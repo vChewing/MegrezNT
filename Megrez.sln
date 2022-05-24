@@ -1,0 +1,57 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.810.23
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Megrez", "Megrez\Megrez.csproj", "{7CA75FEC-E808-4171-9372-28A114843EA4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Megrez.Tests", "Megrez.Tests\Megrez.Tests.csproj", "{F8E8DDEE-952F-4952-8E7F-0618A663B096}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Project", "Solution Project", "{9FFAAF0B-C2BB-4F3B-98F3-834A75840237}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7CA75FEC-E808-4171-9372-28A114843EA4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7CA75FEC-E808-4171-9372-28A114843EA4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7CA75FEC-E808-4171-9372-28A114843EA4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7CA75FEC-E808-4171-9372-28A114843EA4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F8E8DDEE-952F-4952-8E7F-0618A663B096}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F8E8DDEE-952F-4952-8E7F-0618A663B096}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F8E8DDEE-952F-4952-8E7F-0618A663B096}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F8E8DDEE-952F-4952-8E7F-0618A663B096}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8587495F-E908-409D-8593-F3966ADA3358}
+	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		Policies = $0
+		$0.TextStylePolicy = $1
+		$1.FileWidth = 80
+		$1.TabWidth = 2
+		$1.TabsToSpaces = True
+		$1.IndentWidth = 2
+		$1.scope = text/x-csharp
+		$1.NoTabsAfterNonTabs = True
+		$0.CSharpFormattingPolicy = $2
+		$2.scope = text/x-csharp
+		$0.TextStylePolicy = $3
+		$3.FileWidth = 80
+		$3.TabWidth = 8
+		$3.IndentWidth = 8
+		$3.scope = text/plain
+		$0.DotNetNamingPolicy = $4
+		$4.DirectoryNamespaceAssociation = PrefixedHierarchical
+		$0.StandardHeader = $5
+		version = 1.2.0
+	EndGlobalSection
+EndGlobal
