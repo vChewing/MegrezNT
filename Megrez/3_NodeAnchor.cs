@@ -24,17 +24,41 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 namespace Megrez {
+/// <summary>
+/// 節锚。
+/// </summary>
 public struct NodeAnchor {
+  /// <summary>
+  /// 節锚。
+  /// </summary>
   public NodeAnchor(Node Node, int Location, int SpanningLength) {
     this.Node = Node;
     this.Location = Location;
     this.SpanningLength = SpanningLength;
   }
+  /// <summary>
+  /// 節點。一個節锚內不一定有節點，還可能會出 null。
+  /// </summary>
   public Node? Node = null;
+  /// <summary>
+  /// 節锚所在的位置。
+  /// </summary>
   public int Location = 0;
+  /// <summary>
+  /// 幅位長度。
+  /// </summary>
   public int SpanningLength = 0;
+  /// <summary>
+  /// 累計權重。
+  /// </summary>
   public double AccumulatedScore = 0.0;
+  /// <summary>
+  /// 索引鍵的長度。
+  /// </summary>
   public int KeyLength => Node?.Key.Length ?? 0;
+  /// <summary>
+  /// 獲取用來比較的權重。
+  /// </summary>
   public double ScoreForSort => Node?.Score ?? 0.0;
   public override string ToString() {
     string Stream = "";

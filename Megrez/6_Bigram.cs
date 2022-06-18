@@ -27,15 +27,33 @@ using System;
 using System.Collections.Generic;
 
 namespace Megrez {
+/// <summary>
+/// 雙元圖。
+/// </summary>
 public struct Bigram {
+  /// <summary>
+  /// 初期化一筆「雙元圖」。一筆雙元圖由一組前述鍵值配對、一組當前鍵值配對、與一筆權重數值組成。
+  /// </summary>
+  /// <param name="KeyValuePreceded">前述鍵值。</param>
+  /// <param name="KeyValue">當前鍵值。</param>
+  /// <param name="Score">權重（雙精度小數）。</param>
   public Bigram(KeyValuePair KeyValuePreceded, KeyValuePair KeyValue, double Score) {
     this.KeyValuePreceded = KeyValuePreceded;
     this.KeyValue = KeyValue;
     this.Score = Score;
   }
 
+  /// <summary>
+  /// 前述鍵值。
+  /// </summary>
   public KeyValuePair KeyValuePreceded { get; set; }
+  /// <summary>
+  /// 當前鍵值。
+  /// </summary>
   public KeyValuePair KeyValue { get; set; }
+  /// <summary>
+  /// 權重。
+  /// </summary>
   public double Score { get; set; }
 
   public override bool Equals(object Obj) {

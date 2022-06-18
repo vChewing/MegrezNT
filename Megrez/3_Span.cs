@@ -27,22 +27,44 @@ using System;
 using System.Collections.Generic;
 
 namespace Megrez {
+/// <summary>
+/// 幅位。
+/// </summary>
 public struct Span {
+  /// <summary>
+  /// 幅位。
+  /// </summary>
   public Span() {}
+  /// <summary>
+  /// 辭典：以節點長度為索引，以節點為資料值。
+  /// </summary>
   private Dictionary<int, Node> MutLengthNodeMap = new();
+  /// <summary>
+  /// 公開：最長幅距（唯讀）。
+  /// </summary>
   private int MutMaximumLength = 0;
   public int MaximumLength => MutMaximumLength;
+  /// <summary>
+  /// 自我清空，各項參數歸零。
+  /// </summary>
   public void Clear() {
     MutLengthNodeMap.Clear();
     MutMaximumLength = 0;
   }
-  // MARK: - 往自身插入一個節點、及給定的節點長度
+  /// <summary>
+  /// 往自身插入一個節點、及給定的節點長度。
+  /// </summary>
+  /// <param name="Node">節點。</param>
+  /// <param name="Length">給定的節點長度。</param>
   public void Insert(Node Node, int Length) {
     Length = Math.Abs(Length);
     MutLengthNodeMap[Length] = Node;
     MutMaximumLength = Math.Max(MutMaximumLength, Length);
   }
-  // MARK: - 移除任何比給定的長度更長的節點
+  /// <summary>
+  /// 移除任何比給定的長度更長的節點。
+  /// </summary>
+  /// <param name="Length">給定的節點長度。</param>
   public void RemoveNodeOfLengthGreaterThan(int Length) {
     Length = Math.Abs(Length);
     if (Length > MutMaximumLength) return;
@@ -59,7 +81,11 @@ public struct Span {
     }
     MutMaximumLength = LenMax;
   }
-  // MARK: - 給定節點長度，獲取節點
+  /// <summary>
+  /// 給定節點長度，獲取節點。
+  /// </summary>
+  /// <param name="Length">給定的節點長度。</param>
+  /// <returns>節點。如果沒有節點則傳回 null。</returns>
   public Node? Node(int Length) {
     if (MutLengthNodeMap.ContainsKey(Math.Abs(Length))) {
       return MutLengthNodeMap[Math.Abs(Length)];

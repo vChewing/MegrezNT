@@ -27,13 +27,27 @@ using System;
 using System.Collections.Generic;
 
 namespace Megrez {
+/// <summary>
+/// 單元圖。
+/// </summary>
 public struct Unigram {
+  /// <summary>
+  /// 初期化一筆「單元圖」。一筆單元圖由一組鍵值配對與一筆權重數值組成。
+  /// </summary>
+  /// <param name="KeyValue">鍵值。</param>
+  /// <param name="Score">權重（雙精度小數）。</param>
   public Unigram(KeyValuePair KeyValue, double Score) {
     this.KeyValue = KeyValue;
     this.Score = Score;
   }
 
+  /// <summary>
+  /// 鍵值。
+  /// </summary>
   public KeyValuePair KeyValue { get; set; }
+  /// <summary>
+  /// 權重。
+  /// </summary>
   public double Score { get; set; }
 
   public override bool Equals(object Obj) {

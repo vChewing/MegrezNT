@@ -25,13 +25,27 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 using System;
 namespace Megrez {
+/// <summary>
+/// 鍵值配對。
+/// </summary>
 public struct KeyValuePair {
+  /// <summary>
+  /// 初期化一組鍵值配對。
+  /// </summary>
+  /// <param name="Key">鍵。一般情況下用來放置讀音等可以用來作為索引的內容。</param>
+  /// <param name="Value">資料值。</param>
   public KeyValuePair(string Key, string Value) {
     this.Key = Key;
     this.Value = Value;
   }
 
+  /// <summary>
+  /// 鍵。一般情況下用來放置讀音等可以用來作為索引的內容。
+  /// </summary>
   public string Key { get; set; }
+  /// <summary>
+  /// 資料值。
+  /// </summary>
   public string Value { get; set; }
 
   public override bool Equals(object Obj) { return Obj is KeyValuePair Pair && Key == Pair.Key && Value == Pair.Value; }

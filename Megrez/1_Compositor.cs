@@ -28,42 +28,95 @@ using System.Linq;
 using System.Collections.Generic;
 
 namespace Megrez {
+/// <summary>
+/// 組字器。
+/// </summary>
 public class Compositor {
+  /// <summary>
+  /// 給被丟掉的節點路徑施加的負權重。
+  /// </summary>
   private const double ConDroppedPathScore = -999;
+  /// <summary>
+  /// 該組字器的游標位置。
+  /// </summary>
   private int MutCursorIndex = 0;
+  /// <summary>
+  /// 該組字器的讀音陣列。
+  /// </summary>
   private List<string> MutReadings = new();
+  /// <summary>
+  /// 該組字器的軌格。
+  /// </summary>
   private Grid MutGrid = new();
+  /// <summary>
+  /// 該組字器所使用的語言模型。
+  /// </summary>
   private LanguageModel MutLM = new();
+  /// <summary>
+  /// 公開：該組字器內可以允許的最大詞長。
+  /// </summary>
   public int MaxBuildSpanLength => MutGrid.MaxBuildSpanLength;
+  /// <summary>
+  /// 公開：多字讀音鍵當中用以分割漢字讀音的記號，預設為空。
+  /// </summary>
   public string JoinSeparator = "";
+  /// <summary>
+  /// 公開：該組字器的游標位置。
+  /// </summary>
   public int CursorIndex {
     get => MutCursorIndex;
     set => MutCursorIndex = (value < 0) ? 0 : Math.Min(value, MutReadings.Count);
   }
+  /// <summary>
+  /// 公開：該組字器是否為空。
+  /// </summary>
+  public bool IsEmpty => Grid.IsEmpty;
+  /// <summary>
+  /// 公開：該組字器的軌格（唯讀）。
+  /// </summary>
   public Grid Grid => MutGrid;
+  /// <summary>
+  /// 公開：該組字器的長度，也就是內建漢字讀音的數量（唯讀）。
+  /// </summary>
   public int Length => MutReadings.Count;
+  /// <summary>
+  /// 公開：該組字器的讀音陣列（唯讀）。
+  /// </summary>
   public List<string> Readings => MutReadings;
-  // MARK: - Initialization
+  /// <summary>
+  /// 組字器。
+  /// </summary>
+  /// <param name="Lm">語言模型。可以是任何基於 Megrez.LanguageModel 的衍生型別。</param>
+  /// <param name="Length">指定該組字器內可以允許的最大詞長，預設為 10 字。</param>
+  /// <param name="Separator">多字讀音鍵當中用以分割漢字讀音的記號，預設為空。</param>
   public Compositor(LanguageModel Lm, int Length = 10, string Separator = "") {
     MutLM = Lm;
     MutGrid = new Grid(Math.Abs(Length));
     JoinSeparator = Separator;
   }
-  // MARK: - 分節讀音槽自我清空專用函數
+  /// <summary>
+  /// 組字器自我清空專用函式。
+  /// </summary>
   public void Clear() {
     MutCursorIndex = 0;
     MutReadings.Clear();
     MutGrid.Clear();
   }
-  // MARK: - 在游標位置插入給定的讀音
+  /// <summary>
+  /// 在游標位置插入給定的讀音。
+  /// </summary>
+  /// <param name="Reading">要插入的讀音。</param>
   public void InsertReadingAtCursor(string Reading) {
     MutReadings.Insert(MutCursorIndex, Reading);
     MutGrid.ExpandGridByOneAt(MutCursorIndex);
     Build();
     MutCursorIndex += 1;
   }
-  // 朝著與文字輸入方向相反的方向、砍掉一個與游標相鄰的讀音。
-  // 在威注音的術語體系當中，「與文字輸入方向相反的方向」為向後（Rear）。
+  /// <summary>
+  /// 朝著與文字輸入方向相反的方向、砍掉一個與游標相鄰的讀音。<br />
+  /// 在威注音的術語體系當中，「與文字輸入方向相反的方向」為向後（Rear）。
+  /// </summary>
+  /// <returns>結果是否成功執行。</returns>
   public bool DeleteReadingAtTheRearOfCursor() {
     if (MutCursorIndex == 0) return false;
     MutReadings.RemoveAt(MutCursorIndex - 1);
@@ -72,8 +125,11 @@ public class Compositor {
     Build();
     return true;
   }
-  // 朝著往文字輸入方向、砍掉一個與游標相鄰的讀音。
-  // 在威注音的術語體系當中，「文字輸入方向」為向前（Front）。
+  /// <summary>
+  /// 朝著往文字輸入方向、砍掉一個與游標相鄰的讀音。<br />
+  /// 在威注音的術語體系當中，「文字輸入方向」為向前（Front）。
+  /// </summary>
+  /// <returns>結果是否成功執行。</returns>
   public bool DeleteReadingToTheFrontOfCursor() {
     if (MutCursorIndex == MutReadings.Count) return false;
     MutReadings.RemoveAt(MutCursorIndex);
@@ -81,8 +137,13 @@ public class Compositor {
     Build();
     return true;
   }
-  // 移除該分節讀音槽的第一個讀音單元。用於輸入法組字區長度上限處理：
-  // 將該位置要溢出的敲字內容遞交之後、再執行這個函數。
+  /// <summary>
+  /// 移除該組字器最先被輸入的第 X 個讀音單元。<br />
+  /// 用於輸入法組字區長度上限處理：<br />
+  /// 將該位置要溢出的敲字內容遞交之後、再執行這個函式。
+  /// </summary>
+  /// <param name="Count">要移除的讀音單位數量。</param>
+  /// <returns>結果是否成功執行。</returns>
   public bool RemoveHeadReadings(int Count) {
     int TheCount = Math.Abs(Count);
     if (TheCount > Length) return false;
@@ -96,7 +157,14 @@ public class Compositor {
     }
     return true;
   }
-  // MARK: - Walker (non-reversed)
+  /// <summary>
+  /// 對已給定的軌格按照給定的位置與條件進行正向爬軌。
+  /// </summary>
+  /// <param name="Location">開始爬軌的位置。</param>
+  /// <param name="AccumulatedScore">給定累計權重，非必填參數。預設值為 0。</param>
+  /// <param name="JoinedPhrase">用以統計累計長詞的內部參數，請勿主動使用。</param>
+  /// <param name="LongPhrases">用以統計累計長詞的內部參數，請勿主動使用。</param>
+  /// <returns>均有節點的節錨陣列。</returns>
   public List<NodeAnchor> Walk(int Location, double AccumulatedScore = 0.0, string JoinedPhrase = "",
                                List<String> LongPhrases = default) {
     int NewLocation = MutGrid.Width - Math.Abs(Location);
@@ -104,7 +172,14 @@ public class Compositor {
     Result.Reverse();
     return Result;
   }
-  // Mark: - Walker (reversed)
+  /// <summary>
+  /// 對已給定的軌格按照給定的位置與條件進行反向爬軌。
+  /// </summary>
+  /// <param name="Location">開始爬軌的位置。</param>
+  /// <param name="AccumulatedScore">給定累計權重，非必填參數。預設值為 0。</param>
+  /// <param name="JoinedPhrase">用以統計累計長詞的內部參數，請勿主動使用。</param>
+  /// <param name="LongPhrases">用以統計累計長詞的內部參數，請勿主動使用。</param>
+  /// <returns>均有節點的節錨陣列。</returns>
   public List<NodeAnchor> ReverseWalk(int Location, double AccumulatedScore = 0.0, string JoinedPhrase = "",
                                       List<String> LongPhrases = default) {
     if (LongPhrases == null) LongPhrases = new();

@@ -27,14 +27,45 @@ using System;
 using System.Collections.Generic;
 
 namespace Megrez {
+/// <summary>
+/// 軌格。
+/// </summary>
 public class Grid {
+  /// <summary>
+  /// 幅位陣列。
+  /// </summary>
   private List<Span> MutSpans = new();
+  /// <summary>
+  /// 初期化轨格。
+  /// </summary>
+  /// <param name="SpanLength">該軌格內可以允許的最大幅位長度。</param>
   public Grid(int SpanLength = 10) { MutMaxBuildSpanLength = SpanLength; }
+  /// <summary>
+  /// 該幅位內可以允許的最大詞長。
+  /// </summary>
   private int MutMaxBuildSpanLength;
+  /// <summary>
+  /// 公開：該軌格內可以允許的最大幅位長度。
+  /// </summary>
   public int MaxBuildSpanLength => MutMaxBuildSpanLength;
+  /// <summary>
+  /// 公開：軌格的寬度，也就是其內的幅位陣列當中的幅位數量。
+  /// </summary>
   public int Width => MutSpans.Count;
+  /// <summary>
+  /// 公開：軌格是否為空。
+  /// </summary>
+  public bool IsEmpty => MutSpans.Count == 0;
+  /// <summary>
+  /// 自我清空該軌格的內容。
+  /// </summary>
   public void Clear() { MutSpans.Clear(); }
-  // MARK: - 往該軌格的指定位置插入指定幅位長度的指定節點
+  /// <summary>
+  /// 往該軌格的指定位置插入指定幅位長度的指定節點。
+  /// </summary>
+  /// <param name="Node">節點。</param>
+  /// <param name="Location">位置。</param>
+  /// <param name="SpanningLength">給定的幅位長度。</param>
   public void InsertNode(Node Node, int Location, int SpanningLength) {
     Location = Math.Abs(Location);
     SpanningLength = Math.Abs(SpanningLength);
@@ -48,7 +79,13 @@ public class Grid {
     SpanToDealWith.Insert(Node, SpanningLength);
     MutSpans[Location] = SpanToDealWith;
   }
-  // MARK: - 給定索引鍵、位置、幅位長度，在該軌格內確認是否有對應的節點存在
+  /// <summary>
+  /// 給定索引鍵、位置、幅位長度，在該軌格內確認是否有對應的節點存在。
+  /// </summary>
+  /// <param name="Location">位置。</param>
+  /// <param name="SpanningLength">給定的幅位長度。</param>
+  /// <param name="Key">索引鍵。</param>
+  /// <returns>回報存無狀態：存則真，無則假。</returns>
   public bool HasMatchedNode(int Location, int SpanningLength, string Key) {
     int TheLocation = Math.Abs(Location);
     int TheSpanningLength = Math.Abs(SpanningLength);
@@ -58,7 +95,10 @@ public class Grid {
     Node? N = MutSpans[TheLocation].Node(TheSpanningLength);
     return (N != null) && (Key == N.Key);
   }
-  // MARK: - 在該軌格的指定位置擴增一個幅位
+  /// <summary>
+  /// 在該軌格的指定位置擴增一個幅位。
+  /// </summary>
+  /// <param name="Location">位置。</param>
   public void ExpandGridByOneAt(int Location) {
     int TheLocation = Math.Abs(Location);
     MutSpans.Insert(TheLocation, new());
@@ -69,7 +109,10 @@ public class Grid {
         MutSpans[I] = TheSpan;
       }
   }
-  // MARK: - 在該軌格的指定位置減少一個幅位
+  /// <summary>
+  /// 在該軌格的指定位置減少一個幅位。
+  /// </summary>
+  /// <param name="Location">位置。</param>
   public void ShrinkGridByOneAt(int Location) {
     Location = Math.Abs(Location);
     if (Location >= MutSpans.Count) return;
@@ -80,7 +123,11 @@ public class Grid {
       MutSpans[I] = TheSpan;
     }
   }
-  // MARK: - 給定位置，枚舉出所有在這個位置開始的節點
+  /// <summary>
+  /// 給定位置，枚舉出所有在這個位置開始的節點。
+  /// </summary>
+  /// <param name="Location">位置。</param>
+  /// <returns>均有節點的節錨陣列。</returns>
   public List<NodeAnchor> NodesBeginningAt(int Location) {
     int TheLocation = Math.Abs(Location);
     List<NodeAnchor> Results = new();
@@ -93,7 +140,11 @@ public class Grid {
     }
     return Results;
   }
-  // MARK: - 給定位置，枚舉出所有在這個位置結尾的節點
+  /// <summary>
+  /// 給定位置，枚舉出所有在這個位置結尾的節點。
+  /// </summary>
+  /// <param name="Location">位置。</param>
+  /// <returns>均有節點的節錨陣列。</returns>
   public List<NodeAnchor> NodesEndingAt(int Location) {
     int TheLocation = Math.Abs(Location);
     List<NodeAnchor> Results = new();
@@ -108,7 +159,11 @@ public class Grid {
     }
     return Results;
   }
-  // MARK: - 枚舉出所有在這個位置結尾、或者橫跨該位置的節點
+  /// <summary>
+  /// 給定位置，枚舉出所有在這個位置結尾、或者橫跨該位置的節點。
+  /// </summary>
+  /// <param name="Location">位置。</param>
+  /// <returns>均有節點的節錨陣列。</returns>
   public List<NodeAnchor> NodesCrossingOrEndingAt(int Location) {
     int TheLocation = Math.Abs(Location);
     List<NodeAnchor> Results = new();
@@ -126,7 +181,12 @@ public class Grid {
     }
     return Results;
   }
-  // MARK: - 將給定位置的節點的候選字詞改為與給定的字串一致的候選字詞
+  /// <summary>
+  /// 將給定位置的節點的候選字詞改為與給定的字串一致的候選字詞。該函式可以僅用作過程函式。
+  /// </summary>
+  /// <param name="Location">位置。</param>
+  /// <param name="Value">給定字串。</param>
+  /// <returns>一個節錨，內容可能為空。該結果僅用作偵錯用途。</returns>
   public NodeAnchor FixNodeSelectedCandidate(int Location, string Value) {
     int TheLocation = Math.Abs(Location);
     NodeAnchor Node = new();
@@ -148,7 +208,12 @@ public class Grid {
     }
     return Node;
   }
-  // MARK: - 將給定位置的節點的與給定字串一致的候選字詞的權重複寫為給定權重數值
+  /// <summary>
+  /// 將給定位置的節點的與給定的字串一致的候選字詞的權重複寫為給定權重數值。
+  /// </summary>
+  /// <param name="Location">位置。</param>
+  /// <param name="Value">給定字串。</param>
+  /// <param name="OverridingScore">給定權重數值。</param>
   public void FixNodeSelectedCandidate(int Location, string Value, double OverridingScore) {
     int TheLocation = Math.Abs(Location);
     foreach (NodeAnchor NodeAnchor in NodesCrossingOrEndingAt(TheLocation)) {
@@ -167,7 +232,10 @@ public class Grid {
       }
     }
   }
-  // MARK: - DumpDOT
+  /// <summary>
+  /// 生成用以交給 GraphViz 診斷的資料。
+  /// </summary>
+  /// <returns>GraphViz 檔案內容，純文字。</returns>
   public string DumpDOT() {
     string StrOutput = "digraph {\ngraph [ rankdir=LR ];\nBOS;\n";
     for (int P = 0; P < MutSpans.Count; P++) {
