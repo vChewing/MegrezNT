@@ -63,23 +63,19 @@ public struct KeyValuePair {
   }
 
   public static bool operator<(KeyValuePair Lhs, KeyValuePair Rhs) {
-    return (Lhs.Key.Length < Rhs.Key.Length) ||
-           (Lhs.Key.Length == Rhs.Key.Length && Lhs.Value.CompareTo(Rhs.Value) < 0);
+    return Lhs.Key.Length < Rhs.Key.Length || Lhs.Key.Length == Rhs.Key.Length && Lhs.Value.CompareTo(Rhs.Value) < 0;
   }
 
   public static bool operator>(KeyValuePair Lhs, KeyValuePair Rhs) {
-    return (Lhs.Key.Length > Rhs.Key.Length) ||
-           (Lhs.Key.Length == Rhs.Key.Length && Lhs.Value.CompareTo(Rhs.Value) > 0);
+    return Lhs.Key.Length > Rhs.Key.Length || Lhs.Key.Length == Rhs.Key.Length && Lhs.Value.CompareTo(Rhs.Value) > 0;
   }
 
   public static bool operator <=(KeyValuePair Lhs, KeyValuePair Rhs) {
-    return (Lhs.Key.Length <= Rhs.Key.Length) ||
-           (Lhs.Key.Length == Rhs.Key.Length && Lhs.Value.CompareTo(Rhs.Value) <= 0);
+    return Lhs.Key.Length <= Rhs.Key.Length || Lhs.Key.Length == Rhs.Key.Length && Lhs.Value.CompareTo(Rhs.Value) <= 0;
   }
 
   public static bool operator >=(KeyValuePair Lhs, KeyValuePair Rhs) {
-    return (Lhs.Key.Length >= Rhs.Key.Length) ||
-           (Lhs.Key.Length == Rhs.Key.Length && Lhs.Value.CompareTo(Rhs.Value) >= 0);
+    return Lhs.Key.Length >= Rhs.Key.Length || Lhs.Key.Length == Rhs.Key.Length && Lhs.Value.CompareTo(Rhs.Value) >= 0;
   }
 }
 }

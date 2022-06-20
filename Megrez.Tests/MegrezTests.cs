@@ -180,7 +180,7 @@ public class SimpleLM : LanguageModel {
       }
     }
   }
-  public override List<Unigram> UnigramsFor(string Key) => (MutDatabase.ContainsKey(Key)) ? MutDatabase[Key] : new();
+  public override List<Unigram> UnigramsFor(string Key) => MutDatabase.ContainsKey(Key) ? MutDatabase[Key] : new();
   public override bool HasUnigramsFor(string Key) => MutDatabase.ContainsKey(Key);
 }
 

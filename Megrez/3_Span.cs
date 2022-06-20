@@ -42,14 +42,13 @@ public struct Span {
   /// <summary>
   /// 公開：最長幅距（唯讀）。
   /// </summary>
-  private int MutMaximumLength = 0;
-  public int MaximumLength => MutMaximumLength;
+  public int MaximumLength { get; private set; } = 0;
   /// <summary>
   /// 自我清空，各項參數歸零。
   /// </summary>
   public void Clear() {
     MutLengthNodeMap.Clear();
-    MutMaximumLength = 0;
+    MaximumLength = 0;
   }
   /// <summary>
   /// 往自身插入一個節點、及給定的節點長度。
@@ -59,7 +58,7 @@ public struct Span {
   public void Insert(Node Node, int Length) {
     Length = Math.Abs(Length);
     MutLengthNodeMap[Length] = Node;
-    MutMaximumLength = Math.Max(MutMaximumLength, Length);
+    MaximumLength = Math.Max(MaximumLength, Length);
   }
   /// <summary>
   /// 移除任何比給定的長度更長的節點。
@@ -67,7 +66,7 @@ public struct Span {
   /// <param name="Length">給定的節點長度。</param>
   public void RemoveNodeOfLengthGreaterThan(int Length) {
     Length = Math.Abs(Length);
-    if (Length > MutMaximumLength) return;
+    if (Length > MaximumLength) return;
     int LenMax = 0;
     Dictionary<int, Node> RemovalList = new();
     foreach (int Key in MutLengthNodeMap.Keys) {
@@ -79,7 +78,7 @@ public struct Span {
     foreach (int Key in RemovalList.Keys) {
       MutLengthNodeMap.Remove(Key);
     }
-    MutMaximumLength = LenMax;
+    MaximumLength = LenMax;
   }
   /// <summary>
   /// 給定節點長度，獲取節點。
@@ -87,11 +86,7 @@ public struct Span {
   /// <param name="Length">給定的節點長度。</param>
   /// <returns>節點。如果沒有節點則傳回 null。</returns>
   public Node? Node(int Length) {
-    if (MutLengthNodeMap.ContainsKey(Math.Abs(Length))) {
-      return MutLengthNodeMap[Math.Abs(Length)];
-    } else {
-      return null;
-    }
+    return MutLengthNodeMap.ContainsKey(Math.Abs(Length)) ? MutLengthNodeMap[Math.Abs(Length)] : null;
   }
 }
 }

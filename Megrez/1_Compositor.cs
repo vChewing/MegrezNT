@@ -39,15 +39,7 @@ public class Compositor {
   /// <summary>
   /// 該組字器的游標位置。
   /// </summary>
-  private int MutCursorIndex = 0;
-  /// <summary>
-  /// 該組字器的讀音陣列。
-  /// </summary>
-  private List<string> MutReadings = new();
-  /// <summary>
-  /// 該組字器的軌格。
-  /// </summary>
-  private Grid MutGrid = new();
+  private int MutCursorIndex;
   /// <summary>
   /// 該組字器所使用的語言模型。
   /// </summary>
@@ -55,7 +47,7 @@ public class Compositor {
   /// <summary>
   /// 公開：該組字器內可以允許的最大詞長。
   /// </summary>
-  public int MaxBuildSpanLength => MutGrid.MaxBuildSpanLength;
+  public int MaxBuildSpanLength => Grid.MaxBuildSpanLength;
   /// <summary>
   /// 公開：多字讀音鍵當中用以分割漢字讀音的記號，預設為空。
   /// </summary>
@@ -65,7 +57,7 @@ public class Compositor {
   /// </summary>
   public int CursorIndex {
     get => MutCursorIndex;
-    set => MutCursorIndex = (value < 0) ? 0 : Math.Min(value, MutReadings.Count);
+    set => MutCursorIndex = value < 0 ? 0 : Math.Min(value, Readings.Count);
   }
   /// <summary>
   /// 公開：該組字器是否為空。
@@ -74,15 +66,15 @@ public class Compositor {
   /// <summary>
   /// 公開：該組字器的軌格（唯讀）。
   /// </summary>
-  public Grid Grid => MutGrid;
+  public Grid Grid { get; } = new();
   /// <summary>
   /// 公開：該組字器的長度，也就是內建漢字讀音的數量（唯讀）。
   /// </summary>
-  public int Length => MutReadings.Count;
+  public int Length => Readings.Count;
   /// <summary>
   /// 公開：該組字器的讀音陣列（唯讀）。
   /// </summary>
-  public List<string> Readings => MutReadings;
+  public List<string> Readings { get; } = new();
   /// <summary>
   /// 組字器。
   /// </summary>
@@ -91,7 +83,7 @@ public class Compositor {
   /// <param name="Separator">多字讀音鍵當中用以分割漢字讀音的記號，預設為空。</param>
   public Compositor(LanguageModel Lm, int Length = 10, string Separator = "") {
     MutLM = Lm;
-    MutGrid = new Grid(Math.Abs(Length));
+    Grid = new(Math.Abs(Length));
     JoinSeparator = Separator;
   }
   /// <summary>
@@ -99,16 +91,16 @@ public class Compositor {
   /// </summary>
   public void Clear() {
     MutCursorIndex = 0;
-    MutReadings.Clear();
-    MutGrid.Clear();
+    Readings.Clear();
+    Grid.Clear();
   }
   /// <summary>
   /// 在游標位置插入給定的讀音。
   /// </summary>
   /// <param name="Reading">要插入的讀音。</param>
   public void InsertReadingAtCursor(string Reading) {
-    MutReadings.Insert(MutCursorIndex, Reading);
-    MutGrid.ExpandGridByOneAt(MutCursorIndex);
+    Readings.Insert(MutCursorIndex, Reading);
+    Grid.ExpandGridByOneAt(MutCursorIndex);
     Build();
     MutCursorIndex += 1;
   }
@@ -119,9 +111,9 @@ public class Compositor {
   /// <returns>結果是否成功執行。</returns>
   public bool DeleteReadingAtTheRearOfCursor() {
     if (MutCursorIndex == 0) return false;
-    MutReadings.RemoveAt(MutCursorIndex - 1);
+    Readings.RemoveAt(MutCursorIndex - 1);
     MutCursorIndex -= 1;
-    MutGrid.ShrinkGridByOneAt(MutCursorIndex);
+    Grid.ShrinkGridByOneAt(MutCursorIndex);
     Build();
     return true;
   }
@@ -131,9 +123,9 @@ public class Compositor {
   /// </summary>
   /// <returns>結果是否成功執行。</returns>
   public bool DeleteReadingToTheFrontOfCursor() {
-    if (MutCursorIndex == MutReadings.Count) return false;
-    MutReadings.RemoveAt(MutCursorIndex);
-    MutGrid.ShrinkGridByOneAt(MutCursorIndex);
+    if (MutCursorIndex == Readings.Count) return false;
+    Readings.RemoveAt(MutCursorIndex);
+    Grid.ShrinkGridByOneAt(MutCursorIndex);
     Build();
     return true;
   }
@@ -149,9 +141,9 @@ public class Compositor {
     if (TheCount > Length) return false;
     for (int I = 0; I < TheCount; I++) {
       if (MutCursorIndex > 0) MutCursorIndex -= 1;
-      if (MutReadings.Count > 0) {
-        MutReadings.RemoveAt(0);
-        MutGrid.ShrinkGridByOneAt(0);
+      if (Readings.Count > 0) {
+        Readings.RemoveAt(0);
+        Grid.ShrinkGridByOneAt(0);
       }
       Build();
     }
@@ -166,8 +158,8 @@ public class Compositor {
   /// <param name="LongPhrases">用以統計累計長詞的內部參數，請勿主動使用。</param>
   /// <returns>均有節點的節錨陣列。</returns>
   public List<NodeAnchor> Walk(int Location, double AccumulatedScore = 0.0, string JoinedPhrase = "",
-                               List<String> LongPhrases = default) {
-    int NewLocation = MutGrid.Width - Math.Abs(Location);
+                               List<string> LongPhrases = default(List<string>)) {
+    int NewLocation = Grid.Width - Math.Abs(Location);
     List<NodeAnchor> Result = ReverseWalk(NewLocation, AccumulatedScore, JoinedPhrase, LongPhrases);
     Result.Reverse();
     return Result;
@@ -181,18 +173,18 @@ public class Compositor {
   /// <param name="LongPhrases">用以統計累計長詞的內部參數，請勿主動使用。</param>
   /// <returns>均有節點的節錨陣列。</returns>
   public List<NodeAnchor> ReverseWalk(int Location, double AccumulatedScore = 0.0, string JoinedPhrase = "",
-                                      List<String> LongPhrases = default) {
-    if (LongPhrases == null) LongPhrases = new();
+                                      List<string> LongPhrases = default(List<string>)) {
+    LongPhrases ??= new();  // 不要聽 IntelliSense 放屁。這一行不能砍，否則直接炸。
     Location = Math.Abs(Location);
-    if (Location == 0 || Location > MutGrid.Width) return new();
+    if (Location == 0 || Location > Grid.Width) return new();
     List<List<NodeAnchor>> Paths = new();
-    List<NodeAnchor> Nodes = MutGrid.NodesEndingAt(Location);
+    List<NodeAnchor> Nodes = Grid.NodesEndingAt(Location);
     Nodes = Nodes.OrderByDescending(A => A.ScoreForSort).ToList();
     if (Nodes.FirstOrDefault().Node == null) return new();
 
     Node ZeroNode = Nodes.FirstOrDefault().Node ?? new("", new());
 
-    if (ZeroNode.Score >= ZeroNode.ConSelectedCandidateScore) {
+    if (ZeroNode.Score >= Node.ConSelectedCandidateScore) {
       NodeAnchor ZeroAnchor = Nodes.FirstOrDefault();
       ZeroAnchor.AccumulatedScore = AccumulatedScore + ZeroNode.Score;
       List<NodeAnchor> Path = ReverseWalk(Location - ZeroAnchor.SpanningLength, ZeroAnchor.AccumulatedScore);
@@ -200,8 +192,8 @@ public class Compositor {
       Paths.Add(Path);
     } else if (LongPhrases.Count > 0) {
       List<NodeAnchor> Path = new();
-      for (int I = 0; I < Nodes.Count; I++) {
-        NodeAnchor TheAnchor = Nodes[I];
+      foreach (NodeAnchor T in Nodes) {
+        NodeAnchor TheAnchor = T;
         if (TheAnchor.Node == null) continue;
         Node TheNode = TheAnchor.Node;
         string JoinedValue = TheNode.CurrentKeyValue + JoinedPhrase;
@@ -216,7 +208,7 @@ public class Compositor {
         }
         TheAnchor.AccumulatedScore = AccumulatedScore + TheNode.Score;
         Path = ReverseWalk(Location - TheAnchor.SpanningLength, TheAnchor.AccumulatedScore,
-                           (JoinedValue.Length >= (LongPhrases.FirstOrDefault() ?? "").Length) ? "" : JoinedValue,
+                           JoinedValue.Length >= (LongPhrases.FirstOrDefault() ?? "").Length ? "" : JoinedValue,
                            LongPhrases);
         Path.Insert(0, TheAnchor);
         Paths.Add(Path);
@@ -224,59 +216,46 @@ public class Compositor {
     } else {
       // 看看當前格位有沒有更長的候選字詞。
       LongPhrases.Clear();
-      foreach (NodeAnchor TheAnchor in Nodes) {
-        if (TheAnchor.Node == null) continue;
-        Node TheNode = TheAnchor.Node;
-        if (TheAnchor.SpanningLength > 1) LongPhrases.Add(TheNode.CurrentKeyValue.Value);
-      }
+      LongPhrases.AddRange(from TheAnchor in Nodes where TheAnchor.Node != null let TheNode = TheAnchor.Node where TheAnchor.SpanningLength > 1 select TheNode.CurrentKeyValue.Value);
       LongPhrases = LongPhrases.OrderByDescending(A => A.Length).ToList();
-      for (int I = 0; I < Nodes.Count; I++) {
-        NodeAnchor TheAnchor = Nodes[I];
+      foreach (NodeAnchor T in Nodes) {
+        NodeAnchor TheAnchor = T;
         if (TheAnchor.Node == null) continue;
         Node TheNode = TheAnchor.Node;
         TheAnchor.AccumulatedScore = AccumulatedScore + TheNode.Score;
         List<NodeAnchor> Path =
             ReverseWalk(Location - TheAnchor.SpanningLength, TheAnchor.AccumulatedScore,
-                        (TheAnchor.SpanningLength > 1) ? "" : TheNode.CurrentKeyValue.Value, LongPhrases);
+                        TheAnchor.SpanningLength > 1 ? "" : TheNode.CurrentKeyValue.Value, LongPhrases);
         Path.Insert(0, TheAnchor);
         Paths.Add(Path);
       }
     }
 
     List<NodeAnchor> Result = Paths.FirstOrDefault() ?? new();
-    foreach (List<NodeAnchor> Neta in Paths) {
-      if (Neta.LastOrDefault().AccumulatedScore > Result.LastOrDefault().AccumulatedScore) Result = Neta;
+    foreach (List<NodeAnchor> Neta in Paths.Where(Neta => Neta.LastOrDefault().AccumulatedScore >
+                                                          Result.LastOrDefault().AccumulatedScore)) {
+      Result = Neta;
     }
 
     return Result;
   }
   // MARK: - Private Functions
   private void Build() {
-    int ItrBegin = (MutCursorIndex < MaxBuildSpanLength) ? 0 : MutCursorIndex - MaxBuildSpanLength;
-    int ItrEnd = Math.Min(MutCursorIndex + MaxBuildSpanLength, MutReadings.Count);
+    int ItrBegin = MutCursorIndex < MaxBuildSpanLength ? 0 : MutCursorIndex - MaxBuildSpanLength;
+    int ItrEnd = Math.Min(MutCursorIndex + MaxBuildSpanLength, Readings.Count);
     for (int P = ItrBegin; P < ItrEnd; P++) {
       for (int Q = 1; Q < MaxBuildSpanLength; Q++) {
         if (P + Q > ItrEnd) break;
-        List<string> ArrSlice = MutReadings.GetRange(P, Q);
+        List<string> ArrSlice = Readings.GetRange(P, Q);
         string CombinedReading = Join(ArrSlice, JoinSeparator);
-        if (!MutGrid.HasMatchedNode(P, Q, CombinedReading)) {
-          List<Unigram> Unigrams = MutLM.UnigramsFor(CombinedReading);
-          if (Unigrams.Count > 0) {
-            Node? N = new Node(CombinedReading, Unigrams);
-            if (N != null) {
-              MutGrid.InsertNode(N, P, Q);
-            }
-          }
-        }
+        if (Grid.HasMatchedNode(P, Q, CombinedReading)) continue;
+        List<Unigram> Unigrams = MutLM.UnigramsFor(CombinedReading);
+        if (Unigrams.Count == 0) continue;
+        Node N = new(CombinedReading, Unigrams);
+        Grid.InsertNode(N, P, Q);
       }
     }
   }
-  private string Join(List<string> Slice, string Separator) {
-    List<string> ArrResult = new();
-    foreach (string Item in Slice) {
-      ArrResult.Add(Item);
-    }
-    return String.Join(Separator, ArrResult);
-  }
+  private static string Join(IEnumerable<string> Slice, string Separator) => string.Join(Separator, Slice.ToList());
 }
 }
