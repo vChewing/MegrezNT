@@ -47,7 +47,7 @@ public class Node {
   /// <summary>
   /// 專門「用給定鍵值來取對應的雙元圖陣列」的辭典。
   /// </summary>
-  private Dictionary<KeyValuePair, List<Bigram>> _precedingBigramMap = new();
+  private Dictionary<KeyValuePaired, List<Bigram>> _precedingBigramMap = new();
   /// <summary>
   /// 用來登記「當前選中的單元圖」的索引值的變數。
   /// </summary>
@@ -62,7 +62,7 @@ public class Node {
   /// <summary>
   /// 公開：候選字詞陣列（唯讀），以鍵值陣列的形式存在。
   /// </summary>
-  public List<KeyValuePair> Candidates { get; } = new();
+  public List<KeyValuePaired> Candidates { get; } = new();
   /// <summary>
   /// 公開：用來登記「當前選中的單元圖」的索引值的變數（唯讀）。
   /// </summary>
@@ -78,7 +78,7 @@ public class Node {
   /// <summary>
   /// 公開：當前被選中的候選字詞的鍵值配對。
   /// </summary>
-  public KeyValuePair CurrentKeyValue =>
+  public KeyValuePaired CurrentKeyValue =>
       _selectedUnigramIndex >= _unigrams.Count ? new() : Candidates[_selectedUnigramIndex];
   /// <summary>
   /// 公開：給出當前單元圖陣列內最高的權重數值。
@@ -111,11 +111,11 @@ public class Node {
   /// 對擁有「給定的前述鍵值陣列」的節點提權。
   /// </summary>
   /// <param name="precedingKeyValues">前述鍵值陣列。</param>
-  public void PrimeNodeWith(List<KeyValuePair> precedingKeyValues) {
+  public void PrimeNodeWith(List<KeyValuePaired> precedingKeyValues) {
     int newIndex = _selectedUnigramIndex;
     double maxScore = Score;
     if (!IsCandidateFixed) {
-      foreach (KeyValuePair neta in precedingKeyValues) {
+      foreach (KeyValuePaired neta in precedingKeyValues) {
         List<Bigram> bigrams = new();
         if (_precedingBigramMap.ContainsKey(neta)) bigrams = _precedingBigramMap[neta];
         foreach (Bigram bigram in bigrams.Where(bigram => bigram.Score > maxScore)
@@ -171,11 +171,11 @@ public class Node {
   }
   public override bool Equals(object obj) {
     return obj is Node node && EqualityComparer<List<Unigram>>.Default.Equals(_unigrams, node._unigrams) &&
-           EqualityComparer<List<KeyValuePair>>.Default.Equals(Candidates, node.Candidates) &&
+           EqualityComparer<List<KeyValuePaired>>.Default.Equals(Candidates, node.Candidates) &&
            EqualityComparer<Dictionary<string, int>>.Default.Equals(_valueUnigramIndexMap,
                                                                     node._valueUnigramIndexMap) &&
-           EqualityComparer<Dictionary<KeyValuePair, List<Bigram>>>.Default.Equals(_precedingBigramMap,
-                                                                                   node._precedingBigramMap) &&
+           EqualityComparer<Dictionary<KeyValuePaired, List<Bigram>>>.Default.Equals(_precedingBigramMap,
+                                                                                     node._precedingBigramMap) &&
            IsCandidateFixed == node.IsCandidateFixed && _selectedUnigramIndex == node._selectedUnigramIndex;
   }
 

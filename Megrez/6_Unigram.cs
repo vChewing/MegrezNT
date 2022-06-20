@@ -36,7 +36,7 @@ public struct Unigram {
   /// </summary>
   /// <param name="keyValue">鍵值。</param>
   /// <param name="score">權重（雙精度小數）。</param>
-  public Unigram(KeyValuePair keyValue, double score) {
+  public Unigram(KeyValuePaired keyValue, double score) {
     KeyValue = keyValue;
     Score = score;
   }
@@ -44,14 +44,14 @@ public struct Unigram {
   /// <summary>
   /// 鍵值。
   /// </summary>
-  public KeyValuePair KeyValue { get; set; }
+  public KeyValuePaired KeyValue { get; set; }
   /// <summary>
   /// 權重。
   /// </summary>
   public double Score { get; set; }
 
   public override bool Equals(object obj) {
-    return obj is Unigram unigram && EqualityComparer<KeyValuePair>.Default.Equals(KeyValue, unigram.KeyValue) &&
+    return obj is Unigram unigram && EqualityComparer<KeyValuePaired>.Default.Equals(KeyValue, unigram.KeyValue) &&
            Score == unigram.Score;
   }
 

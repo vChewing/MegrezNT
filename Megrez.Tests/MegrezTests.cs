@@ -169,7 +169,7 @@ public class SimpleLM : LanguageModel {
         string col1 = lineStream[1];  // 假設其不為 nil
         double col2 = 0;              // 防呆
         if (lineStream.Count >= 3 && Double.TryParse(lineStream[2], out double number)) col2 = number;
-        Unigram u = new(new KeyValuePair(), 0);
+        Unigram u = new(new KeyValuePaired(), 0);
         if (swapKeyValue)
           u.KeyValue = new(col1, col0);
         else
