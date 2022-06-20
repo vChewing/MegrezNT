@@ -34,13 +34,13 @@ public struct Bigram {
   /// <summary>
   /// 初期化一筆「雙元圖」。一筆雙元圖由一組前述鍵值配對、一組當前鍵值配對、與一筆權重數值組成。
   /// </summary>
-  /// <param name="KeyValuePreceded">前述鍵值。</param>
-  /// <param name="KeyValue">當前鍵值。</param>
-  /// <param name="Score">權重（雙精度小數）。</param>
-  public Bigram(KeyValuePair KeyValuePreceded, KeyValuePair KeyValue, double Score) {
-    this.KeyValuePreceded = KeyValuePreceded;
-    this.KeyValue = KeyValue;
-    this.Score = Score;
+  /// <param name="keyValuePreceded">前述鍵值。</param>
+  /// <param name="keyValue">當前鍵值。</param>
+  /// <param name="score">權重（雙精度小數）。</param>
+  public Bigram(KeyValuePair keyValuePreceded, KeyValuePair keyValue, double score) {
+    KeyValuePreceded = keyValuePreceded;
+    KeyValue = keyValue;
+    Score = score;
   }
 
   /// <summary>
@@ -56,42 +56,42 @@ public struct Bigram {
   /// </summary>
   public double Score { get; set; }
 
-  public override bool Equals(object Obj) {
-    return Obj is Bigram Bigram &&
-           EqualityComparer<KeyValuePair>.Default.Equals(KeyValuePreceded, Bigram.KeyValuePreceded) &&
-           EqualityComparer<KeyValuePair>.Default.Equals(KeyValue, Bigram.KeyValue) && Score == Bigram.Score;
+  public override bool Equals(object obj) {
+    return obj is Bigram bigram &&
+           EqualityComparer<KeyValuePair>.Default.Equals(KeyValuePreceded, bigram.KeyValuePreceded) &&
+           EqualityComparer<KeyValuePair>.Default.Equals(KeyValue, bigram.KeyValue) && Score == bigram.Score;
   }
 
   public override int GetHashCode() { return HashCode.Combine(KeyValuePreceded, KeyValue, Score); }
 
   public override string ToString() => $"({KeyValuePreceded}|{KeyValue},{Score})";
 
-  public static bool operator ==(Bigram Lhs, Bigram Rhs) {
-    return Lhs.KeyValuePreceded == Rhs.KeyValuePreceded && Lhs.KeyValue == Rhs.KeyValue && Lhs.Score == Rhs.Score;
+  public static bool operator ==(Bigram lhs, Bigram rhs) {
+    return lhs.KeyValuePreceded == rhs.KeyValuePreceded && lhs.KeyValue == rhs.KeyValue && lhs.Score == rhs.Score;
   }
 
-  public static bool operator !=(Bigram Lhs, Bigram Rhs) {
-    return Lhs.KeyValuePreceded != Rhs.KeyValuePreceded || Lhs.KeyValue != Rhs.KeyValue || Lhs.Score != Rhs.Score;
+  public static bool operator !=(Bigram lhs, Bigram rhs) {
+    return lhs.KeyValuePreceded != rhs.KeyValuePreceded || lhs.KeyValue != rhs.KeyValue || lhs.Score != rhs.Score;
   }
 
-  public static bool operator<(Bigram Lhs, Bigram Rhs) {
-    return Lhs.KeyValuePreceded < Rhs.KeyValuePreceded || Lhs.KeyValue < Rhs.KeyValue ||
-           Lhs.KeyValue == Rhs.KeyValue && Lhs.Score < Rhs.Score;
+  public static bool operator<(Bigram lhs, Bigram rhs) {
+    return lhs.KeyValuePreceded < rhs.KeyValuePreceded || lhs.KeyValue < rhs.KeyValue ||
+           lhs.KeyValue == rhs.KeyValue && lhs.Score < rhs.Score;
   }
 
-  public static bool operator>(Bigram Lhs, Bigram Rhs) {
-    return Lhs.KeyValuePreceded > Rhs.KeyValuePreceded || Lhs.KeyValue > Rhs.KeyValue ||
-           Lhs.KeyValue == Rhs.KeyValue && Lhs.Score > Rhs.Score;
+  public static bool operator>(Bigram lhs, Bigram rhs) {
+    return lhs.KeyValuePreceded > rhs.KeyValuePreceded || lhs.KeyValue > rhs.KeyValue ||
+           lhs.KeyValue == rhs.KeyValue && lhs.Score > rhs.Score;
   }
 
-  public static bool operator <=(Bigram Lhs, Bigram Rhs) {
-    return Lhs.KeyValuePreceded <= Rhs.KeyValuePreceded || Lhs.KeyValue <= Rhs.KeyValue ||
-           Lhs.KeyValue == Rhs.KeyValue && Lhs.Score <= Rhs.Score;
+  public static bool operator <=(Bigram lhs, Bigram rhs) {
+    return lhs.KeyValuePreceded <= rhs.KeyValuePreceded || lhs.KeyValue <= rhs.KeyValue ||
+           lhs.KeyValue == rhs.KeyValue && lhs.Score <= rhs.Score;
   }
 
-  public static bool operator >=(Bigram Lhs, Bigram Rhs) {
-    return Lhs.KeyValuePreceded >= Rhs.KeyValuePreceded || Lhs.KeyValue >= Rhs.KeyValue ||
-           Lhs.KeyValue == Rhs.KeyValue && Lhs.Score >= Rhs.Score;
+  public static bool operator >=(Bigram lhs, Bigram rhs) {
+    return lhs.KeyValuePreceded >= rhs.KeyValuePreceded || lhs.KeyValue >= rhs.KeyValue ||
+           lhs.KeyValue == rhs.KeyValue && lhs.Score >= rhs.Score;
   }
 }
 }

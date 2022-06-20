@@ -31,10 +31,10 @@ public struct NodeAnchor {
   /// <summary>
   /// 節锚。
   /// </summary>
-  public NodeAnchor(Node Node, int Location, int SpanningLength) {
-    this.Node = Node;
-    this.Location = Location;
-    this.SpanningLength = SpanningLength;
+  public NodeAnchor(Node node, int location, int spanningLength) {
+    Node = node;
+    Location = location;
+    SpanningLength = spanningLength;
   }
   /// <summary>
   /// 節點。一個節锚內不一定有節點，還可能會出 null。
@@ -61,11 +61,11 @@ public struct NodeAnchor {
   /// </summary>
   public double ScoreForSort => Node?.Score ?? 0.0;
   public override string ToString() {
-    string Stream = "";
-    Stream += "{@(" + Location + "," + SpanningLength + "),";
-    Stream += Node != null ? Node.ToString() : "null";
-    Stream += "}";
-    return Stream;
+    string stream = "";
+    stream += "{@(" + Location + "," + SpanningLength + "),";
+    stream += Node != null ? Node.ToString() : "null";
+    stream += "}";
+    return stream;
   }
 }
 }

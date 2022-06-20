@@ -34,11 +34,11 @@ public struct Unigram {
   /// <summary>
   /// 初期化一筆「單元圖」。一筆單元圖由一組鍵值配對與一筆權重數值組成。
   /// </summary>
-  /// <param name="KeyValue">鍵值。</param>
-  /// <param name="Score">權重（雙精度小數）。</param>
-  public Unigram(KeyValuePair KeyValue, double Score) {
-    this.KeyValue = KeyValue;
-    this.Score = Score;
+  /// <param name="keyValue">鍵值。</param>
+  /// <param name="score">權重（雙精度小數）。</param>
+  public Unigram(KeyValuePair keyValue, double score) {
+    KeyValue = keyValue;
+    Score = score;
   }
 
   /// <summary>
@@ -50,37 +50,37 @@ public struct Unigram {
   /// </summary>
   public double Score { get; set; }
 
-  public override bool Equals(object Obj) {
-    return Obj is Unigram Unigram && EqualityComparer<KeyValuePair>.Default.Equals(KeyValue, Unigram.KeyValue) &&
-           Score == Unigram.Score;
+  public override bool Equals(object obj) {
+    return obj is Unigram unigram && EqualityComparer<KeyValuePair>.Default.Equals(KeyValue, unigram.KeyValue) &&
+           Score == unigram.Score;
   }
 
   public override int GetHashCode() { return HashCode.Combine(KeyValue, Score); }
 
   public override string ToString() => $"({KeyValue},{Score})";
 
-  public static bool operator ==(Unigram Lhs, Unigram Rhs) {
-    return Lhs.KeyValue == Rhs.KeyValue && Lhs.Score == Rhs.Score;
+  public static bool operator ==(Unigram lhs, Unigram rhs) {
+    return lhs.KeyValue == rhs.KeyValue && lhs.Score == rhs.Score;
   }
 
-  public static bool operator !=(Unigram Lhs, Unigram Rhs) {
-    return Lhs.KeyValue != Rhs.KeyValue || Lhs.Score != Rhs.Score;
+  public static bool operator !=(Unigram lhs, Unigram rhs) {
+    return lhs.KeyValue != rhs.KeyValue || lhs.Score != rhs.Score;
   }
 
-  public static bool operator<(Unigram Lhs, Unigram Rhs) {
-    return Lhs.KeyValue < Rhs.KeyValue || Lhs.KeyValue == Rhs.KeyValue && Lhs.Score < Rhs.Score;
+  public static bool operator<(Unigram lhs, Unigram rhs) {
+    return lhs.KeyValue < rhs.KeyValue || lhs.KeyValue == rhs.KeyValue && lhs.Score < rhs.Score;
   }
 
-  public static bool operator>(Unigram Lhs, Unigram Rhs) {
-    return Lhs.KeyValue > Rhs.KeyValue || Lhs.KeyValue == Rhs.KeyValue && Lhs.Score > Rhs.Score;
+  public static bool operator>(Unigram lhs, Unigram rhs) {
+    return lhs.KeyValue > rhs.KeyValue || lhs.KeyValue == rhs.KeyValue && lhs.Score > rhs.Score;
   }
 
-  public static bool operator <=(Unigram Lhs, Unigram Rhs) {
-    return Lhs.KeyValue <= Rhs.KeyValue || Lhs.KeyValue == Rhs.KeyValue && Lhs.Score <= Rhs.Score;
+  public static bool operator <=(Unigram lhs, Unigram rhs) {
+    return lhs.KeyValue <= rhs.KeyValue || lhs.KeyValue == rhs.KeyValue && lhs.Score <= rhs.Score;
   }
 
-  public static bool operator >=(Unigram Lhs, Unigram Rhs) {
-    return Lhs.KeyValue >= Rhs.KeyValue || Lhs.KeyValue == Rhs.KeyValue && Lhs.Score >= Rhs.Score;
+  public static bool operator >=(Unigram lhs, Unigram rhs) {
+    return lhs.KeyValue >= rhs.KeyValue || lhs.KeyValue == rhs.KeyValue && lhs.Score >= rhs.Score;
   }
 }
 }
