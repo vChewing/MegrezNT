@@ -37,7 +37,7 @@ public struct Bigram {
   /// <param name="keyValuePreceded">前述鍵值。</param>
   /// <param name="keyValue">當前鍵值。</param>
   /// <param name="score">權重（雙精度小數）。</param>
-  public Bigram(KeyValuePair keyValuePreceded, KeyValuePair keyValue, double score) {
+  public Bigram(KeyValuePaired keyValuePreceded, KeyValuePaired keyValue, double score) {
     KeyValuePreceded = keyValuePreceded;
     KeyValue = keyValue;
     Score = score;
@@ -46,11 +46,11 @@ public struct Bigram {
   /// <summary>
   /// 前述鍵值。
   /// </summary>
-  public KeyValuePair KeyValuePreceded { get; set; }
+  public KeyValuePaired KeyValuePreceded { get; set; }
   /// <summary>
   /// 當前鍵值。
   /// </summary>
-  public KeyValuePair KeyValue { get; set; }
+  public KeyValuePaired KeyValue { get; set; }
   /// <summary>
   /// 權重。
   /// </summary>
@@ -58,8 +58,8 @@ public struct Bigram {
 
   public override bool Equals(object obj) {
     return obj is Bigram bigram &&
-           EqualityComparer<KeyValuePair>.Default.Equals(KeyValuePreceded, bigram.KeyValuePreceded) &&
-           EqualityComparer<KeyValuePair>.Default.Equals(KeyValue, bigram.KeyValue) && Score == bigram.Score;
+           EqualityComparer<KeyValuePaired>.Default.Equals(KeyValuePreceded, bigram.KeyValuePreceded) &&
+           EqualityComparer<KeyValuePaired>.Default.Equals(KeyValue, bigram.KeyValue) && Score == bigram.Score;
   }
 
   public override int GetHashCode() { return HashCode.Combine(KeyValuePreceded, KeyValue, Score); }

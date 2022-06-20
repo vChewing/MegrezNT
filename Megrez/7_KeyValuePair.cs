@@ -28,13 +28,13 @@ namespace Megrez {
 /// <summary>
 /// 鍵值配對。
 /// </summary>
-public struct KeyValuePair {
+public struct KeyValuePaired {
   /// <summary>
   /// 初期化一組鍵值配對。
   /// </summary>
   /// <param name="key">鍵。一般情況下用來放置讀音等可以用來作為索引的內容。</param>
   /// <param name="value">資料值。</param>
-  public KeyValuePair(string key, string value) {
+  public KeyValuePaired(string key, string value) {
     Key = key;
     Value = value;
   }
@@ -48,33 +48,35 @@ public struct KeyValuePair {
   /// </summary>
   public string Value { get; }
 
-  public override bool Equals(object obj) { return obj is KeyValuePair pair && Key == pair.Key && Value == pair.Value; }
+  public override bool Equals(object obj) {
+    return obj is KeyValuePaired pair && Key == pair.Key && Value == pair.Value;
+  }
 
   public override int GetHashCode() { return HashCode.Combine(Key, Value); }
 
   public override string ToString() => $"({Key},{Value})";
 
-  public static bool operator ==(KeyValuePair lhs, KeyValuePair rhs) {
+  public static bool operator ==(KeyValuePaired lhs, KeyValuePaired rhs) {
     return lhs.Key.Length == rhs.Key.Length && lhs.Value == rhs.Value;
   }
 
-  public static bool operator !=(KeyValuePair lhs, KeyValuePair rhs) {
+  public static bool operator !=(KeyValuePaired lhs, KeyValuePaired rhs) {
     return lhs.Key.Length != rhs.Key.Length || lhs.Value != rhs.Value;
   }
 
-  public static bool operator<(KeyValuePair lhs, KeyValuePair rhs) {
+  public static bool operator<(KeyValuePaired lhs, KeyValuePaired rhs) {
     return lhs.Key.Length < rhs.Key.Length || lhs.Key.Length == rhs.Key.Length && lhs.Value.CompareTo(rhs.Value) < 0;
   }
 
-  public static bool operator>(KeyValuePair lhs, KeyValuePair rhs) {
+  public static bool operator>(KeyValuePaired lhs, KeyValuePaired rhs) {
     return lhs.Key.Length > rhs.Key.Length || lhs.Key.Length == rhs.Key.Length && lhs.Value.CompareTo(rhs.Value) > 0;
   }
 
-  public static bool operator <=(KeyValuePair lhs, KeyValuePair rhs) {
+  public static bool operator <=(KeyValuePaired lhs, KeyValuePaired rhs) {
     return lhs.Key.Length <= rhs.Key.Length || lhs.Key.Length == rhs.Key.Length && lhs.Value.CompareTo(rhs.Value) <= 0;
   }
 
-  public static bool operator >=(KeyValuePair lhs, KeyValuePair rhs) {
+  public static bool operator >=(KeyValuePaired lhs, KeyValuePaired rhs) {
     return lhs.Key.Length >= rhs.Key.Length || lhs.Key.Length == rhs.Key.Length && lhs.Value.CompareTo(rhs.Value) >= 0;
   }
 }

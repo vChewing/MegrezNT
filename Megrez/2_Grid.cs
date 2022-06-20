@@ -184,11 +184,11 @@ public class Grid {
     foreach (NodeAnchor nodeAnchor in NodesCrossingOrEndingAt(theLocation)) {
       Node? theNode = nodeAnchor.Node;
       if (theNode == null) continue;
-      List<KeyValuePair> candidates = theNode.Candidates;
+      List<KeyValuePaired> candidates = theNode.Candidates;
       // 將該位置的所有節點的候選字詞鎖定狀態全部重設。
       theNode.ResetCandidate();
       int I = 0;
-      foreach (KeyValuePair candidate in candidates) {
+      foreach (KeyValuePaired candidate in candidates) {
         if (candidate.Value == value) {
           theNode.SelectCandidateAt(I);
           node = nodeAnchor;
@@ -210,11 +210,11 @@ public class Grid {
     foreach (NodeAnchor nodeAnchor in NodesCrossingOrEndingAt(theLocation)) {
       Node? theNode = nodeAnchor.Node;
       if (theNode == null) continue;
-      List<KeyValuePair> candidates = theNode.Candidates;
+      List<KeyValuePaired> candidates = theNode.Candidates;
       // 將該位置的所有節點的候選字詞鎖定狀態全部重設。
       theNode.ResetCandidate();
       int I = 0;
-      foreach (KeyValuePair candidate in candidates) {
+      foreach (KeyValuePaired candidate in candidates) {
         if (candidate.Value == value) {
           theNode.SelectFloatingCandidateAt(I, overridingScore);
           break;
