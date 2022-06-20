@@ -33,36 +33,32 @@ namespace Megrez {
 /// </summary>
 public class Node {
   /// <summary>
-  /// 當前節點對應的語言模型。
-  /// </summary>
-  private LanguageModel MutLM = new();
-  /// <summary>
   /// 單元圖陣列。
   /// </summary>
-  private List<Unigram> MutUnigrams = new();
+  private List<Unigram> _unigrams;
   /// <summary>
   /// 雙元圖陣列。
   /// </summary>
-  private List<Bigram> MutBigrams = new();
+  private List<Bigram> _bigrams;
   /// <summary>
   /// 專門「用單元圖資料值來調查索引值」的辭典。
   /// </summary>
-  private Dictionary<string, int> MutValueUnigramIndexMap = new();
+  private Dictionary<string, int> _valueUnigramIndexMap;
   /// <summary>
   /// 專門「用給定鍵值來取對應的雙元圖陣列」的辭典。
   /// </summary>
-  private Dictionary<KeyValuePair, List<Bigram>> MutPrecedingBigramMap = new();
+  private Dictionary<KeyValuePair, List<Bigram>> _precedingBigramMap = new();
   /// <summary>
   /// 用來登記「當前選中的單元圖」的索引值的變數。
   /// </summary>
-  private int MutSelectedUnigramIndex = 0;
+  private int _selectedUnigramIndex;
 
   /// <summary>
   /// 用來登記要施加給「『被標記為選中狀態』的候選字詞」的複寫權重的數值。
   /// </summary>
   public const double ConSelectedCandidateScore = 99.0;
   public override string ToString() =>
-      $"(node,key:{Key},fixed:{(IsCandidateFixed ? "true" : "false")},selected:{MutSelectedUnigramIndex},{MutUnigrams})";
+      $"(node,key:{Key},fixed:{(IsCandidateFixed ? "true" : "false")},selected:{_selectedUnigramIndex},{_unigrams})";
   /// <summary>
   /// 公開：候選字詞陣列（唯讀），以鍵值陣列的形式存在。
   /// </summary>
@@ -70,7 +66,7 @@ public class Node {
   /// <summary>
   /// 公開：用來登記「當前選中的單元圖」的索引值的變數（唯讀）。
   /// </summary>
-  public bool IsCandidateFixed { get; private set; } = false;
+  public bool IsCandidateFixed { get; private set; }
   /// <summary>
   /// 公開：鍵（唯讀）。
   /// </summary>
@@ -78,108 +74,109 @@ public class Node {
   /// <summary>
   /// 公開：當前節點的當前被選中的候選字詞「在該節點內的」目前的權重（唯讀）。
   /// </summary>
-  public double Score { get; private set; } = 0;
+  public double Score { get; private set; }
   /// <summary>
   /// 公開：當前被選中的候選字詞的鍵值配對。
   /// </summary>
   public KeyValuePair CurrentKeyValue =>
-      MutSelectedUnigramIndex >= MutUnigrams.Count ? new() : Candidates[MutSelectedUnigramIndex];
+      _selectedUnigramIndex >= _unigrams.Count ? new() : Candidates[_selectedUnigramIndex];
   /// <summary>
   /// 公開：給出當前單元圖陣列內最高的權重數值。
   /// </summary>
-  public double HighestUnigramScore => MutUnigrams.Count == 0 ? 0.0 : MutUnigrams.FirstOrDefault().Score;
+  public double HighestUnigramScore => _unigrams.Count == 0 ? 0.0 : _unigrams.FirstOrDefault().Score;
 
   /// <summary>
   /// 初期化一個節點。
   /// </summary>
-  /// <param name="Key">索引鍵。</param>
-  /// <param name="Unigrams">單元圖陣列。</param>
-  /// <param name="Bigrams">雙元圖陣列（非必填）。</param>
-  public Node(string Key, List<Unigram> Unigrams, List<Bigram>? Bigrams = null) {
-    this.Key = Key;
-    MutUnigrams = Unigrams;
-    MutBigrams = Bigrams ?? new();
-    MutUnigrams.Sort((A, B) => B.Score.CompareTo(A.Score));
-    if (MutUnigrams.Count > 0) Score = MutUnigrams[0].Score;
-    for (int I = 0; I < MutUnigrams.Count; I++) {
-      Unigram Gram = MutUnigrams[I];
-      MutValueUnigramIndexMap[Gram.KeyValue.Value] = I;
-      Candidates.Add(Gram.KeyValue);
+  /// <param name="key">索引鍵。</param>
+  /// <param name="unigrams">單元圖陣列。</param>
+  /// <param name="bigrams">雙元圖陣列（非必填）。</param>
+  public Node(string key, List<Unigram> unigrams, List<Bigram>? bigrams = null) {
+    Key = key;
+    _unigrams = unigrams;
+    _bigrams = bigrams ?? new();
+    _unigrams.Sort((a, b) => b.Score.CompareTo(a.Score));
+    _valueUnigramIndexMap = new();
+    if (_unigrams.Count > 0) Score = _unigrams[0].Score;
+    for (int I = 0; I < _unigrams.Count; I++) {
+      Unigram gram = _unigrams[I];
+      _valueUnigramIndexMap[gram.KeyValue.Value] = I;
+      Candidates.Add(gram.KeyValue);
     }
-    foreach (Bigram Gram in MutBigrams.Where(Gram => MutPrecedingBigramMap.ContainsKey(Gram.KeyValuePreceded))) {
-      MutPrecedingBigramMap[Gram.KeyValuePreceded].Add(Gram);
+    foreach (Bigram gram in _bigrams.Where(gram => _precedingBigramMap.ContainsKey(gram.KeyValuePreceded))) {
+      _precedingBigramMap[gram.KeyValuePreceded].Add(gram);
     }
   }
   /// <summary>
   /// 對擁有「給定的前述鍵值陣列」的節點提權。
   /// </summary>
-  /// <param name="PrecedingKeyValues">前述鍵值陣列。</param>
-  public void PrimeNodeWith(List<KeyValuePair> PrecedingKeyValues) {
-    int NewIndex = MutSelectedUnigramIndex;
-    double MaxScore = Score;
+  /// <param name="precedingKeyValues">前述鍵值陣列。</param>
+  public void PrimeNodeWith(List<KeyValuePair> precedingKeyValues) {
+    int newIndex = _selectedUnigramIndex;
+    double maxScore = Score;
     if (!IsCandidateFixed) {
-      foreach (KeyValuePair Neta in PrecedingKeyValues) {
-        List<Bigram> Bigrams = new();
-        if (MutPrecedingBigramMap.ContainsKey(Neta)) Bigrams = MutPrecedingBigramMap[Neta];
-        foreach (Bigram Bigram in Bigrams.Where(Bigram => Bigram.Score > MaxScore)
-                     .Where(Bigram => MutValueUnigramIndexMap.ContainsKey(Bigram.KeyValue.Value))) {
-          NewIndex = MutValueUnigramIndexMap[Bigram.KeyValue.Value];
-          MaxScore = Bigram.Score;
+      foreach (KeyValuePair neta in precedingKeyValues) {
+        List<Bigram> bigrams = new();
+        if (_precedingBigramMap.ContainsKey(neta)) bigrams = _precedingBigramMap[neta];
+        foreach (Bigram bigram in bigrams.Where(bigram => bigram.Score > maxScore)
+                     .Where(bigram => _valueUnigramIndexMap.ContainsKey(bigram.KeyValue.Value))) {
+          newIndex = _valueUnigramIndexMap[bigram.KeyValue.Value];
+          maxScore = bigram.Score;
         }
       }
     }
-    Score = MaxScore;
-    MutSelectedUnigramIndex = NewIndex;
+    Score = maxScore;
+    _selectedUnigramIndex = newIndex;
   }
   /// <summary>
   /// 選中位於給定索引位置的候選字詞。
   /// </summary>
-  /// <param name="Index">索引位置。</param>
-  /// <param name="Fix">是否將當前解點標記為「候選詞已鎖定」的狀態。</param>
-  public void SelectCandidateAt(int Index = 0, bool Fix = false) {
-    MutSelectedUnigramIndex = Index >= MutUnigrams.Count ? 0 : Index;
-    IsCandidateFixed = Fix;
+  /// <param name="index">索引位置。</param>
+  /// <param name="fix">是否將當前解點標記為「候選詞已鎖定」的狀態。</param>
+  public void SelectCandidateAt(int index = 0, bool fix = false) {
+    _selectedUnigramIndex = index >= _unigrams.Count ? 0 : index;
+    IsCandidateFixed = fix;
     Score = ConSelectedCandidateScore;
   }
   /// <summary>
   /// 重設該節點的候選字詞狀態。
   /// </summary>
   public void ResetCandidate() {
-    MutSelectedUnigramIndex = 0;
+    _selectedUnigramIndex = 0;
     IsCandidateFixed = false;
-    if (MutUnigrams.Count != 0) Score = MutUnigrams.FirstOrDefault().Score;
+    if (_unigrams.Count != 0) Score = _unigrams.FirstOrDefault().Score;
   }
   /// <summary>
   /// 選中位於給定索引位置的候選字詞、且施加給定的權重。
   /// </summary>
-  /// <param name="Index">索引位置。</param>
-  /// <param name="Score">給定權重條件。</param>
-  public void SelectFloatingCandidateAt(int Index, double Score) {
-    int RealIndex = Math.Abs(Index);
-    MutSelectedUnigramIndex = RealIndex >= MutUnigrams.Count ? 0 : RealIndex;
+  /// <param name="index">索引位置。</param>
+  /// <param name="score">給定權重條件。</param>
+  public void SelectFloatingCandidateAt(int index, double score) {
+    int realIndex = Math.Abs(index);
+    _selectedUnigramIndex = realIndex >= _unigrams.Count ? 0 : realIndex;
     IsCandidateFixed = false;
-    this.Score = Score;
+    Score = score;
   }
   /// <summary>
   /// 藉由給定的候選字詞字串，找出在庫的單元圖權重數值。沒有的話就找零。
   /// </summary>
-  /// <param name="Candidate">給定的候選字詞字串。</param>
+  /// <param name="candidate">給定的候選字詞字串。</param>
   /// <returns>在庫的單元圖權重數值；沒有在庫的話就找零。</returns>
-  public double ScoreFor(string Candidate) {
-    double Result = 0.0;
-    foreach (Unigram Unigram in MutUnigrams.Where(Unigram => Unigram.KeyValue.Value == Candidate)) {
-      Result = Unigram.Score;
+  public double ScoreFor(string candidate) {
+    double result = 0.0;
+    foreach (Unigram unigram in _unigrams.Where(unigram => unigram.KeyValue.Value == candidate)) {
+      result = unigram.Score;
     }
-    return Result;
+    return result;
   }
-  public override bool Equals(object Obj) {
-    return Obj is Node Node && EqualityComparer<List<Unigram>>.Default.Equals(MutUnigrams, Node.MutUnigrams) &&
-           EqualityComparer<List<KeyValuePair>>.Default.Equals(Candidates, Node.Candidates) &&
-           EqualityComparer<Dictionary<string, int>>.Default.Equals(MutValueUnigramIndexMap,
-                                                                    Node.MutValueUnigramIndexMap) &&
-           EqualityComparer<Dictionary<KeyValuePair, List<Bigram>>>.Default.Equals(MutPrecedingBigramMap,
-                                                                                   Node.MutPrecedingBigramMap) &&
-           IsCandidateFixed == Node.IsCandidateFixed && MutSelectedUnigramIndex == Node.MutSelectedUnigramIndex;
+  public override bool Equals(object obj) {
+    return obj is Node node && EqualityComparer<List<Unigram>>.Default.Equals(_unigrams, node._unigrams) &&
+           EqualityComparer<List<KeyValuePair>>.Default.Equals(Candidates, node.Candidates) &&
+           EqualityComparer<Dictionary<string, int>>.Default.Equals(_valueUnigramIndexMap,
+                                                                    node._valueUnigramIndexMap) &&
+           EqualityComparer<Dictionary<KeyValuePair, List<Bigram>>>.Default.Equals(_precedingBigramMap,
+                                                                                   node._precedingBigramMap) &&
+           IsCandidateFixed == node.IsCandidateFixed && _selectedUnigramIndex == node._selectedUnigramIndex;
   }
 
   public override int GetHashCode() {

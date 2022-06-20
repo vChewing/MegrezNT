@@ -24,6 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Megrez {
 /// <summary>
@@ -40,10 +41,10 @@ public class LanguageModel {
   /// <summary>
   /// 給定鍵，讓語言模型找給一組單元圖陣列。
   /// </summary>
-  /// <param name="Key">給定鍵。</param>
+  /// <param name="key">給定鍵。</param>
   /// <returns>一組單元圖陣列。</returns>
-  public virtual List<Unigram> UnigramsFor(string Key) {
-    return Key.Length == 0 ? new List<Unigram>() : new List<Unigram>();
+  public virtual List<Unigram> UnigramsFor(string key) {
+    return key.Length == 0 ? new List<Unigram>().ToList() : new();
   }
 
   // This function works merely as a placeholder.
@@ -51,11 +52,11 @@ public class LanguageModel {
   /// <summary>
   /// 給定當前鍵與前述鍵，讓語言模型找給一組雙元圖陣列。
   /// </summary>
-  /// <param name="PrecedingKey">前述鍵。</param>
-  /// <param name="Key">當前鍵。</param>
+  /// <param name="precedingKey">前述鍵。</param>
+  /// <param name="key">當前鍵。</param>
   /// <returns>一組雙元圖陣列。</returns>
-  public virtual List<Bigram> BigramsForKeys(string PrecedingKey, string Key) {
-    return PrecedingKey == Key ? new List<Bigram>() : new List<Bigram>();
+  public virtual List<Bigram> BigramsForKeys(string precedingKey, string key) {
+    return precedingKey == key ? new List<Bigram>().ToList() : new();
   }
 
   // This function works merely as a placeholder.
@@ -63,8 +64,8 @@ public class LanguageModel {
   /// <summary>
   /// 給定鍵，確認是否有單元圖記錄在庫。
   /// </summary>
-  /// <param name="Key">給定鍵。</param>
+  /// <param name="key">給定鍵。</param>
   /// <returns>True 則表示在庫，False 則表示不在庫。</returns>
-  public virtual bool HasUnigramsFor(string Key) { return Key.Length != 0; }
+  public virtual bool HasUnigramsFor(string key) { return key.Length != 0; }
 }
 }

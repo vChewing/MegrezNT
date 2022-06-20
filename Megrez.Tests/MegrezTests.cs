@@ -34,154 +34,154 @@ public class MegrezTests {
   [Test]
   public void TestInput() {
     Console.WriteLine("// 開始測試語言文字輸入處理");
-    SimpleLM LmTestInput = new(TestClass.StrSampleData);
-    Compositor TheCompositor = new(LmTestInput);
-    List<Megrez.NodeAnchor> Walked = new();
+    SimpleLM lmTestInput = new(TestClass.StrSampleData);
+    Compositor theCompositor = new(lmTestInput);
+    List<Megrez.NodeAnchor> walked = new();
 
-    void Walk() { Walked = TheCompositor.Walk(0, 0.0); }
+    void Walk() { walked = theCompositor.Walk(0, 0.0); }
 
     // 模擬輸入法的行為，每次敲字或選字都重新 walk。;
-    TheCompositor.InsertReadingAtCursor("gao1");
+    theCompositor.InsertReadingAtCursor("gao1");
     Walk();
-    TheCompositor.InsertReadingAtCursor("ji4");
+    theCompositor.InsertReadingAtCursor("ji4");
     Walk();
-    TheCompositor.CursorIndex = 1;
-    TheCompositor.InsertReadingAtCursor("ke1");
+    theCompositor.CursorIndex = 1;
+    theCompositor.InsertReadingAtCursor("ke1");
     Walk();
-    TheCompositor.CursorIndex = 1;
-    TheCompositor.DeleteReadingToTheFrontOfCursor();
+    theCompositor.CursorIndex = 1;
+    theCompositor.DeleteReadingToTheFrontOfCursor();
     Walk();
-    TheCompositor.InsertReadingAtCursor("ke1");
+    theCompositor.InsertReadingAtCursor("ke1");
     Walk();
-    TheCompositor.CursorIndex = 0;
-    TheCompositor.DeleteReadingToTheFrontOfCursor();
+    theCompositor.CursorIndex = 0;
+    theCompositor.DeleteReadingToTheFrontOfCursor();
     Walk();
-    TheCompositor.InsertReadingAtCursor("gao1");
+    theCompositor.InsertReadingAtCursor("gao1");
     Walk();
-    TheCompositor.CursorIndex = TheCompositor.Length;
-    TheCompositor.InsertReadingAtCursor("gong1");
+    theCompositor.CursorIndex = theCompositor.Length;
+    theCompositor.InsertReadingAtCursor("gong1");
     Walk();
-    TheCompositor.InsertReadingAtCursor("si1");
+    theCompositor.InsertReadingAtCursor("si1");
     Walk();
-    TheCompositor.InsertReadingAtCursor("de5");
+    theCompositor.InsertReadingAtCursor("de5");
     Walk();
-    TheCompositor.InsertReadingAtCursor("nian2");
+    theCompositor.InsertReadingAtCursor("nian2");
     Walk();
-    TheCompositor.InsertReadingAtCursor("zhong1");
+    theCompositor.InsertReadingAtCursor("zhong1");
     Walk();
-    TheCompositor.Grid.FixNodeSelectedCandidate(7, "年終");
+    theCompositor.Grid.FixNodeSelectedCandidate(7, "年終");
     Walk();
-    TheCompositor.InsertReadingAtCursor("jiang3");
+    theCompositor.InsertReadingAtCursor("jiang3");
     Walk();
-    TheCompositor.InsertReadingAtCursor("jin1");
+    theCompositor.InsertReadingAtCursor("jin1");
     Walk();
-    TheCompositor.InsertReadingAtCursor("ni3");
+    theCompositor.InsertReadingAtCursor("ni3");
     Walk();
-    TheCompositor.InsertReadingAtCursor("zhe4");
+    theCompositor.InsertReadingAtCursor("zhe4");
     Walk();
-    TheCompositor.InsertReadingAtCursor("yang4");
+    theCompositor.InsertReadingAtCursor("yang4");
     Walk();
 
     // 這裡模擬一個輸入法的常見情況：每次敲一個字詞都會
     // walk，然後你回頭編輯完一些內容之後又會立刻重新 walk。
     // 如果只在這裡測試第一遍 walk 的話，測試通過了也無法測試之後再次 walk
     // 是否會正常。
-    TheCompositor.CursorIndex = 1;
-    TheCompositor.DeleteReadingToTheFrontOfCursor();
+    theCompositor.CursorIndex = 1;
+    theCompositor.DeleteReadingToTheFrontOfCursor();
 
     // 於是咱們 walk 第二遍
     Walk();
-    Assert.False(Walked.Count == 0);
+    Assert.False(walked.Count == 0);
 
     // 做好第三遍的準備，這次咱們來一次插入性編輯。
     // 重點測試這句是否正常，畢竟是在 walked 過的節點內進行插入編輯。
-    TheCompositor.InsertReadingAtCursor("ke1");
+    theCompositor.InsertReadingAtCursor("ke1");
 
     // 於是咱們 walk 第三遍。
     // 這一遍會直接曝露「上述修改是否有對 TheCompositor 造成了破壞性的損失」，
     // 所以很重要。
     Walk();
-    Assert.False(Walked.Count == 0);
+    Assert.False(walked.Count == 0);
 
-    List<string> Composed = new();
-    foreach (Megrez.NodeAnchor Phrase in Walked) {
-      if (Phrase.Node != null) Composed.Add(Phrase.Node.CurrentKeyValue.Value);
+    List<string> composed = new();
+    foreach (Megrez.NodeAnchor phrase in walked) {
+      if (phrase.Node != null) composed.Add(phrase.Node.CurrentKeyValue.Value);
     }
-    Console.WriteLine(string.Join("_", Composed));
-    List<string> CorrectResult = new List<string> { "高科技", "公司", "的", "年終", "獎金", "你", "這樣" };
+    Console.WriteLine(string.Join("_", composed));
+    List<string> correctResult = new List<string> { "高科技", "公司", "的", "年終", "獎金", "你", "這樣" };
     Console.WriteLine(" - 上述列印結果理應於下面這行一致：");
-    Console.WriteLine(string.Join("_", CorrectResult));
-    Assert.AreEqual(string.Join("_", CorrectResult), string.Join("_", Composed));
+    Console.WriteLine(string.Join("_", correctResult));
+    Assert.AreEqual(string.Join("_", correctResult), string.Join("_", composed));
 
     // 測試 DumpDOT
-    TheCompositor.CursorIndex = TheCompositor.Length;
-    TheCompositor.DeleteReadingAtTheRearOfCursor();
-    TheCompositor.DeleteReadingAtTheRearOfCursor();
-    TheCompositor.DeleteReadingAtTheRearOfCursor();
-    string ExpectedDumpDOT =
+    theCompositor.CursorIndex = theCompositor.Length;
+    theCompositor.DeleteReadingAtTheRearOfCursor();
+    theCompositor.DeleteReadingAtTheRearOfCursor();
+    theCompositor.DeleteReadingAtTheRearOfCursor();
+    string expectedDumpDot =
         "digraph {\ngraph [ rankdir=LR ];\nBOS;\nBOS -> 高;\n高;\n高 -> 科;\n高 -> 科技;\nBOS -> 高科技;\n高科技;\n高科技 -> 工;\n高科技 -> 公司;\n科;\n科 -> 際;\n科 -> 濟公;\n科技;\n科技 -> 工;\n科技 -> 公司;\n際;\n際 -> 工;\n際 -> 公司;\n濟公;\n濟公 -> 斯;\n工;\n工 -> 斯;\n公司;\n公司 -> 的;\n斯;\n斯 -> 的;\n的;\n的 -> 年;\n的 -> 年終;\n年;\n年 -> 中;\n年終;\n年終 -> 獎;\n年終 -> 獎金;\n中;\n中 -> 獎;\n中 -> 獎金;\n獎;\n獎 -> 金;\n獎金;\n獎金 -> EOS;\n金;\n金 -> EOS;\nEOS;\n}\n";
-    Assert.AreEqual(ExpectedDumpDOT, TheCompositor.Grid.DumpDOT());
+    Assert.AreEqual(expectedDumpDot, theCompositor.Grid.DumpDot());
   }
 
   [Test]
   public void TestWordSegmentation() {
     Console.WriteLine("// 開始測試語句分節處理");
-    SimpleLM LmTestInput = new(TestClass.StrSampleData, true);
-    Compositor TheCompositor = new(LmTestInput, Separator: "");
-    List<Megrez.NodeAnchor> Walked = new();
+    SimpleLM lmTestInput = new(TestClass.StrSampleData, true);
+    Compositor theCompositor = new(lmTestInput, separator: "");
+    List<Megrez.NodeAnchor> walked = new();
 
-    void Walk(int Location) { Walked = TheCompositor.Walk(Location, 0.0); }
+    void Walk(int location) { walked = theCompositor.Walk(location, 0.0); }
 
     // 模擬輸入法的行為，每次敲字或選字都重新 walk。;
-    TheCompositor.InsertReadingAtCursor("高");
-    TheCompositor.InsertReadingAtCursor("科");
-    TheCompositor.InsertReadingAtCursor("技");
-    TheCompositor.InsertReadingAtCursor("公");
-    TheCompositor.InsertReadingAtCursor("司");
-    TheCompositor.InsertReadingAtCursor("的");
-    TheCompositor.InsertReadingAtCursor("年");
-    TheCompositor.InsertReadingAtCursor("終");
-    TheCompositor.InsertReadingAtCursor("獎");
-    TheCompositor.InsertReadingAtCursor("金");
+    theCompositor.InsertReadingAtCursor("高");
+    theCompositor.InsertReadingAtCursor("科");
+    theCompositor.InsertReadingAtCursor("技");
+    theCompositor.InsertReadingAtCursor("公");
+    theCompositor.InsertReadingAtCursor("司");
+    theCompositor.InsertReadingAtCursor("的");
+    theCompositor.InsertReadingAtCursor("年");
+    theCompositor.InsertReadingAtCursor("終");
+    theCompositor.InsertReadingAtCursor("獎");
+    theCompositor.InsertReadingAtCursor("金");
 
-    Walk(Location: 0);
-    List<string> Segmented = new();
-    foreach (Megrez.NodeAnchor Phrase in Walked) {
-      if (Phrase.Node != null) Segmented.Add(Phrase.Node.CurrentKeyValue.Key);
+    Walk(location: 0);
+    List<string> segmented = new();
+    foreach (Megrez.NodeAnchor phrase in walked) {
+      if (phrase.Node != null) segmented.Add(phrase.Node.CurrentKeyValue.Key);
     }
-    Console.WriteLine(string.Join("_", Segmented));
-    List<string> CorrectResult = new List<string> { "高科技", "公司", "的", "年終", "獎金" };
+    Console.WriteLine(string.Join("_", segmented));
+    List<string> correctResult = new List<string> { "高科技", "公司", "的", "年終", "獎金" };
     Console.WriteLine(" - 上述列印結果理應於下面這行一致：");
-    Console.WriteLine(string.Join("_", CorrectResult));
-    Assert.AreEqual(string.Join("_", CorrectResult), string.Join("_", Segmented));
+    Console.WriteLine(string.Join("_", correctResult));
+    Assert.AreEqual(string.Join("_", correctResult), string.Join("_", segmented));
   }
 }
 
 public class SimpleLM : LanguageModel {
-  private Dictionary<string, List<Unigram>> MutDatabase = new();
-  public SimpleLM(string Input, bool SwapKeyValue = false) {
-    List<string> SStream = new(Input.Split('\n'));
-    foreach (string Line in SStream) {
-      if (Line.Length == 0 || Line.FirstOrDefault().CompareTo('#') == 0) continue;
-      List<string> LineStream = new(Line.Split(' '));
-      if (LineStream.Count >= 2) {
-        string Col0 = LineStream[0];  // 假設其不為 nil
-        string Col1 = LineStream[1];  // 假設其不為 nil
-        double Col2 = 0;              // 防呆
-        if (LineStream.Count >= 3 && Double.TryParse(LineStream[2], out double Number)) Col2 = Number;
-        Unigram U = new(new KeyValuePair(), 0);
-        if (SwapKeyValue)
-          U.KeyValue = new(Col1, Col0);
+  private Dictionary<string, List<Unigram>> _database = new();
+  public SimpleLM(string input, bool swapKeyValue = false) {
+    List<string> sStream = new(input.Split('\n'));
+    foreach (string line in sStream) {
+      if (line.Length == 0 || line.FirstOrDefault().CompareTo('#') == 0) continue;
+      List<string> lineStream = new(line.Split(' '));
+      if (lineStream.Count >= 2) {
+        string col0 = lineStream[0];  // 假設其不為 nil
+        string col1 = lineStream[1];  // 假設其不為 nil
+        double col2 = 0;              // 防呆
+        if (lineStream.Count >= 3 && Double.TryParse(lineStream[2], out double number)) col2 = number;
+        Unigram u = new(new KeyValuePair(), 0);
+        if (swapKeyValue)
+          u.KeyValue = new(col1, col0);
         else
-          U.KeyValue = new(Col0, Col1);
-        U.Score = Col2;
-        if (!MutDatabase.ContainsKey(U.KeyValue.Key)) MutDatabase.Add(U.KeyValue.Key, new List<Unigram> {});
-        MutDatabase[U.KeyValue.Key].Add(U);
+          u.KeyValue = new(col0, col1);
+        u.Score = col2;
+        if (!_database.ContainsKey(u.KeyValue.Key)) _database.Add(u.KeyValue.Key, new List<Unigram> {});
+        _database[u.KeyValue.Key].Add(u);
       }
     }
   }
-  public override List<Unigram> UnigramsFor(string Key) => MutDatabase.ContainsKey(Key) ? MutDatabase[Key] : new();
-  public override bool HasUnigramsFor(string Key) => MutDatabase.ContainsKey(Key);
+  public override List<Unigram> UnigramsFor(string key) => _database.ContainsKey(key) ? _database[key] : new();
+  public override bool HasUnigramsFor(string key) => _database.ContainsKey(key);
 }
 
 public class TestClass {
