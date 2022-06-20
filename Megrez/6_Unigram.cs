@@ -68,19 +68,19 @@ public struct Unigram {
   }
 
   public static bool operator<(Unigram Lhs, Unigram Rhs) {
-    return (Lhs.KeyValue < Rhs.KeyValue) || (Lhs.KeyValue == Rhs.KeyValue && Lhs.Score < Rhs.Score);
+    return Lhs.KeyValue < Rhs.KeyValue || Lhs.KeyValue == Rhs.KeyValue && Lhs.Score < Rhs.Score;
   }
 
   public static bool operator>(Unigram Lhs, Unigram Rhs) {
-    return (Lhs.KeyValue > Rhs.KeyValue) || (Lhs.KeyValue == Rhs.KeyValue && Lhs.Score > Rhs.Score);
+    return Lhs.KeyValue > Rhs.KeyValue || Lhs.KeyValue == Rhs.KeyValue && Lhs.Score > Rhs.Score;
   }
 
   public static bool operator <=(Unigram Lhs, Unigram Rhs) {
-    return (Lhs.KeyValue <= Rhs.KeyValue) || (Lhs.KeyValue == Rhs.KeyValue && Lhs.Score <= Rhs.Score);
+    return Lhs.KeyValue <= Rhs.KeyValue || Lhs.KeyValue == Rhs.KeyValue && Lhs.Score <= Rhs.Score;
   }
 
   public static bool operator >=(Unigram Lhs, Unigram Rhs) {
-    return (Lhs.KeyValue >= Rhs.KeyValue) || (Lhs.KeyValue == Rhs.KeyValue && Lhs.Score >= Rhs.Score);
+    return Lhs.KeyValue >= Rhs.KeyValue || Lhs.KeyValue == Rhs.KeyValue && Lhs.Score >= Rhs.Score;
   }
 }
 }

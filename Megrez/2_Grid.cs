@@ -39,15 +39,11 @@ public class Grid {
   /// 初期化轨格。
   /// </summary>
   /// <param name="SpanLength">該軌格內可以允許的最大幅位長度。</param>
-  public Grid(int SpanLength = 10) { MutMaxBuildSpanLength = SpanLength; }
-  /// <summary>
-  /// 該幅位內可以允許的最大詞長。
-  /// </summary>
-  private int MutMaxBuildSpanLength;
+  public Grid(int SpanLength = 10) { MaxBuildSpanLength = SpanLength; }
   /// <summary>
   /// 公開：該軌格內可以允許的最大幅位長度。
   /// </summary>
-  public int MaxBuildSpanLength => MutMaxBuildSpanLength;
+  public int MaxBuildSpanLength { get; }
   /// <summary>
   /// 公開：軌格的寬度，也就是其內的幅位陣列當中的幅位數量。
   /// </summary>
@@ -93,7 +89,7 @@ public class Grid {
       return false;
     }
     Node? N = MutSpans[TheLocation].Node(TheSpanningLength);
-    return (N != null) && (Key == N.Key);
+    return N != null && Key == N.Key;
   }
   /// <summary>
   /// 在該軌格的指定位置擴增一個幅位。
@@ -102,12 +98,12 @@ public class Grid {
   public void ExpandGridByOneAt(int Location) {
     int TheLocation = Math.Abs(Location);
     MutSpans.Insert(TheLocation, new());
-    if ((TheLocation != 0) && (TheLocation != MutSpans.Count))
-      for (int I = 0; I < TheLocation; I++) {
-        Span TheSpan = MutSpans[I];
-        TheSpan.RemoveNodeOfLengthGreaterThan(TheLocation - I);
-        MutSpans[I] = TheSpan;
-      }
+    if (TheLocation == 0 || TheLocation == MutSpans.Count) return;
+    for (int I = 0; I < TheLocation; I++) {
+      Span TheSpan = MutSpans[I];
+      TheSpan.RemoveNodeOfLengthGreaterThan(TheLocation - I);
+      MutSpans[I] = TheSpan;
+    }
   }
   /// <summary>
   /// 在該軌格的指定位置減少一個幅位。
@@ -131,12 +127,11 @@ public class Grid {
   public List<NodeAnchor> NodesBeginningAt(int Location) {
     int TheLocation = Math.Abs(Location);
     List<NodeAnchor> Results = new();
-    if (TheLocation < MutSpans.Count) {  // 此時 MutSpans 必定不為空
-      Span Span = MutSpans[TheLocation];
-      for (int I = 1; I <= MaxBuildSpanLength; I++) {
-        Node? NP = Span.Node(I);
-        if (NP != null) Results.Add(new(NP, TheLocation, I));
-      }
+    if (TheLocation >= MutSpans.Count) return Results;  // 此時 MutSpans 必定不為空
+    Span Span = MutSpans[TheLocation];
+    for (int I = 1; I <= MaxBuildSpanLength; I++) {
+      Node? NP = Span.Node(I);
+      if (NP != null) Results.Add(new(NP, TheLocation, I));
     }
     return Results;
   }
@@ -148,14 +143,12 @@ public class Grid {
   public List<NodeAnchor> NodesEndingAt(int Location) {
     int TheLocation = Math.Abs(Location);
     List<NodeAnchor> Results = new();
-    if (MutSpans.Count != 0 && TheLocation <= MutSpans.Count) {
-      for (int I = 0; I < TheLocation; I++) {
-        Span Span = MutSpans[I];
-        if (I + Span.MaximumLength >= TheLocation) {
-          Node? NP = Span.Node(TheLocation - I);
-          if (NP != null) Results.Add(new(NP, I, TheLocation - I));
-        }
-      }
+    if (MutSpans.Count == 0 || TheLocation > MutSpans.Count) return Results;
+    for (int I = 0; I < TheLocation; I++) {
+      Span Span = MutSpans[I];
+      if (I + Span.MaximumLength < TheLocation) continue;
+      Node? NP = Span.Node(TheLocation - I);
+      if (NP != null) Results.Add(new(NP, I, TheLocation - I));
     }
     return Results;
   }
@@ -167,16 +160,14 @@ public class Grid {
   public List<NodeAnchor> NodesCrossingOrEndingAt(int Location) {
     int TheLocation = Math.Abs(Location);
     List<NodeAnchor> Results = new();
-    if (MutSpans.Count != 0 && TheLocation <= MutSpans.Count) {
-      for (int I = 0; I < TheLocation; I++) {
-        Span Span = MutSpans[I];
-        if (I + Span.MaximumLength >= TheLocation) {
-          for (int J = 1; J <= Span.MaximumLength; J++) {
-            if (I + J < Location) continue;
-            Node? NP = Span.Node(J);
-            if (NP != null) Results.Add(new(NP, I, TheLocation - I));
-          }
-        }
+    if (MutSpans.Count == 0 || TheLocation > MutSpans.Count) return Results;
+    for (int I = 0; I < TheLocation; I++) {
+      Span Span = MutSpans[I];
+      if (I + Span.MaximumLength < TheLocation) continue;
+      for (int J = 1; J <= Span.MaximumLength; J++) {
+        if (I + J < Location) continue;
+        Node? NP = Span.Node(J);
+        if (NP != null) Results.Add(new(NP, I, TheLocation - I));
       }
     }
     return Results;
@@ -245,16 +236,15 @@ public class Grid {
         Node NP = Span.Node(NI) ?? new("", new());
         if (P == 0) StrOutput += "BOS -> " + NP.CurrentKeyValue.Value + ";\n";
         StrOutput += NP.CurrentKeyValue.Value + ";\n";
-        if ((P + NI) < MutSpans.Count) {
+        if (P + NI < MutSpans.Count) {
           Span DestinationSpan = MutSpans[P + NI];
           for (int Q = 0; Q <= DestinationSpan.MaximumLength; Q++) {
-            if (DestinationSpan.Node(Q) != null) {
-              Node DN = DestinationSpan.Node(Q) ?? new("", new());
-              StrOutput += NP.CurrentKeyValue.Value + " -> " + DN.CurrentKeyValue.Value + ";\n";
-            }
+            if (DestinationSpan.Node(Q) == null) continue;
+            Node DN = DestinationSpan.Node(Q) ?? new("", new());
+            StrOutput += NP.CurrentKeyValue.Value + " -> " + DN.CurrentKeyValue.Value + ";\n";
           }
         }
-        if ((P + NI) == MutSpans.Count) StrOutput += NP.CurrentKeyValue.Value + " -> EOS;\n";
+        if (P + NI == MutSpans.Count) StrOutput += NP.CurrentKeyValue.Value + " -> EOS;\n";
       }
     }
     StrOutput += "EOS;\n}\n";

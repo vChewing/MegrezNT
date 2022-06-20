@@ -3,21 +3,23 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
-    <ReleaseVersion>1.2.1</ReleaseVersion>
+    <ReleaseVersion>1.2.2</ReleaseVersion>
     <PackageId>vChewing.Megrez</PackageId>
     <Authors>Shiki Suen</Authors>
     <Company>Atelier Inmu</Company>
     <Copyright>(c) 2022 and onwards The vChewing Project (MIT-NTL License).</Copyright>
     <RepositoryUrl>https://github.com/ShikiSuen/MegrezNT</RepositoryUrl>
     <NeutralLanguage>zh-TW</NeutralLanguage>
-    <AssemblyVersion>1.2.1</AssemblyVersion>
-    <FileVersion>1.2.1</FileVersion>
-    <Version>1.2.1</Version>
+    <AssemblyVersion>1.2.2</AssemblyVersion>
+    <FileVersion>1.2.2</FileVersion>
+    <Version>1.2.2</Version>
     <Product>Megrez</Product>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-    <PackageLicenseExpression> MIT-Modern-Variant</PackageLicenseExpression>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Description>Megrez Engine is a module made for processing lingual data of an input method.</Description>
+    <PackageProjectUrl>https://github.com/ShikiSuen/MegrezNT</PackageProjectUrl>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

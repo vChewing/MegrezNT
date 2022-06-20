@@ -63,7 +63,7 @@ public struct NodeAnchor {
   public override string ToString() {
     string Stream = "";
     Stream += "{@(" + Location + "," + SpanningLength + "),";
-    Stream += (Node != null) ? Node.ToString() : "null";
+    Stream += Node != null ? Node.ToString() : "null";
     Stream += "}";
     return Stream;
   }

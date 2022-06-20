@@ -75,23 +75,23 @@ public struct Bigram {
   }
 
   public static bool operator<(Bigram Lhs, Bigram Rhs) {
-    return (Lhs.KeyValuePreceded < Rhs.KeyValuePreceded) ||
-           (Lhs.KeyValue < Rhs.KeyValue || (Lhs.KeyValue == Rhs.KeyValue && Lhs.Score < Rhs.Score));
+    return Lhs.KeyValuePreceded < Rhs.KeyValuePreceded || Lhs.KeyValue < Rhs.KeyValue ||
+           Lhs.KeyValue == Rhs.KeyValue && Lhs.Score < Rhs.Score;
   }
 
   public static bool operator>(Bigram Lhs, Bigram Rhs) {
-    return (Lhs.KeyValuePreceded > Rhs.KeyValuePreceded) ||
-           (Lhs.KeyValue > Rhs.KeyValue || (Lhs.KeyValue == Rhs.KeyValue && Lhs.Score > Rhs.Score));
+    return Lhs.KeyValuePreceded > Rhs.KeyValuePreceded || Lhs.KeyValue > Rhs.KeyValue ||
+           Lhs.KeyValue == Rhs.KeyValue && Lhs.Score > Rhs.Score;
   }
 
   public static bool operator <=(Bigram Lhs, Bigram Rhs) {
-    return (Lhs.KeyValuePreceded <= Rhs.KeyValuePreceded) ||
-           (Lhs.KeyValue <= Rhs.KeyValue || (Lhs.KeyValue == Rhs.KeyValue && Lhs.Score <= Rhs.Score));
+    return Lhs.KeyValuePreceded <= Rhs.KeyValuePreceded || Lhs.KeyValue <= Rhs.KeyValue ||
+           Lhs.KeyValue == Rhs.KeyValue && Lhs.Score <= Rhs.Score;
   }
 
   public static bool operator >=(Bigram Lhs, Bigram Rhs) {
-    return (Lhs.KeyValuePreceded >= Rhs.KeyValuePreceded) ||
-           (Lhs.KeyValue >= Rhs.KeyValue || (Lhs.KeyValue == Rhs.KeyValue && Lhs.Score >= Rhs.Score));
+    return Lhs.KeyValuePreceded >= Rhs.KeyValuePreceded || Lhs.KeyValue >= Rhs.KeyValue ||
+           Lhs.KeyValue == Rhs.KeyValue && Lhs.Score >= Rhs.Score;
   }
 }
 }
