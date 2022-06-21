@@ -180,8 +180,9 @@ public class SimpleLM : LanguageModel {
       }
     }
   }
-  public override List<Unigram> UnigramsFor(string key) => _database.ContainsKey(key) ? _database[key] : new();
-  public override bool HasUnigramsFor(string key) => _database.ContainsKey(key);
+  public List<Bigram> BigramsForKeys(string precedingKey, string key) { return new(); }
+  public List<Unigram> UnigramsFor(string key) => _database.ContainsKey(key) ? _database[key] : new();
+  public bool HasUnigramsFor(string key) => _database.ContainsKey(key);
 }
 
 public class TestClass {
