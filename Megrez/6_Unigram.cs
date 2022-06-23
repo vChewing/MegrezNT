@@ -52,7 +52,7 @@ public struct Unigram {
 
   public override bool Equals(object obj) {
     return obj is Unigram unigram && EqualityComparer<KeyValuePaired>.Default.Equals(KeyValue, unigram.KeyValue) &&
-           Score == unigram.Score;
+           Math.Abs(Score - unigram.Score) < 0.0000001f;
   }
 
   public override int GetHashCode() { return HashCode.Combine(KeyValue, Score); }
@@ -60,12 +60,11 @@ public struct Unigram {
   public override string ToString() => $"({KeyValue},{Score})";
 
   public static bool operator ==(Unigram lhs, Unigram rhs) {
-    return lhs.KeyValue == rhs.KeyValue && lhs.Score == rhs.Score;
+    return lhs.KeyValue == rhs.KeyValue && Math.Abs(lhs.Score - rhs.Score) < 0.0000001f;
   }
 
-  public static bool operator !=(Unigram lhs, Unigram rhs) {
-    return lhs.KeyValue != rhs.KeyValue || lhs.Score != rhs.Score;
-  }
+  public static bool operator !=(Unigram lhs, Unigram rhs) => lhs.KeyValue != rhs.KeyValue
+                                                              || Math.Abs(lhs.Score - rhs.Score) > 0.0000001f;
 
   public static bool operator<(Unigram lhs, Unigram rhs) {
     return lhs.KeyValue < rhs.KeyValue || lhs.KeyValue == rhs.KeyValue && lhs.Score < rhs.Score;

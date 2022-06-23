@@ -56,22 +56,24 @@ public struct Bigram {
   /// </summary>
   public double Score { get; set; }
 
-  public override bool Equals(object obj) {
-    return obj is Bigram bigram &&
-           EqualityComparer<KeyValuePaired>.Default.Equals(KeyValuePreceded, bigram.KeyValuePreceded) &&
-           EqualityComparer<KeyValuePaired>.Default.Equals(KeyValue, bigram.KeyValue) && Score == bigram.Score;
-  }
+  public override bool Equals(object obj) =>
+      obj is Bigram bigram
+      && EqualityComparer<KeyValuePaired>.Default.Equals(KeyValuePreceded, bigram.KeyValuePreceded) &&
+      EqualityComparer<KeyValuePaired>.Default.Equals(KeyValue, bigram.KeyValue) &&
+      Math.Abs(Score - bigram.Score) < 0.0000001f;
 
-  public override int GetHashCode() { return HashCode.Combine(KeyValuePreceded, KeyValue, Score); }
+  public override int GetHashCode() => HashCode.Combine(KeyValuePreceded, KeyValue, Score);
 
   public override string ToString() => $"({KeyValuePreceded}|{KeyValue},{Score})";
 
   public static bool operator ==(Bigram lhs, Bigram rhs) {
-    return lhs.KeyValuePreceded == rhs.KeyValuePreceded && lhs.KeyValue == rhs.KeyValue && lhs.Score == rhs.Score;
+    return lhs.KeyValuePreceded == rhs.KeyValuePreceded && lhs.KeyValue == rhs.KeyValue &&
+           Math.Abs(lhs.Score - rhs.Score) < 0.0000001f;
   }
 
   public static bool operator !=(Bigram lhs, Bigram rhs) {
-    return lhs.KeyValuePreceded != rhs.KeyValuePreceded || lhs.KeyValue != rhs.KeyValue || lhs.Score != rhs.Score;
+    return lhs.KeyValuePreceded != rhs.KeyValuePreceded || lhs.KeyValue != rhs.KeyValue ||
+           Math.Abs(lhs.Score - rhs.Score) > 0.0000001f;
   }
 
   public static bool operator<(Bigram lhs, Bigram rhs) {
