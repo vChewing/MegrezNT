@@ -205,7 +205,7 @@ public class Grid {
   /// <param name="location">位置。</param>
   /// <param name="value">給定字串。</param>
   /// <param name="overridingScore">給定權重數值。</param>
-  public void FixNodeSelectedCandidate(int location, string value, double overridingScore) {
+  public void OverrideNodeScoreForSelectedCandidate(int location, string value, double overridingScore) {
     int theLocation = Math.Abs(location);
     foreach (NodeAnchor nodeAnchor in NodesCrossingOrEndingAt(theLocation)) {
       Node? theNode = nodeAnchor.Node;
