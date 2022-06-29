@@ -157,7 +157,7 @@ public class Compositor {
   /// <param name="joinedPhrase">用以統計累計長詞的內部參數，請勿主動使用。</param>
   /// <param name="longPhrases">用以統計累計長詞的內部參數，請勿主動使用。</param>
   /// <returns>均有節點的節錨陣列。</returns>
-  public List<NodeAnchor> Walk(int location, double accumulatedScore = 0.0, string joinedPhrase = "",
+  public List<NodeAnchor> Walk(int location = 0, double accumulatedScore = 0.0, string joinedPhrase = "",
                                List<string>? longPhrases = default(List<string>)) {
     int newLocation = Grid.Width - Math.Abs(location);
     List<NodeAnchor> result = ReverseWalk(newLocation, accumulatedScore, joinedPhrase, longPhrases);
