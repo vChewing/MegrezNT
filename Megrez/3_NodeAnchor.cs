@@ -60,6 +60,10 @@ public struct NodeAnchor {
   /// 獲取用來比較的權重。
   /// </summary>
   public double ScoreForSort => Node?.Score ?? 0.0;
+  /// <summary>
+  /// 將當前節錨的內容輸出為字串。
+  /// </summary>
+  /// <returns>當前節錨的內容輸出成的字串。</returns>
   public override string ToString() {
     string stream = "";
     stream += "{@(" + Location + "," + SpanningLength + "),";

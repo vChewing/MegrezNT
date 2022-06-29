@@ -54,39 +54,90 @@ public struct KeyValuePaired {
   /// <returns>只要鍵或者值任一為空，則傳回值為「否」。</returns>
   public bool IsValid() => !string.IsNullOrEmpty(Key) && !string.IsNullOrEmpty(Value);
 
+  /// <summary>
+  /// 判定兩個物件是否相等。
+  /// </summary>
+  /// <param name="obj">用來比較的物件。</param>
+  /// <returns>若相等，則返回 true。</returns>
   public override bool Equals(object obj) {
     return obj is KeyValuePaired pair && Key == pair.Key && Value == pair.Value;
   }
 
+  /// <summary>
+  /// 將當前物件的內容輸出為雜湊資料。
+  /// </summary>
+  /// <returns>當前物件的內容輸出成的雜湊資料。</returns>
   public override int GetHashCode() => HashCode.Combine(Key, Value);
 
+  /// <summary>
+  /// 將當前物件的內容輸出為字串。
+  /// </summary>
+  /// <returns>當前物件的內容輸出成的字串。</returns>
   public override string ToString() => $"({Key},{Value})";
 
+  /// <summary>
+  /// 生成統一索引鍵，以作其它用途。如果該鍵值配對有任一為空，則生成空的統一索引鍵。
+  /// </summary>
+  /// <returns>生成的統一索引鍵。</returns>
   public string ToNGramKey() => IsValid() ? $"({Key},{Value})" : "()";
-
+  /// <summary>
+  /// 判定兩個物件是否相等。
+  /// </summary>
+  /// <param name="lhs"></param>
+  /// <param name="rhs"></param>
+  /// <returns></returns>
   public static bool operator ==(KeyValuePaired lhs, KeyValuePaired rhs) {
     return lhs.Key.Length == rhs.Key.Length && lhs.Value == rhs.Value;
   }
-
+  /// <summary>
+  /// 判定兩個物件是否相異。
+  /// </summary>
+  /// <param name="lhs"></param>
+  /// <param name="rhs"></param>
+  /// <returns></returns>
   public static bool operator !=(KeyValuePaired lhs, KeyValuePaired rhs) {
     return lhs.Key.Length != rhs.Key.Length || lhs.Value != rhs.Value;
   }
 
+  /// <summary>
+  ///
+  /// </summary>
+  /// <param name="lhs"></param>
+  /// <param name="rhs"></param>
+  /// <returns></returns>
   public static bool operator<(KeyValuePaired lhs, KeyValuePaired rhs) {
     return lhs.Key.Length < rhs.Key.Length ||
            lhs.Key.Length == rhs.Key.Length && String.Compare(lhs.Value, rhs.Value, StringComparison.Ordinal) < 0;
   }
 
+  /// <summary>
+  ///
+  /// </summary>
+  /// <param name="lhs"></param>
+  /// <param name="rhs"></param>
+  /// <returns></returns>
   public static bool operator>(KeyValuePaired lhs, KeyValuePaired rhs) {
     return lhs.Key.Length > rhs.Key.Length ||
            lhs.Key.Length == rhs.Key.Length && String.Compare(lhs.Value, rhs.Value, StringComparison.Ordinal) > 0;
   }
 
+  /// <summary>
+  ///
+  /// </summary>
+  /// <param name="lhs"></param>
+  /// <param name="rhs"></param>
+  /// <returns></returns>
   public static bool operator <=(KeyValuePaired lhs, KeyValuePaired rhs) {
     return lhs.Key.Length <= rhs.Key.Length ||
            lhs.Key.Length == rhs.Key.Length && String.Compare(lhs.Value, rhs.Value, StringComparison.Ordinal) <= 0;
   }
 
+  /// <summary>
+  ///
+  /// </summary>
+  /// <param name="lhs"></param>
+  /// <param name="rhs"></param>
+  /// <returns></returns>
   public static bool operator >=(KeyValuePaired lhs, KeyValuePaired rhs) {
     return lhs.Key.Length >= rhs.Key.Length ||
            lhs.Key.Length == rhs.Key.Length && String.Compare(lhs.Value, rhs.Value, StringComparison.Ordinal) >= 0;

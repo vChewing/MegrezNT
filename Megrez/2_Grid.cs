@@ -227,7 +227,7 @@ public class Grid {
   /// 生成用以交給 GraphViz 診斷的資料。
   /// </summary>
   /// <returns>GraphViz 檔案內容，純文字。</returns>
-  public string DumpDot() {
+  public string DumpDOT() {
     string strOutput = "digraph {\ngraph [ rankdir=LR ];\nBOS;\n";
     for (int p = 0; p < _spans.Count; p++) {
       Span span = _spans[p];

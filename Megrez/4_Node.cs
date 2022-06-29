@@ -57,6 +57,10 @@ public class Node {
   /// 用來登記要施加給「『被標記為選中狀態』的候選字詞」的複寫權重的數值。
   /// </summary>
   public const double ConSelectedCandidateScore = 99.0;
+  /// <summary>
+  /// 將當前節點的內容輸出為字串。
+  /// </summary>
+  /// <returns>當前節點的內容輸出成的字串。</returns>
   public override string ToString() =>
       $"(node,key:{Key},fixed:{(IsCandidateFixed ? "true" : "false")},selected:{_selectedUnigramIndex},{_unigrams})";
   /// <summary>
@@ -169,6 +173,11 @@ public class Node {
     }
     return result;
   }
+  /// <summary>
+  /// 判定兩個節點是否相等。
+  /// </summary>
+  /// <param name="obj">用來比較的節點。</param>
+  /// <returns>若相等，則返回 true。</returns>
   public override bool Equals(object obj) {
     return obj is Node node && EqualityComparer<List<Unigram>>.Default.Equals(_unigrams, node._unigrams) &&
            EqualityComparer<List<KeyValuePaired>>.Default.Equals(Candidates, node.Candidates) &&
@@ -179,6 +188,10 @@ public class Node {
            IsCandidateFixed == node.IsCandidateFixed && _selectedUnigramIndex == node._selectedUnigramIndex;
   }
 
+  /// <summary>
+  /// 將當前節點的內容輸出為雜湊資料。
+  /// </summary>
+  /// <returns>當前節錨的內容輸出成的雜湊資料。</returns>
   public override int GetHashCode() {
     unchecked { return (int)BitConverter.ToInt64(Convert.FromBase64String(ToString()), 0); }
   }

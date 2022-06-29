@@ -55,42 +55,88 @@ public struct Bigram {
   /// 權重。
   /// </summary>
   public double Score { get; set; }
-
+  /// <summary>
+  /// 判定兩個雙元圖是否相等。
+  /// </summary>
+  /// <param name="obj">用來比較的雙元圖。</param>
+  /// <returns>若相等，則返回 true。</returns>
   public override bool Equals(object obj) =>
       obj is Bigram bigram
       && EqualityComparer<KeyValuePaired>.Default.Equals(KeyValuePreceded, bigram.KeyValuePreceded) &&
       EqualityComparer<KeyValuePaired>.Default.Equals(KeyValue, bigram.KeyValue) &&
       Math.Abs(Score - bigram.Score) < 0.0000001f;
 
+  /// <summary>
+  /// 將當前物件的內容輸出為雜湊資料。
+  /// </summary>
+  /// <returns>當前物件的內容輸出成的雜湊資料。</returns>
   public override int GetHashCode() => HashCode.Combine(KeyValuePreceded, KeyValue, Score);
 
+  /// <summary>
+  /// 將當前物件的內容輸出為字串。
+  /// </summary>
+  /// <returns>當前物件的內容輸出成的字串。</returns>
   public override string ToString() => $"({KeyValuePreceded}|{KeyValue},{Score})";
-
+  /// <summary>
+  /// 判定兩個物件是否相等。
+  /// </summary>
+  /// <param name="lhs"></param>
+  /// <param name="rhs"></param>
+  /// <returns></returns>
   public static bool operator ==(Bigram lhs, Bigram rhs) {
     return lhs.KeyValuePreceded == rhs.KeyValuePreceded && lhs.KeyValue == rhs.KeyValue &&
            Math.Abs(lhs.Score - rhs.Score) < 0.0000001f;
   }
-
+  /// <summary>
+  /// 判定兩個物件是否相異。
+  /// </summary>
+  /// <param name="lhs"></param>
+  /// <param name="rhs"></param>
+  /// <returns></returns>
   public static bool operator !=(Bigram lhs, Bigram rhs) {
     return lhs.KeyValuePreceded != rhs.KeyValuePreceded || lhs.KeyValue != rhs.KeyValue ||
            Math.Abs(lhs.Score - rhs.Score) > 0.0000001f;
   }
 
+  /// <summary>
+  ///
+  /// </summary>
+  /// <param name="lhs"></param>
+  /// <param name="rhs"></param>
+  /// <returns></returns>
   public static bool operator<(Bigram lhs, Bigram rhs) {
     return lhs.KeyValuePreceded < rhs.KeyValuePreceded || lhs.KeyValue < rhs.KeyValue ||
            lhs.KeyValue == rhs.KeyValue && lhs.Score < rhs.Score;
   }
 
+  /// <summary>
+  ///
+  /// </summary>
+  /// <param name="lhs"></param>
+  /// <param name="rhs"></param>
+  /// <returns></returns>
   public static bool operator>(Bigram lhs, Bigram rhs) {
     return lhs.KeyValuePreceded > rhs.KeyValuePreceded || lhs.KeyValue > rhs.KeyValue ||
            lhs.KeyValue == rhs.KeyValue && lhs.Score > rhs.Score;
   }
 
+  /// <summary>
+  ///
+  /// </summary>
+  /// <param name="lhs"></param>
+  /// <param name="rhs"></param>
+  /// <returns></returns>
   public static bool operator <=(Bigram lhs, Bigram rhs) {
     return lhs.KeyValuePreceded <= rhs.KeyValuePreceded || lhs.KeyValue <= rhs.KeyValue ||
            lhs.KeyValue == rhs.KeyValue && lhs.Score <= rhs.Score;
   }
 
+  /// <summary>
+  ///
+  /// </summary>
+  /// <param name="lhs"></param>
+  /// <param name="rhs"></param>
+  /// <returns></returns>
   public static bool operator >=(Bigram lhs, Bigram rhs) {
     return lhs.KeyValuePreceded >= rhs.KeyValuePreceded || lhs.KeyValue >= rhs.KeyValue ||
            lhs.KeyValue == rhs.KeyValue && lhs.Score >= rhs.Score;
