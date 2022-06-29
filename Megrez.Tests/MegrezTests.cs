@@ -118,9 +118,9 @@ public class MegrezTests {
     theCompositor.DeleteReadingAtTheRearOfCursor();
     theCompositor.DeleteReadingAtTheRearOfCursor();
     theCompositor.DeleteReadingAtTheRearOfCursor();
-    string expectedDumpDot =
+    string expectedDumpDOT =
         "digraph {\ngraph [ rankdir=LR ];\nBOS;\nBOS -> 高;\n高;\n高 -> 科;\n高 -> 科技;\nBOS -> 高科技;\n高科技;\n高科技 -> 工;\n高科技 -> 公司;\n科;\n科 -> 際;\n科 -> 濟公;\n科技;\n科技 -> 工;\n科技 -> 公司;\n際;\n際 -> 工;\n際 -> 公司;\n濟公;\n濟公 -> 斯;\n工;\n工 -> 斯;\n公司;\n公司 -> 的;\n斯;\n斯 -> 的;\n的;\n的 -> 年;\n的 -> 年終;\n年;\n年 -> 中;\n年終;\n年終 -> 獎;\n年終 -> 獎金;\n中;\n中 -> 獎;\n中 -> 獎金;\n獎;\n獎 -> 金;\n獎金;\n獎金 -> EOS;\n金;\n金 -> EOS;\nEOS;\n}\n";
-    Assert.AreEqual(expectedDumpDot, theCompositor.Grid.DumpDot());
+    Assert.AreEqual(expectedDumpDOT, theCompositor.Grid.DumpDOT());
   }
 
   [Test]
