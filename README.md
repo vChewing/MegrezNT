@@ -1,7 +1,7 @@
 # Megrez Engine 天權星引擎
 
 - Gitee: [Swift](https://gitee.com/vChewing/Megrez) | [C#](https://gitee.com/vChewing/MegrezNT)
-- GitHub: [Swift](https://github.com/ShikiSuen/Megrez) | [C#](https://github.com/ShikiSuen/MegrezNT)
+- GitHub: [Swift](https://github.com/vChewing/Megrez) | [C#](https://github.com/vChewing/MegrezNT)
 
 天權星引擎是用來處理輸入法語彙庫的一個模組。該倉庫乃威注音專案的弒神行動（Operation Longinus）的一部分。
 
