@@ -23,6 +23,9 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+using System.Collections.Generic;
+using System.Linq;
+
 namespace Megrez {
 /// <summary>
 /// 節锚。
@@ -31,45 +34,74 @@ public struct NodeAnchor {
   /// <summary>
   /// 節锚。
   /// </summary>
-  public NodeAnchor(Node node, int location, int spanningLength) {
+  public NodeAnchor(Node node, double? mass = null) {
     Node = node;
-    Location = location;
-    SpanningLength = spanningLength;
+    Mass = mass ?? Node.Score;
   }
+  /// <summary>
+  /// 用來判斷該節錨是否為空。
+  /// </summary>
+  public bool IsEmpty => string.IsNullOrEmpty(Node.Key);
   /// <summary>
   /// 節點。一個節锚內不一定有節點，還可能會出 null。
   /// </summary>
-  public Node? Node = null;
-  /// <summary>
-  /// 節锚所在的位置。
-  /// </summary>
-  public int Location = 0;
-  /// <summary>
-  /// 幅位長度。
-  /// </summary>
-  public int SpanningLength = 0;
-  /// <summary>
-  /// 累計權重。
-  /// </summary>
-  public double AccumulatedScore = 0.0;
-  /// <summary>
-  /// 索引鍵的長度。
-  /// </summary>
-  public int KeyLength => Node?.Key.Length ?? 0;
+  public Node Node = new();
   /// <summary>
   /// 獲取用來比較的權重。
   /// </summary>
-  public double ScoreForSort => Node?.Score ?? 0.0;
+  public double ScoreForSort => Node.Score;
+  /// <summary>
+  /// 幅位長度。
+  /// </summary>
+  public int SpanLength => Node.SpanLength;
+  /// <summary>
+  /// 累計權重。
+  /// </summary>
+  public double Mass = 0.0;
+  /// <summary>
+  /// 索引鍵。
+  /// </summary>
+  public string Key => Node.Key;
+  /// <summary>
+  /// 單元圖陣列。
+  /// </summary>
+  public List<Unigram> Unigrams => Node.Unigrams;
+  /// <summary>
+  /// 雙元圖陣列。
+  /// </summary>
+  public List<Bigram> Bigrams => Node.Bigrams;
   /// <summary>
   /// 將當前節錨的內容輸出為字串。
   /// </summary>
   /// <returns>當前節錨的內容輸出成的字串。</returns>
   public override string ToString() {
     string stream = "";
-    stream += "{@(" + Location + "," + SpanningLength + "),";
+    stream += "{@(" + SpanLength + "),";
     stream += Node != null ? Node.ToString() : "null";
     stream += "}";
     return stream;
   }
 }
+/// <summary>
+/// 用以在陣列內容為節錨的時候擴展陣列功能。
+/// </summary>
+public static class NodeAnchorExtensions {
+  /// <summary>
+  /// 獲取當前節錨陣列當中的索引鍵陣列。
+  /// </summary>
+  /// <param name="list">資料來源陣列。</param>
+  /// <returns>得到的索引鍵陣列。</returns>
+  public static string[] Keys(this IEnumerable<NodeAnchor> list) {
+    return list.Select(x => x.Node.CurrentPair.Key).ToArray();
+  }
+  /// <summary>
+  /// 獲取當前節錨陣列當中的資料值陣列。
+  /// </summary>
+  /// <param name="list">資料來源陣列。</param>
+  /// <returns>得到的資料值陣列。</returns>
+  public static string[] Values(this IEnumerable<NodeAnchor> list) {
+    return list.Select(x => x.Node.CurrentPair.Value).ToArray();
+  }
+}
+
 }

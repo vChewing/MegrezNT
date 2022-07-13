@@ -38,56 +38,56 @@ public class MegrezTests {
     Compositor theCompositor = new(lmTestInput);
     List<Megrez.NodeAnchor> walked = new();
 
-    void Walk() { walked = theCompositor.Walk(0, 0.0); }
+    void Walk() { walked = theCompositor.Walk(); }
 
     // 模擬輸入法的行為，每次敲字或選字都重新 walk。;
-    theCompositor.InsertReadingAtCursor("gao1");
+    theCompositor.insertReading("gao1");
     Walk();
-    theCompositor.InsertReadingAtCursor("ji4");
+    theCompositor.insertReading("ji4");
     Walk();
-    theCompositor.CursorIndex = 1;
-    theCompositor.InsertReadingAtCursor("ke1");
+    theCompositor.Cursor = 1;
+    theCompositor.insertReading("ke1");
     Walk();
-    theCompositor.CursorIndex = 1;
-    theCompositor.DeleteReadingToTheFrontOfCursor();
+    theCompositor.Cursor = 1;
+    theCompositor.DropReading(Compositor.TypingDirection.ToFront);
     Walk();
-    theCompositor.InsertReadingAtCursor("ke1");
+    theCompositor.insertReading("ke1");
     Walk();
-    theCompositor.CursorIndex = 0;
-    theCompositor.DeleteReadingToTheFrontOfCursor();
+    theCompositor.Cursor = 0;
+    theCompositor.DropReading(Compositor.TypingDirection.ToFront);
     Walk();
-    theCompositor.InsertReadingAtCursor("gao1");
+    theCompositor.insertReading("gao1");
     Walk();
-    theCompositor.CursorIndex = theCompositor.Length;
-    theCompositor.InsertReadingAtCursor("gong1");
+    theCompositor.Cursor = theCompositor.Length;
+    theCompositor.insertReading("gong1");
     Walk();
-    theCompositor.InsertReadingAtCursor("si1");
+    theCompositor.insertReading("si1");
     Walk();
-    theCompositor.InsertReadingAtCursor("de5");
+    theCompositor.insertReading("de5");
     Walk();
-    theCompositor.InsertReadingAtCursor("nian2");
+    theCompositor.insertReading("nian2");
     Walk();
-    theCompositor.InsertReadingAtCursor("zhong1");
+    theCompositor.insertReading("zhong1");
     Walk();
-    theCompositor.Grid.FixNodeSelectedCandidate(7, "年終");
+    theCompositor.FixNodeSelectedCandidate(new("nian2zhong1", "年終"), 7);
     Walk();
-    theCompositor.InsertReadingAtCursor("jiang3");
+    theCompositor.insertReading("jiang3");
     Walk();
-    theCompositor.InsertReadingAtCursor("jin1");
+    theCompositor.insertReading("jin1");
     Walk();
-    theCompositor.InsertReadingAtCursor("ni3");
+    theCompositor.insertReading("ni3");
     Walk();
-    theCompositor.InsertReadingAtCursor("zhe4");
+    theCompositor.insertReading("zhe4");
     Walk();
-    theCompositor.InsertReadingAtCursor("yang4");
+    theCompositor.insertReading("yang4");
     Walk();
 
     // 這裡模擬一個輸入法的常見情況：每次敲一個字詞都會
     // walk，然後你回頭編輯完一些內容之後又會立刻重新 walk。
     // 如果只在這裡測試第一遍 walk 的話，測試通過了也無法測試之後再次 walk
     // 是否會正常。
-    theCompositor.CursorIndex = 1;
-    theCompositor.DeleteReadingToTheFrontOfCursor();
+    theCompositor.Cursor = 1;
+    theCompositor.DropReading(Compositor.TypingDirection.ToFront);
 
     // 於是咱們 walk 第二遍
     Walk();
@@ -95,7 +95,7 @@ public class MegrezTests {
 
     // 做好第三遍的準備，這次咱們來一次插入性編輯。
     // 重點測試這句是否正常，畢竟是在 walked 過的節點內進行插入編輯。
-    theCompositor.InsertReadingAtCursor("ke1");
+    theCompositor.insertReading("ke1");
 
     // 於是咱們 walk 第三遍。
     // 這一遍會直接曝露「上述修改是否有對 TheCompositor 造成了破壞性的損失」，
@@ -105,7 +105,7 @@ public class MegrezTests {
 
     List<string> composed = new();
     foreach (Megrez.NodeAnchor phrase in walked) {
-      if (phrase.Node != null) composed.Add(phrase.Node.CurrentKeyValue.Value);
+      if (phrase.Node != null) composed.Add(phrase.Node.CurrentPair.Value);
     }
     Console.WriteLine(string.Join("_", composed));
     List<string> correctResult = new List<string> { "高科技", "公司", "的", "年終", "獎金", "你", "這樣" };
@@ -114,13 +114,13 @@ public class MegrezTests {
     Assert.AreEqual(string.Join("_", correctResult), string.Join("_", composed));
 
     // 測試 DumpDOT
-    theCompositor.CursorIndex = theCompositor.Length;
-    theCompositor.DeleteReadingAtTheRearOfCursor();
-    theCompositor.DeleteReadingAtTheRearOfCursor();
-    theCompositor.DeleteReadingAtTheRearOfCursor();
+    theCompositor.Cursor = theCompositor.Length;
+    theCompositor.DropReading(Compositor.TypingDirection.ToRear);
+    theCompositor.DropReading(Compositor.TypingDirection.ToRear);
+    theCompositor.DropReading(Compositor.TypingDirection.ToRear);
     string expectedDumpDOT =
         "digraph {\ngraph [ rankdir=LR ];\nBOS;\nBOS -> 高;\n高;\n高 -> 科;\n高 -> 科技;\nBOS -> 高科技;\n高科技;\n高科技 -> 工;\n高科技 -> 公司;\n科;\n科 -> 際;\n科 -> 濟公;\n科技;\n科技 -> 工;\n科技 -> 公司;\n際;\n際 -> 工;\n際 -> 公司;\n濟公;\n濟公 -> 斯;\n工;\n工 -> 斯;\n公司;\n公司 -> 的;\n斯;\n斯 -> 的;\n的;\n的 -> 年;\n的 -> 年終;\n年;\n年 -> 中;\n年終;\n年終 -> 獎;\n年終 -> 獎金;\n中;\n中 -> 獎;\n中 -> 獎金;\n獎;\n獎 -> 金;\n獎金;\n獎金 -> EOS;\n金;\n金 -> EOS;\nEOS;\n}\n";
-    Assert.AreEqual(expectedDumpDOT, theCompositor.Grid.DumpDOT());
+    Assert.AreEqual(expectedDumpDOT, theCompositor.DumpDOT());
   }
 
   [Test]
@@ -130,24 +130,24 @@ public class MegrezTests {
     Compositor theCompositor = new(lmTestInput, separator: "");
     List<Megrez.NodeAnchor> walked = new();
 
-    void Walk(int location) { walked = theCompositor.Walk(location, 0.0); }
+    void Walk(int location) { walked = theCompositor.Walk(); }
 
     // 模擬輸入法的行為，每次敲字或選字都重新 walk。;
-    theCompositor.InsertReadingAtCursor("高");
-    theCompositor.InsertReadingAtCursor("科");
-    theCompositor.InsertReadingAtCursor("技");
-    theCompositor.InsertReadingAtCursor("公");
-    theCompositor.InsertReadingAtCursor("司");
-    theCompositor.InsertReadingAtCursor("的");
-    theCompositor.InsertReadingAtCursor("年");
-    theCompositor.InsertReadingAtCursor("終");
-    theCompositor.InsertReadingAtCursor("獎");
-    theCompositor.InsertReadingAtCursor("金");
+    theCompositor.insertReading("高");
+    theCompositor.insertReading("科");
+    theCompositor.insertReading("技");
+    theCompositor.insertReading("公");
+    theCompositor.insertReading("司");
+    theCompositor.insertReading("的");
+    theCompositor.insertReading("年");
+    theCompositor.insertReading("終");
+    theCompositor.insertReading("獎");
+    theCompositor.insertReading("金");
 
     Walk(location: 0);
     List<string> segmented = new();
     foreach (Megrez.NodeAnchor phrase in walked) {
-      if (phrase.Node != null) segmented.Add(phrase.Node.CurrentKeyValue.Key);
+      if (phrase.Node != null) segmented.Add(phrase.Node.CurrentPair.Key);
     }
     Console.WriteLine(string.Join("_", segmented));
     List<string> correctResult = new List<string> { "高科技", "公司", "的", "年終", "獎金" };
@@ -157,7 +157,7 @@ public class MegrezTests {
   }
 }
 
-public class SimpleLM : LanguageModel {
+public class SimpleLM : LangModelProtocol {
   private Dictionary<string, List<Unigram>> _database = new();
   public SimpleLM(string input, bool swapKeyValue = false) {
     List<string> sStream = new(input.Split('\n'));

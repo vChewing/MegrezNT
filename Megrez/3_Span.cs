@@ -30,11 +30,11 @@ namespace Megrez {
 /// <summary>
 /// 幅位。
 /// </summary>
-public struct Span {
+public struct SpanUnit {
   /// <summary>
   /// 幅位。
   /// </summary>
-  public Span() {}
+  public SpanUnit() {}
   /// <summary>
   /// 辭典：以節點長度為索引，以節點為資料值。
   /// </summary>
@@ -42,13 +42,13 @@ public struct Span {
   /// <summary>
   /// 公開：最長幅距（唯讀）。
   /// </summary>
-  public int MaximumLength { get; private set; } = 0;
+  public int MaxLength { get; private set; } = 0;
   /// <summary>
   /// 自我清空，各項參數歸零。
   /// </summary>
   public void Clear() {
     _lengthNodeMap.Clear();
-    MaximumLength = 0;
+    MaxLength = 0;
   }
   /// <summary>
   /// 往自身插入一個節點、及給定的節點長度。
@@ -58,15 +58,15 @@ public struct Span {
   public void Insert(Node node, int length) {
     length = Math.Abs(length);
     _lengthNodeMap[length] = node;
-    MaximumLength = Math.Max(MaximumLength, length);
+    MaxLength = Math.Max(MaxLength, length);
   }
   /// <summary>
   /// 移除任何比給定的長度更長的節點。
   /// </summary>
   /// <param name="length">給定的節點長度。</param>
-  public void RemoveNodeOfLengthGreaterThan(int length) {
+  public void DropNodesBeyond(int length) {
     length = Math.Abs(length);
-    if (length > MaximumLength) return;
+    if (length > MaxLength) return;
     int lenMax = 0;
     Dictionary<int, Node> removalList = new();
     foreach (int key in _lengthNodeMap.Keys) {
@@ -78,14 +78,14 @@ public struct Span {
     foreach (int key in removalList.Keys) {
       _lengthNodeMap.Remove(key);
     }
-    MaximumLength = lenMax;
+    MaxLength = lenMax;
   }
   /// <summary>
   /// 給定節點長度，獲取節點。
   /// </summary>
   /// <param name="length">給定的節點長度。</param>
   /// <returns>節點。如果沒有節點則傳回 null。</returns>
-  public Node? Node(int length) {
+  public Node? NodeOf(int length) {
     return _lengthNodeMap.ContainsKey(Math.Abs(length)) ? _lengthNodeMap[Math.Abs(length)] : null;
   }
 }
