@@ -23,261 +23,484 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-using System;
-using System.Linq;
-using System.Collections.Generic;
 using NUnit.Framework;
+using System;
+using System.Collections.Generic;
 
 namespace Megrez.Tests;
 
-public class MegrezTests {
+public class MegrezTests : TestDataClass {
   [Test]
-  public void TestInput() {
-    Console.WriteLine("// 開始測試語言文字輸入處理");
-    SimpleLM lmTestInput = new(TestClass.StrSampleData);
-    Compositor theCompositor = new(lmTestInput);
-    List<Megrez.NodeAnchor> walked = new();
+  public void Test01_SpanUnitInternalAbilities() {
+    SimpleLM langModel = new(input: StrSampleData);
+    SpanUnit span = new();
+    Node n1 = new(key: "gao", unigrams: langModel.UnigramsFor(key: "gao1"));
+    Node n3 = new(key: "gao1ke1ji4", unigrams: langModel.UnigramsFor(key: "gao1ke1ji4"));
+    Assert.AreEqual(actual: span.MaxLength, expected: 0);
+    span.Insert(node: n1, length: 1);
+    Assert.AreEqual(actual: span.MaxLength, expected: 1);
+    span.Insert(node: n3, length: 3);
+    Assert.AreEqual(actual: span.MaxLength, expected: 3);
+    Assert.AreEqual(actual: span.NodeOf(length: 1), expected: n1);
+    Assert.AreEqual(actual: span.NodeOf(length: 2), expected: null);
+    Assert.AreEqual(actual: span.NodeOf(length: 3), expected: n3);
+    span.Clear();
+    Assert.AreEqual(actual: span.MaxLength, expected: 0);
+    Assert.AreEqual(actual: span.NodeOf(length: 1), expected: null);
+    Assert.AreEqual(actual: span.NodeOf(length: 2), expected: null);
+    Assert.AreEqual(actual: span.NodeOf(length: 3), expected: null);
 
-    void Walk() { walked = theCompositor.Walk(0, 0.0); }
-
-    // 模擬輸入法的行為，每次敲字或選字都重新 walk。;
-    theCompositor.InsertReadingAtCursor("gao1");
-    Walk();
-    theCompositor.InsertReadingAtCursor("ji4");
-    Walk();
-    theCompositor.CursorIndex = 1;
-    theCompositor.InsertReadingAtCursor("ke1");
-    Walk();
-    theCompositor.CursorIndex = 1;
-    theCompositor.DeleteReadingToTheFrontOfCursor();
-    Walk();
-    theCompositor.InsertReadingAtCursor("ke1");
-    Walk();
-    theCompositor.CursorIndex = 0;
-    theCompositor.DeleteReadingToTheFrontOfCursor();
-    Walk();
-    theCompositor.InsertReadingAtCursor("gao1");
-    Walk();
-    theCompositor.CursorIndex = theCompositor.Length;
-    theCompositor.InsertReadingAtCursor("gong1");
-    Walk();
-    theCompositor.InsertReadingAtCursor("si1");
-    Walk();
-    theCompositor.InsertReadingAtCursor("de5");
-    Walk();
-    theCompositor.InsertReadingAtCursor("nian2");
-    Walk();
-    theCompositor.InsertReadingAtCursor("zhong1");
-    Walk();
-    theCompositor.Grid.FixNodeSelectedCandidate(7, "年終");
-    Walk();
-    theCompositor.InsertReadingAtCursor("jiang3");
-    Walk();
-    theCompositor.InsertReadingAtCursor("jin1");
-    Walk();
-    theCompositor.InsertReadingAtCursor("ni3");
-    Walk();
-    theCompositor.InsertReadingAtCursor("zhe4");
-    Walk();
-    theCompositor.InsertReadingAtCursor("yang4");
-    Walk();
-
-    // 這裡模擬一個輸入法的常見情況：每次敲一個字詞都會
-    // walk，然後你回頭編輯完一些內容之後又會立刻重新 walk。
-    // 如果只在這裡測試第一遍 walk 的話，測試通過了也無法測試之後再次 walk
-    // 是否會正常。
-    theCompositor.CursorIndex = 1;
-    theCompositor.DeleteReadingToTheFrontOfCursor();
-
-    // 於是咱們 walk 第二遍
-    Walk();
-    Assert.False(walked.Count == 0);
-
-    // 做好第三遍的準備，這次咱們來一次插入性編輯。
-    // 重點測試這句是否正常，畢竟是在 walked 過的節點內進行插入編輯。
-    theCompositor.InsertReadingAtCursor("ke1");
-
-    // 於是咱們 walk 第三遍。
-    // 這一遍會直接曝露「上述修改是否有對 TheCompositor 造成了破壞性的損失」，
-    // 所以很重要。
-    Walk();
-    Assert.False(walked.Count == 0);
-
-    List<string> composed = new();
-    foreach (Megrez.NodeAnchor phrase in walked) {
-      if (phrase.Node != null) composed.Add(phrase.Node.CurrentKeyValue.Value);
-    }
-    Console.WriteLine(string.Join("_", composed));
-    List<string> correctResult = new List<string> { "高科技", "公司", "的", "年終", "獎金", "你", "這樣" };
-    Console.WriteLine(" - 上述列印結果理應於下面這行一致：");
-    Console.WriteLine(string.Join("_", correctResult));
-    Assert.AreEqual(string.Join("_", correctResult), string.Join("_", composed));
-
-    // 測試 DumpDOT
-    theCompositor.CursorIndex = theCompositor.Length;
-    theCompositor.DeleteReadingAtTheRearOfCursor();
-    theCompositor.DeleteReadingAtTheRearOfCursor();
-    theCompositor.DeleteReadingAtTheRearOfCursor();
-    string expectedDumpDOT =
-        "digraph {\ngraph [ rankdir=LR ];\nBOS;\nBOS -> 高;\n高;\n高 -> 科;\n高 -> 科技;\nBOS -> 高科技;\n高科技;\n高科技 -> 工;\n高科技 -> 公司;\n科;\n科 -> 際;\n科 -> 濟公;\n科技;\n科技 -> 工;\n科技 -> 公司;\n際;\n際 -> 工;\n際 -> 公司;\n濟公;\n濟公 -> 斯;\n工;\n工 -> 斯;\n公司;\n公司 -> 的;\n斯;\n斯 -> 的;\n的;\n的 -> 年;\n的 -> 年終;\n年;\n年 -> 中;\n年終;\n年終 -> 獎;\n年終 -> 獎金;\n中;\n中 -> 獎;\n中 -> 獎金;\n獎;\n獎 -> 金;\n獎金;\n獎金 -> EOS;\n金;\n金 -> EOS;\nEOS;\n}\n";
-    Assert.AreEqual(expectedDumpDOT, theCompositor.Grid.DumpDOT());
+    span.Insert(node: n1, length: 1);
+    span.Insert(node: n3, length: 3);
+    span.DropNodesBeyond(length: 1);
+    Assert.AreEqual(actual: span.MaxLength, expected: 1);
+    Assert.AreEqual(actual: span.NodeOf(length: 1), expected: n1);
+    Assert.AreEqual(actual: span.NodeOf(length: 2), expected: null);
+    Assert.AreEqual(actual: span.NodeOf(length: 3), expected: null);
+    span.DropNodesBeyond(length: 0);
+    Assert.AreEqual(actual: span.MaxLength, expected: 0);
+    Assert.AreEqual(actual: span.NodeOf(length: 1), expected: null);
   }
 
   [Test]
-  public void TestWordSegmentation() {
-    Console.WriteLine("// 開始測試語句分節處理");
-    SimpleLM lmTestInput = new(TestClass.StrSampleData, true);
-    Compositor theCompositor = new(lmTestInput, separator: "");
-    List<Megrez.NodeAnchor> walked = new();
+  public void Test02_BasicFeaturesOfCompositor() {
+    Compositor compositor = new(lm: new MockLM(), separator: "");
+    Assert.AreEqual(actual: compositor.JoinSeparator, expected: "");
+    Assert.AreEqual(actual: compositor.Cursor, expected: 0);
+    Assert.AreEqual(actual: compositor.Length, expected: 0);
 
-    void Walk(int location) { walked = theCompositor.Walk(location, 0.0); }
+    Assert.IsTrue(compositor.InsertReading("a"));
+    Assert.AreEqual(actual: compositor.Cursor, expected: 1);
+    Assert.AreEqual(actual: compositor.Length, expected: 1);
+    Assert.AreEqual(actual: compositor.Width, expected: 1);
+    Assert.AreEqual(actual: compositor.Spans[0].MaxLength, expected: 1);
+    if (compositor.Spans[0].NodeOf(length: 1) is not {} zeroNode) return;
+    Assert.AreEqual(actual: zeroNode.Key, expected: "a");
 
-    // 模擬輸入法的行為，每次敲字或選字都重新 walk。;
-    theCompositor.InsertReadingAtCursor("高");
-    theCompositor.InsertReadingAtCursor("科");
-    theCompositor.InsertReadingAtCursor("技");
-    theCompositor.InsertReadingAtCursor("公");
-    theCompositor.InsertReadingAtCursor("司");
-    theCompositor.InsertReadingAtCursor("的");
-    theCompositor.InsertReadingAtCursor("年");
-    theCompositor.InsertReadingAtCursor("終");
-    theCompositor.InsertReadingAtCursor("獎");
-    theCompositor.InsertReadingAtCursor("金");
-
-    Walk(location: 0);
-    List<string> segmented = new();
-    foreach (Megrez.NodeAnchor phrase in walked) {
-      if (phrase.Node != null) segmented.Add(phrase.Node.CurrentKeyValue.Key);
-    }
-    Console.WriteLine(string.Join("_", segmented));
-    List<string> correctResult = new List<string> { "高科技", "公司", "的", "年終", "獎金" };
-    Console.WriteLine(" - 上述列印結果理應於下面這行一致：");
-    Console.WriteLine(string.Join("_", correctResult));
-    Assert.AreEqual(string.Join("_", correctResult), string.Join("_", segmented));
+    Assert.IsTrue(compositor.DropReading(direction: Compositor.TypingDirection.ToRear));
+    Assert.AreEqual(actual: compositor.Cursor, expected: 0);
+    Assert.AreEqual(actual: compositor.Cursor, expected: 0);
+    Assert.AreEqual(actual: compositor.Width, expected: 0);
   }
-}
 
-public class SimpleLM : LanguageModel {
-  private Dictionary<string, List<Unigram>> _database = new();
-  public SimpleLM(string input, bool swapKeyValue = false) {
-    List<string> sStream = new(input.Split('\n'));
-    foreach (string line in sStream) {
-      if (line.Length == 0 || line.FirstOrDefault().CompareTo('#') == 0) continue;
-      List<string> lineStream = new(line.Split(' '));
-      if (lineStream.Count >= 2) {
-        string col0 = lineStream[0];  // 假設其不為 nil
-        string col1 = lineStream[1];  // 假設其不為 nil
-        double col2 = 0;              // 防呆
-        if (lineStream.Count >= 3 && Double.TryParse(lineStream[2], out double number)) col2 = number;
-        Unigram u = new(new KeyValuePaired(), 0);
-        if (swapKeyValue)
-          u.KeyValue = new(col1, col0);
-        else
-          u.KeyValue = new(col0, col1);
-        u.Score = col2;
-        if (!_database.ContainsKey(u.KeyValue.Key)) _database.Add(u.KeyValue.Key, new List<Unigram> {});
-        _database[u.KeyValue.Key].Add(u);
-      }
-    }
+  [Test]
+  public void Test03_InvalidOperations() {
+    Compositor compositor = new(lm: new TestLM(), separator: ";");
+    Assert.IsFalse(compositor.InsertReading("bar"));
+    Assert.IsFalse(compositor.InsertReading(""));
+    Assert.IsFalse(compositor.InsertReading(""));
+    Assert.IsFalse(compositor.DropReading(direction: Compositor.TypingDirection.ToRear));
+    Assert.IsFalse(compositor.DropReading(direction: Compositor.TypingDirection.ToFront));
+
+    compositor.InsertReading("foo");
+    Assert.IsTrue(compositor.DropReading(direction: Compositor.TypingDirection.ToRear));
+    Assert.AreEqual(actual: compositor.Length, expected: 0);
+    compositor.InsertReading("foo");
+    compositor.Cursor = 0;
+    Assert.IsTrue(compositor.DropReading(direction: Compositor.TypingDirection.ToFront));
+    Assert.AreEqual(actual: compositor.Length, expected: 0);
   }
-  public List<Bigram> BigramsForKeys(string precedingKey, string key) { return new(); }
-  public List<Unigram> UnigramsFor(string key) => _database.ContainsKey(key) ? _database[key] : new();
-  public bool HasUnigramsFor(string key) => _database.ContainsKey(key);
-}
 
-public class TestClass {
-  public static string StrSampleData =
-      @"
-#
-# 下述詞頻資料取自 libTaBE 資料庫 (http://sourceforge.net/projects/libtabe/)
-# (2002 最終版). 該專案於 1999 年由 Pai-Hsiang Hsiao 發起、以 BSD 授權發行。
-#
+  [Test]
+  public void Test04_DeleteToTheFrontOfCursor() {
+    Compositor compositor = new(lm: new MockLM());
+    compositor.InsertReading("a");
+    compositor.Cursor = 0;
+    Assert.AreEqual(actual: compositor.Cursor, expected: 0);
+    Assert.AreEqual(actual: compositor.Length, expected: 1);
+    Assert.AreEqual(actual: compositor.Width, expected: 1);
+    Assert.IsFalse(compositor.DropReading(direction: Compositor.TypingDirection.ToRear));
+    Assert.AreEqual(actual: compositor.Cursor, expected: 0);
+    Assert.AreEqual(actual: compositor.Length, expected: 1);
+    Assert.IsTrue(compositor.DropReading(direction: Compositor.TypingDirection.ToFront));
+    Assert.AreEqual(actual: compositor.Cursor, expected: 0);
+    Assert.AreEqual(actual: compositor.Length, expected: 0);
+    Assert.AreEqual(actual: compositor.Width, expected: 0);
+  }
 
-ni3 你 -6.000000 // Non-LibTaBE
-zhe4 這 -6.000000 // Non-LibTaBE
-yang4 樣 -6.000000 // Non-LibTaBE
-si1 絲 -9.495858
-si1 思 -9.006414
-si1 私 -99.000000
-si1 斯 -8.091803
-si1 司 -99.000000
-si1 嘶 -13.513987
-si1 撕 -12.259095
-gao1 高 -7.171551
-ke1 顆 -10.574273
-ke1 棵 -11.504072
-ke1 刻 -10.450457
-ke1 科 -7.171052
-ke1 柯 -99.000000
-gao1 膏 -11.928720
-gao1 篙 -13.624335
-gao1 糕 -12.390804
-de5 的 -3.516024
-di2 的 -3.516024
-di4 的 -3.516024
-zhong1 中 -5.809297
-de5 得 -7.427179
-gong1 共 -8.381971
-gong1 供 -8.501463
-ji4 既 -99.000000
-jin1 今 -8.034095
-gong1 紅 -8.858181
-ji4 際 -7.608341
-ji4 季 -99.000000
-jin1 金 -7.290109
-ji4 騎 -10.939895
-zhong1 終 -99.000000
-ji4 記 -99.000000
-ji4 寄 -99.000000
-jin1 斤 -99.000000
-ji4 繼 -9.715317
-ji4 計 -7.926683
-ji4 暨 -8.373022
-zhong1 鐘 -9.877580
-jin1 禁 -10.711079
-gong1 公 -7.877973
-gong1 工 -7.822167
-gong1 攻 -99.000000
-gong1 功 -99.000000
-gong1 宮 -99.000000
-zhong1 鍾 -9.685671
-ji4 繫 -10.425662
-gong1 弓 -99.000000
-gong1 恭 -99.000000
-ji4 劑 -8.888722
-ji4 祭 -10.204425
-jin1 浸 -11.378321
-zhong1 盅 -99.000000
-ji4 忌 -99.000000
-ji4 技 -8.450826
-jin1 筋 -11.074890
-gong1 躬 -99.000000
-ji4 冀 -12.045357
-zhong1 忠 -99.000000
-ji4 妓 -99.000000
-ji4 濟 -9.517568
-ji4 薊 -12.021587
-jin1 巾 -99.000000
-jin1 襟 -12.784206
-nian2 年 -6.086515
-jiang3 講 -9.164384
-jiang3 獎 -8.690941
-jiang3 蔣 -10.127828
-nian2 黏 -11.336864
-nian2 粘 -11.285740
-jiang3 槳 -12.492933
-gong1si1 公司 -6.299461
-ke1ji4 科技 -6.736613
-ji4gong1 濟公 -13.336653
-jiang3jin1 獎金 -10.344678
-nian2zhong1 年終 -11.668947
-nian2zhong1 年中 -11.373044
-gao1ke1ji4 高科技 -9.842421
-zhe4yang4 這樣 -6.000000 // Non-LibTaBE
-ni3zhe4 你這 -9.000000 // Non-LibTaBE
-jiao4 教 -3.676169
-jiao4 較 -3.24869962
-jiao4yu4 教育 -3.32220565
-yu4 育 -3.30192952
-  ";
+  [Test]
+  public void Test05_MultipleSpanUnits() {
+    Compositor compositor = new(lm: new MockLM(), separator: ";");
+    compositor.InsertReading("a");
+    compositor.InsertReading("b");
+    compositor.InsertReading("c");
+    Assert.AreEqual(actual: compositor.Cursor, expected: 3);
+    Assert.AreEqual(actual: compositor.Length, expected: 3);
+    Assert.AreEqual(actual: compositor.Width, expected: 3);
+    Assert.AreEqual(actual: compositor.Spans[0].MaxLength, expected: 3);
+    Assert.AreEqual(actual: compositor.Spans[0].NodeOf(length: 1)?.Key, expected: "a");
+    Assert.AreEqual(actual: compositor.Spans[0].NodeOf(length: 2)?.Key, expected: "a;b");
+    Assert.AreEqual(actual: compositor.Spans[0].NodeOf(length: 3)?.Key, expected: "a;b;c");
+    Assert.AreEqual(actual: compositor.Spans[1].MaxLength, expected: 2);
+    Assert.AreEqual(actual: compositor.Spans[1].NodeOf(length: 1)?.Key, expected: "b");
+    Assert.AreEqual(actual: compositor.Spans[1].NodeOf(length: 2)?.Key, expected: "b;c");
+    Assert.AreEqual(actual: compositor.Spans[2].MaxLength, expected: 1);
+    Assert.AreEqual(actual: compositor.Spans[2].NodeOf(length: 1)?.Key, expected: "c");
+  }
+
+  [Test]
+  public void Test06_SpanUnitDeletionFromFront() {
+    Compositor compositor = new(lm: new MockLM(), separator: ";");
+    compositor.InsertReading("a");
+    compositor.InsertReading("b");
+    compositor.InsertReading("c");
+    Assert.IsFalse(compositor.DropReading(direction: Compositor.TypingDirection.ToFront));
+    Assert.IsTrue(compositor.DropReading(direction: Compositor.TypingDirection.ToRear));
+    Assert.AreEqual(actual: compositor.Cursor, expected: 2);
+    Assert.AreEqual(actual: compositor.Length, expected: 2);
+    Assert.AreEqual(actual: compositor.Width, expected: 2);
+    Assert.AreEqual(actual: compositor.Spans[0].MaxLength, expected: 2);
+    Assert.AreEqual(actual: compositor.Spans[0].NodeOf(length: 1)?.Key, expected: "a");
+    Assert.AreEqual(actual: compositor.Spans[0].NodeOf(length: 2)?.Key, expected: "a;b");
+    Assert.AreEqual(actual: compositor.Spans[1].MaxLength, expected: 1);
+    Assert.AreEqual(actual: compositor.Spans[1].NodeOf(length: 1)?.Key, expected: "b");
+  }
+
+  [Test]
+  public void Test07_SpanUnitDeletionFromMiddle() {
+    Compositor compositor = new(lm: new MockLM(), separator: ";");
+    compositor.InsertReading("a");
+    compositor.InsertReading("b");
+    compositor.InsertReading("c");
+    compositor.Cursor = 2;
+
+    Assert.IsTrue(compositor.DropReading(direction: Compositor.TypingDirection.ToRear));
+    Assert.AreEqual(actual: compositor.Cursor, expected: 1);
+    Assert.AreEqual(actual: compositor.Length, expected: 2);
+    Assert.AreEqual(actual: compositor.Width, expected: 2);
+    Assert.AreEqual(actual: compositor.Spans[0].MaxLength, expected: 2);
+    Assert.AreEqual(actual: compositor.Spans[0].NodeOf(length: 1)?.Key, expected: "a");
+    Assert.AreEqual(actual: compositor.Spans[0].NodeOf(length: 2)?.Key, expected: "a;c");
+    Assert.AreEqual(actual: compositor.Spans[1].MaxLength, expected: 1);
+    Assert.AreEqual(actual: compositor.Spans[1].NodeOf(length: 1)?.Key, expected: "c");
+
+    compositor.Clear();
+    compositor.InsertReading("a");
+    compositor.InsertReading("b");
+    compositor.InsertReading("c");
+    compositor.Cursor = 1;
+
+    Assert.IsTrue(compositor.DropReading(direction: Compositor.TypingDirection.ToFront));
+    Assert.AreEqual(actual: compositor.Cursor, expected: 1);
+    Assert.AreEqual(actual: compositor.Length, expected: 2);
+    Assert.AreEqual(actual: compositor.Width, expected: 2);
+    Assert.AreEqual(actual: compositor.Spans[0].MaxLength, expected: 2);
+    Assert.AreEqual(actual: compositor.Spans[0].NodeOf(length: 1)?.Key, expected: "a");
+    Assert.AreEqual(actual: compositor.Spans[0].NodeOf(length: 2)?.Key, expected: "a;c");
+    Assert.AreEqual(actual: compositor.Spans[1].MaxLength, expected: 1);
+    Assert.AreEqual(actual: compositor.Spans[1].NodeOf(length: 1)?.Key, expected: "c");
+  }
+
+  [Test]
+  public void Test08_SpanUnitDeletionFromRear() {
+    Compositor compositor = new(lm: new MockLM(), separator: ";");
+    compositor.InsertReading("a");
+    compositor.InsertReading("b");
+    compositor.InsertReading("c");
+    compositor.Cursor = 0;
+
+    Assert.IsFalse(compositor.DropReading(direction: Compositor.TypingDirection.ToRear));
+    Assert.IsTrue(compositor.DropReading(direction: Compositor.TypingDirection.ToFront));
+    Assert.AreEqual(actual: compositor.Cursor, expected: 0);
+    Assert.AreEqual(actual: compositor.Length, expected: 2);
+    Assert.AreEqual(actual: compositor.Width, expected: 2);
+    Assert.AreEqual(actual: compositor.Spans[0].MaxLength, expected: 2);
+    Assert.AreEqual(actual: compositor.Spans[0].NodeOf(length: 1)?.Key, expected: "b");
+    Assert.AreEqual(actual: compositor.Spans[0].NodeOf(length: 2)?.Key, expected: "b;c");
+    Assert.AreEqual(actual: compositor.Spans[1].MaxLength, expected: 1);
+    Assert.AreEqual(actual: compositor.Spans[1].NodeOf(length: 1)?.Key, expected: "c");
+  }
+
+  [Test]
+  public void Test09_SpanUnitInsertion() {
+    Compositor compositor = new(lm: new MockLM(), separator: ";");
+    compositor.InsertReading("a");
+    compositor.InsertReading("b");
+    compositor.InsertReading("c");
+    compositor.Cursor = 1;
+    compositor.InsertReading("X");
+
+    Assert.AreEqual(actual: compositor.Cursor, expected: 2);
+    Assert.AreEqual(actual: compositor.Length, expected: 4);
+    Assert.AreEqual(actual: compositor.Width, expected: 4);
+    Assert.AreEqual(actual: compositor.Spans[0].MaxLength, expected: 4);
+    Assert.AreEqual(actual: compositor.Spans[0].NodeOf(length: 1)?.Key, expected: "a");
+    Assert.AreEqual(actual: compositor.Spans[0].NodeOf(length: 2)?.Key, expected: "a;X");
+    Assert.AreEqual(actual: compositor.Spans[0].NodeOf(length: 3)?.Key, expected: "a;X;b");
+    Assert.AreEqual(actual: compositor.Spans[0].NodeOf(length: 4)?.Key, expected: "a;X;b;c");
+    Assert.AreEqual(actual: compositor.Spans[1].MaxLength, expected: 3);
+    Assert.AreEqual(actual: compositor.Spans[1].NodeOf(length: 1)?.Key, expected: "X");
+    Assert.AreEqual(actual: compositor.Spans[1].NodeOf(length: 2)?.Key, expected: "X;b");
+    Assert.AreEqual(actual: compositor.Spans[1].NodeOf(length: 3)?.Key, expected: "X;b;c");
+    Assert.AreEqual(actual: compositor.Spans[2].MaxLength, expected: 2);
+    Assert.AreEqual(actual: compositor.Spans[2].NodeOf(length: 1)?.Key, expected: "b");
+    Assert.AreEqual(actual: compositor.Spans[2].NodeOf(length: 2)?.Key, expected: "b;c");
+    Assert.AreEqual(actual: compositor.Spans[3].MaxLength, expected: 1);
+    Assert.AreEqual(actual: compositor.Spans[3].NodeOf(length: 1)?.Key, expected: "c");
+  }
+
+  [Test]
+  public void Test10_LongGridDeletion() {
+    Compositor compositor = new(lm: new MockLM(), separator: "");
+    compositor.InsertReading("a");
+    compositor.InsertReading("b");
+    compositor.InsertReading("c");
+    compositor.InsertReading("d");
+    compositor.InsertReading("e");
+    compositor.InsertReading("f");
+    compositor.InsertReading("g");
+    compositor.InsertReading("h");
+    compositor.InsertReading("i");
+    compositor.InsertReading("j");
+    compositor.InsertReading("k");
+    compositor.InsertReading("l");
+    compositor.InsertReading("m");
+    compositor.InsertReading("n");
+    compositor.Cursor = 7;
+    Assert.IsTrue(compositor.DropReading(direction: Compositor.TypingDirection.ToRear));
+    Assert.AreEqual(actual: compositor.Cursor, expected: 6);
+    Assert.AreEqual(actual: compositor.Length, expected: 13);
+    Assert.AreEqual(actual: compositor.Width, expected: 13);
+    Assert.AreEqual(actual: compositor.Spans[0].NodeOf(length: 6)?.Key, expected: "abcdef");
+    Assert.AreEqual(actual: compositor.Spans[1].NodeOf(length: 6)?.Key, expected: "bcdefh");
+    Assert.AreEqual(actual: compositor.Spans[1].NodeOf(length: 5)?.Key, expected: "bcdef");
+    Assert.AreEqual(actual: compositor.Spans[2].NodeOf(length: 6)?.Key, expected: "cdefhi");
+    Assert.AreEqual(actual: compositor.Spans[2].NodeOf(length: 5)?.Key, expected: "cdefh");
+    Assert.AreEqual(actual: compositor.Spans[3].NodeOf(length: 6)?.Key, expected: "defhij");
+    Assert.AreEqual(actual: compositor.Spans[4].NodeOf(length: 6)?.Key, expected: "efhijk");
+    Assert.AreEqual(actual: compositor.Spans[5].NodeOf(length: 6)?.Key, expected: "fhijkl");
+    Assert.AreEqual(actual: compositor.Spans[6].NodeOf(length: 6)?.Key, expected: "hijklm");
+    Assert.AreEqual(actual: compositor.Spans[7].NodeOf(length: 6)?.Key, expected: "ijklmn");
+    Assert.AreEqual(actual: compositor.Spans[8].NodeOf(length: 5)?.Key, expected: "jklmn");
+  }
+
+  [Test]
+  public void Test11_LongGridInsertion() {
+    Compositor compositor = new(lm: new MockLM(), separator: "");
+    compositor.InsertReading("a");
+    compositor.InsertReading("b");
+    compositor.InsertReading("c");
+    compositor.InsertReading("d");
+    compositor.InsertReading("e");
+    compositor.InsertReading("f");
+    compositor.InsertReading("g");
+    compositor.InsertReading("h");
+    compositor.InsertReading("i");
+    compositor.InsertReading("j");
+    compositor.InsertReading("k");
+    compositor.InsertReading("l");
+    compositor.InsertReading("m");
+    compositor.InsertReading("n");
+    compositor.Cursor = 7;
+    compositor.InsertReading("X");
+    Assert.AreEqual(actual: compositor.Cursor, expected: 8);
+    Assert.AreEqual(actual: compositor.Length, expected: 15);
+    Assert.AreEqual(actual: compositor.Width, expected: 15);
+    Assert.AreEqual(actual: compositor.Spans[0].NodeOf(length: 6)?.Key, expected: "abcdef");
+    Assert.AreEqual(actual: compositor.Spans[1].NodeOf(length: 6)?.Key, expected: "bcdefg");
+    Assert.AreEqual(actual: compositor.Spans[2].NodeOf(length: 6)?.Key, expected: "cdefgX");
+    Assert.AreEqual(actual: compositor.Spans[3].NodeOf(length: 6)?.Key, expected: "defgXh");
+    Assert.AreEqual(actual: compositor.Spans[3].NodeOf(length: 5)?.Key, expected: "defgX");
+    Assert.AreEqual(actual: compositor.Spans[4].NodeOf(length: 6)?.Key, expected: "efgXhi");
+    Assert.AreEqual(actual: compositor.Spans[4].NodeOf(length: 5)?.Key, expected: "efgXh");
+    Assert.AreEqual(actual: compositor.Spans[4].NodeOf(length: 4)?.Key, expected: "efgX");
+    Assert.AreEqual(actual: compositor.Spans[4].NodeOf(length: 3)?.Key, expected: "efg");
+    Assert.AreEqual(actual: compositor.Spans[5].NodeOf(length: 6)?.Key, expected: "fgXhij");
+    Assert.AreEqual(actual: compositor.Spans[6].NodeOf(length: 6)?.Key, expected: "gXhijk");
+    Assert.AreEqual(actual: compositor.Spans[7].NodeOf(length: 6)?.Key, expected: "Xhijkl");
+    Assert.AreEqual(actual: compositor.Spans[8].NodeOf(length: 6)?.Key, expected: "hijklm");
+  }
+
+  [Test]
+  public void Test12_WordSegmentation() {
+    Compositor compositor = new(lm: new SimpleLM(input: StrSampleData, swapKeyValue: true)) { JoinSeparator = "" };
+    string testStr = "高科技公司的年終獎金";
+    foreach (char c in testStr) compositor.InsertReading(c.ToString());
+    Assert.AreEqual(actual: compositor.Walk().Keys(),
+                    expected: new List<string> { "高科技", "公司", "的", "年終", "獎金" });
+  }
+
+  [Test]
+  public void Test13_LanguageInputAndCursorJump() {
+    Compositor compositor = new(lm: new SimpleLM(input: StrSampleData), separator: "");
+    compositor.InsertReading("gao1");
+    compositor.Walk();
+    compositor.InsertReading("ji4");
+    compositor.Walk();
+    compositor.Cursor = 1;
+    compositor.InsertReading("ke1");
+    compositor.Walk();
+    compositor.Cursor = 0;
+    compositor.DropReading(direction: Compositor.TypingDirection.ToFront);
+    compositor.InsertReading("gao1");
+    compositor.Walk();
+    compositor.Cursor = compositor.Length;
+    compositor.InsertReading("gong1");
+    compositor.Walk();
+    compositor.InsertReading("si1");
+    compositor.Walk();
+    compositor.InsertReading("de5");
+    compositor.Walk();
+    compositor.InsertReading("nian2");
+    compositor.Walk();
+    compositor.InsertReading("zhong1");
+    compositor.Walk();
+    compositor.InsertReading("jiang3");
+    compositor.Walk();
+    compositor.InsertReading("jin1");
+    Console.WriteLine("// Normal walk: Time test started.");
+    DateTime startTime = DateTime.Now;
+    compositor.Walk();
+    TimeSpan timeElapsed = DateTime.Now - startTime;
+    Console.WriteLine($"// Normal walk: Time test elapsed: {timeElapsed.TotalSeconds}s.");
+    Assert.AreEqual(actual: compositor.WalkedAnchors.Values(),
+                    expected: new List<string> { "高科技", "公司", "的", "年中", "獎金" });
+    Assert.AreEqual(actual: compositor.Length, expected: 10);
+    Assert.False(compositor.FixNodeWithCandidate(new(key: "nian2zhong1", value: "年終"), 7).IsEmpty);
+    compositor.Cursor = 8;
+    Assert.False(compositor.FixNodeWithCandidate(new(key: "nian2zhong1", value: "年終"), compositor.Cursor).IsEmpty);
+    compositor.Walk();
+    Assert.AreEqual(actual: compositor.WalkedAnchors.Values(),
+                    expected: new List<string> { "高科技", "公司", "的", "年終", "獎金" });
+    Assert.IsTrue(compositor.JumpCursorBySpan(Compositor.TypingDirection.ToRear));
+    Assert.AreEqual(actual: compositor.Cursor, expected: 6);
+    Assert.IsTrue(compositor.JumpCursorBySpan(Compositor.TypingDirection.ToRear));
+    Assert.AreEqual(actual: compositor.Cursor, expected: 5);
+    Assert.IsTrue(compositor.JumpCursorBySpan(Compositor.TypingDirection.ToRear));
+    Assert.AreEqual(actual: compositor.Cursor, expected: 3);
+    Assert.IsTrue(compositor.JumpCursorBySpan(Compositor.TypingDirection.ToRear));
+    Assert.AreEqual(actual: compositor.Cursor, expected: 0);
+    Assert.IsFalse(compositor.JumpCursorBySpan(Compositor.TypingDirection.ToRear));
+    Assert.AreEqual(actual: compositor.Cursor, expected: 0);
+    Assert.IsTrue(compositor.JumpCursorBySpan(Compositor.TypingDirection.ToFront));
+    Assert.AreEqual(actual: compositor.Cursor, expected: 3);
+    Assert.IsTrue(compositor.JumpCursorBySpan(Compositor.TypingDirection.ToFront));
+    Assert.AreEqual(actual: compositor.Cursor, expected: 5);
+    Assert.IsTrue(compositor.JumpCursorBySpan(Compositor.TypingDirection.ToFront));
+    Assert.AreEqual(actual: compositor.Cursor, expected: 6);
+    Assert.IsTrue(compositor.JumpCursorBySpan(Compositor.TypingDirection.ToFront));
+    Assert.AreEqual(actual: compositor.Cursor, expected: 8);
+    Assert.IsTrue(compositor.JumpCursorBySpan(Compositor.TypingDirection.ToFront));
+    Assert.AreEqual(actual: compositor.Cursor, expected: 10);
+    Assert.IsFalse(compositor.JumpCursorBySpan(Compositor.TypingDirection.ToFront));
+    Assert.AreEqual(actual: compositor.Cursor, expected: 10);
+    compositor.Walk();
+    Assert.AreEqual(actual: compositor.WalkedAnchors.Values(),
+                    expected: new List<string> { "高科技", "公司", "的", "年終", "獎金" });
+  }
+  [Test]
+  public void Test14_OverrideOverlappingNodes() {
+    Compositor compositor = new(lm: new SimpleLM(input: StrSampleData)) { JoinSeparator = "" };
+    compositor.InsertReading("gao1");
+    compositor.InsertReading("ke1");
+    compositor.InsertReading("ji4");
+    compositor.Cursor = 1;
+    compositor.FixNodeWithCandidateLiteral("膏", compositor.Cursor);
+    List<NodeAnchor> result = compositor.Walk();
+    Assert.AreEqual(actual: result.Values(), expected: new List<string> { "膏", "科技" });
+    compositor.FixNodeWithCandidateLiteral("高科技", 2);
+    result = compositor.Walk();
+    Assert.AreEqual(actual: result.Values(), expected: new List<string> { "高科技" });
+    compositor.FixNodeWithCandidateLiteral("膏", 1);
+    result = compositor.Walk();
+    Assert.AreEqual(actual: result.Values(), expected: new List<string> { "膏", "科技" });
+
+    compositor.FixNodeWithCandidateLiteral("柯", 2);
+    result = compositor.Walk();
+    Assert.AreEqual(actual: result.Values(), expected: new List<string> { "膏", "柯", "際" });
+
+    compositor.FixNodeWithCandidateLiteral("暨", 3);
+    result = compositor.Walk();
+    Assert.AreEqual(actual: result.Values(), expected: new List<string> { "膏", "柯", "暨" });
+
+    compositor.FixNodeWithCandidateLiteral("高科技", 3);
+    result = compositor.Walk();
+    Assert.AreEqual(actual: result.Values(), expected: new List<string> { "高科技" });
+  }
+  [Test]
+  public void Test15_OverrideReset() {
+    string newSampleData = StrSampleData + "zhong1jiang3 終講 -11.0\n" + "jiang3jin1 槳襟 -11.0\n";
+    Compositor compositor = new(lm: new SimpleLM(input: newSampleData), separator: "");
+    compositor.InsertReading("nian2");
+    compositor.InsertReading("zhong1");
+    compositor.InsertReading("jiang3");
+    compositor.InsertReading("jin1");
+    compositor.Walk();
+    Assert.AreEqual(actual: compositor.WalkedAnchors.Values(), expected: new List<string> { "年中", "獎金" });
+
+    compositor.FixNodeWithCandidateLiteral("終講", 2);
+    compositor.Walk();
+    Assert.AreEqual(actual: compositor.WalkedAnchors.Values(), expected: new List<string> { "年", "終講", "金" });
+
+    compositor.FixNodeWithCandidateLiteral("槳襟", 3);
+    compositor.Walk();
+    Assert.AreEqual(actual: compositor.WalkedAnchors.Values(), expected: new List<string> { "年中", "槳襟" });
+
+    compositor.FixNodeWithCandidateLiteral("年終", 1);
+    compositor.Walk();
+    Assert.AreEqual(actual: compositor.WalkedAnchors.Values(), expected: new List<string> { "年終", "槳襟" });
+  }
+  [Test]
+  public void Test16_CandidateDisambiguation() {
+    Compositor compositor = new(lm: new SimpleLM(input: StrEmojiSampleData), separator: "");
+    compositor.InsertReading("gao1");
+    compositor.InsertReading("re4");
+    compositor.InsertReading("huo3");
+    compositor.InsertReading("yan4");
+    compositor.InsertReading("wei2");
+    compositor.InsertReading("xian3");
+    compositor.InsertReading("mi4");
+    compositor.InsertReading("feng1");
+    List<NodeAnchor>? result = compositor.Walk();
+    Assert.AreEqual(actual: result.Values(), expected: new List<string> { "高熱", "火焰", "危險", "蜜蜂" });
+
+    compositor.FixNodeWithCandidate(new(key: "huo3", value: "🔥"), 3);
+    result = compositor.Walk();
+    Assert.AreEqual(actual: result.Values(), expected: new List<string> { "高熱", "🔥", "焰", "危險", "蜜蜂" });
+
+    compositor.FixNodeWithCandidate(new(key: "huo3yan4", value: "🔥"), 4);
+    result = compositor.Walk();
+    Assert.AreEqual(actual: result.Values(), expected: new List<string> { "高熱", "🔥", "危險", "蜜蜂" });
+
+    compositor.Cursor = compositor.Width;
+
+    compositor.FixNodeWithCandidate(new(key: "mi4feng1", value: "🐝"), compositor.Cursor);
+    result = compositor.Walk();
+    Assert.AreEqual(actual: result.Values(), expected: new List<string> { "高熱", "🔥", "危險", "🐝" });
+
+    compositor.FixNodeWithCandidate(new(key: "feng1", value: "🐝"), compositor.Cursor);
+    result = compositor.Walk();
+    Assert.AreEqual(actual: result.Values(), expected: new List<string> { "高熱", "🔥", "危險", "蜜", "🐝" });
+  }
+
+  [Test]
+  public void Test17_StressBenchmark_MachineGun() {
+    // 測試結果發現：只敲入完全雷同的某個漢字的話，想保證使用體驗就得讓一個組字區最多塞 20 字。
+    Console.WriteLine("// Normal walk: Machine-Gun Stress test preparation begins.");
+    Compositor compositor = new(lm: new SimpleLM(input: StrStressData));
+    // 這個測試最多只能塞 20 字，否則會慢死。;
+    for (int i = 0; i < 20; i += 1) compositor.InsertReading("yi1");
+    Console.WriteLine("// Normal walk: Machine-Gun Stress test started.");
+    DateTime startTime = DateTime.Now;
+    compositor.Walk();
+    TimeSpan timeElapsed = DateTime.Now - startTime;
+    Console.WriteLine($"// Normal walk: Machine-Gun Stress test elapsed: {timeElapsed.TotalSeconds}s.");
+  }
+
+  [Test]
+  public void Test18_StressBenchmark_SpeakLikeAHuman() {
+    // C# 的測試結果與 Swift 不同，只敲入完全雷同的某個漢字時的處理速度反而更快。
+    // 複雜輸入的話，一個組字區最多塞 20-30 字。不然很快就會遲鈍。
+    Compositor compositor = new(lm: new SimpleLM(input: StrSampleData), separator: "");
+    List<string> testMaterial =
+        new() { "gao1", "ke1", "ji4", "gong1", "si1", "de5", "nian2", "zhong1", "jiang3", "jin1" };
+    foreach (string neta in testMaterial) compositor.InsertReading(neta);
+    foreach (string neta in testMaterial) compositor.InsertReading(neta);
+    foreach (string neta in testMaterial) compositor.InsertReading(neta);
+    Console.WriteLine("// Normal walk: Time test started.");
+    DateTime startTime = DateTime.Now;
+    compositor.Walk();
+    TimeSpan timeElapsed = DateTime.Now - startTime;
+    Console.WriteLine($"// Normal walk: Time test elapsed: {timeElapsed.TotalSeconds}s.");
+  }
 }
