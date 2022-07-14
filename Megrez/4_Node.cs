@@ -35,11 +35,11 @@ public class Node {
   /// <summary>
   /// 單元圖陣列。
   /// </summary>
-  private List<Unigram> _unigrams;
+  public List<Unigram> Unigrams { get; private set; }
   /// <summary>
   /// 雙元圖陣列。
   /// </summary>
-  private List<Bigram> _bigrams;
+  public List<Bigram> Bigrams { get; private set; }
   /// <summary>
   /// 專門「用單元圖資料值來調查索引值」的辭典。
   /// </summary>
@@ -52,6 +52,10 @@ public class Node {
   /// 用來登記「當前選中的單元圖」的索引值的變數。
   /// </summary>
   private int _selectedUnigramIndex;
+  /// <summary>
+  /// 指定的幅位長度。
+  /// </summary>
+  public int SpanLength { get; private set; }
 
   /// <summary>
   /// 用來登記要施加給「『被標記為選中狀態』的候選字詞」的複寫權重的數值。
@@ -62,7 +66,7 @@ public class Node {
   /// </summary>
   /// <returns>當前節點的內容輸出成的字串。</returns>
   public override string ToString() =>
-      $"(node,key:{Key},fixed:{(IsCandidateFixed ? "true" : "false")},selected:{_selectedUnigramIndex},{_unigrams})";
+      $"(node,key:{Key},fixed:{(IsCandidateFixed ? "true" : "false")},selected:{_selectedUnigramIndex},{Unigrams})";
   /// <summary>
   /// 公開：候選字詞陣列（唯讀），以鍵值陣列的形式存在。
   /// </summary>
@@ -74,7 +78,7 @@ public class Node {
   /// <summary>
   /// 公開：鍵（唯讀）。
   /// </summary>
-  public string Key { get; } = "";
+  public string Key { get; private set; } = "";
   /// <summary>
   /// 公開：當前節點的當前被選中的候選字詞「在該節點內的」目前的權重（唯讀）。
   /// </summary>
@@ -82,32 +86,34 @@ public class Node {
   /// <summary>
   /// 公開：當前被選中的候選字詞的鍵值配對。
   /// </summary>
-  public KeyValuePaired CurrentKeyValue =>
-      _selectedUnigramIndex >= _unigrams.Count ? new() : Candidates[_selectedUnigramIndex];
+  public KeyValuePaired CurrentPair =>
+      _selectedUnigramIndex >= Unigrams.Count ? new() : Candidates[_selectedUnigramIndex];
   /// <summary>
   /// 公開：給出當前單元圖陣列內最高的權重數值。
   /// </summary>
-  public double HighestUnigramScore => _unigrams.Count == 0 ? 0.0 : _unigrams.FirstOrDefault().Score;
+  public double HighestUnigramScore => Unigrams.Count == 0 ? 0.0 : Unigrams.FirstOrDefault().Score;
 
   /// <summary>
   /// 初期化一個節點。
   /// </summary>
   /// <param name="key">索引鍵。</param>
+  /// <param name="spanLength">幅位長度。</param>
   /// <param name="unigrams">單元圖陣列。</param>
   /// <param name="bigrams">雙元圖陣列（非必填）。</param>
-  public Node(string key, List<Unigram> unigrams, List<Bigram>? bigrams = null) {
+  public Node(string key = "", int spanLength = 0, List<Unigram>? unigrams = null, List<Bigram>? bigrams = null) {
     Key = key;
-    _unigrams = unigrams;
-    _bigrams = bigrams ?? new();
-    _unigrams.Sort((a, b) => b.Score.CompareTo(a.Score));
+    Unigrams = unigrams ?? new();
+    Bigrams = bigrams ?? new();
+    SpanLength = spanLength;
+    Unigrams.Sort((a, b) => b.Score.CompareTo(a.Score));
     _valueUnigramIndexMap = new();
-    if (_unigrams.Count > 0) Score = _unigrams[0].Score;
-    for (int I = 0; I < _unigrams.Count; I++) {
-      Unigram gram = _unigrams[I];
+    if (Unigrams.Count > 0) Score = Unigrams[0].Score;
+    for (int I = 0; I < Unigrams.Count; I++) {
+      Unigram gram = Unigrams[I];
       _valueUnigramIndexMap[gram.KeyValue.Value] = I;
       Candidates.Add(gram.KeyValue);
     }
-    foreach (Bigram gram in _bigrams.Where(gram => _precedingBigramMap.ContainsKey(gram.KeyValuePreceded))) {
+    foreach (Bigram gram in Bigrams.Where(gram => _precedingBigramMap.ContainsKey(gram.KeyValuePreceded))) {
       _precedingBigramMap[gram.KeyValuePreceded].Add(gram);
     }
   }
@@ -138,7 +144,7 @@ public class Node {
   /// <param name="index">索引位置。</param>
   /// <param name="fix">是否將當前解點標記為「候選詞已鎖定」的狀態。</param>
   public void SelectCandidateAt(int index = 0, bool fix = false) {
-    _selectedUnigramIndex = index >= _unigrams.Count ? 0 : index;
+    _selectedUnigramIndex = index >= Unigrams.Count ? 0 : index;
     IsCandidateFixed = fix;
     Score = ConSelectedCandidateScore;
   }
@@ -148,7 +154,7 @@ public class Node {
   public void ResetCandidate() {
     _selectedUnigramIndex = 0;
     IsCandidateFixed = false;
-    if (_unigrams.Count != 0) Score = _unigrams.FirstOrDefault().Score;
+    if (Unigrams.Count != 0) Score = Unigrams.FirstOrDefault().Score;
   }
   /// <summary>
   /// 選中位於給定索引位置的候選字詞、且施加給定的權重。
@@ -157,7 +163,7 @@ public class Node {
   /// <param name="score">給定權重條件。</param>
   public void SelectFloatingCandidateAt(int index, double score) {
     int realIndex = Math.Abs(index);
-    _selectedUnigramIndex = realIndex >= _unigrams.Count ? 0 : realIndex;
+    _selectedUnigramIndex = realIndex >= Unigrams.Count ? 0 : realIndex;
     IsCandidateFixed = false;
     Score = score;
   }
@@ -168,8 +174,20 @@ public class Node {
   /// <returns>在庫的單元圖權重數值；沒有在庫的話就找零。</returns>
   public double ScoreFor(string candidate) {
     double result = 0.0;
-    foreach (Unigram unigram in _unigrams.Where(unigram => unigram.KeyValue.Value == candidate)) {
-      result = unigram.Score;
+    foreach (Unigram unigram in Unigrams.Where(unigram => unigram.KeyValue.Value == candidate)) {
+      return unigram.Score;
+    }
+    return result;
+  }
+  /// <summary>
+  /// 藉由給定的候選字詞鍵值配對，找出在庫的單元圖權重數值。沒有的話就找零。
+  /// </summary>
+  /// <param name="candidate">給定的候選字詞字串。</param>
+  /// <returns>在庫的單元圖權重數值；沒有在庫的話就找零。</returns>
+  public double ScoreForPaired(KeyValuePaired candidate) {
+    double result = 0.0;
+    foreach (Unigram unigram in Unigrams.Where(unigram => unigram.KeyValue == candidate)) {
+      return unigram.Score;
     }
     return result;
   }
@@ -179,7 +197,7 @@ public class Node {
   /// <param name="obj">用來比較的節點。</param>
   /// <returns>若相等，則返回 true。</returns>
   public override bool Equals(object obj) {
-    return obj is Node node && EqualityComparer<List<Unigram>>.Default.Equals(_unigrams, node._unigrams) &&
+    return obj is Node node && EqualityComparer<List<Unigram>>.Default.Equals(Unigrams, node.Unigrams) &&
            EqualityComparer<List<KeyValuePaired>>.Default.Equals(Candidates, node.Candidates) &&
            EqualityComparer<Dictionary<string, int>>.Default.Equals(_valueUnigramIndexMap,
                                                                     node._valueUnigramIndexMap) &&
@@ -193,7 +211,11 @@ public class Node {
   /// </summary>
   /// <returns>當前節錨的內容輸出成的雜湊資料。</returns>
   public override int GetHashCode() {
-    unchecked { return (int)BitConverter.ToInt64(Convert.FromBase64String(ToString()), 0); }
+    int a1 = HashCode.Combine(Key, Score, Unigrams, Bigrams);
+    int a2 = HashCode.Combine(_precedingBigramMap, SpanLength, Candidates, _valueUnigramIndexMap);
+    int a3 = HashCode.Combine(_precedingBigramMap, IsCandidateFixed, _selectedUnigramIndex);
+    string combined = a1.ToString() + a2.ToString() + a3.ToString();
+    return HashCode.Combine(combined);
   }
 }
 }
