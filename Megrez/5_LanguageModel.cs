@@ -24,13 +24,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Megrez {
 /// <summary>
 /// 語言模型框架協定，實際使用時需要派生一個型別、且重寫相關函式。
 /// </summary>
-public interface LanguageModel {
+public interface LangModelProtocol {
   /// <summary>
   /// 給定鍵，讓語言模型找給一組單元圖陣列。
   /// </summary>
@@ -44,7 +43,7 @@ public interface LanguageModel {
   /// <param name="precedingKey">前述鍵。</param>
   /// <param name="key">當前鍵。</param>
   /// <returns>一組雙元圖陣列。</returns>
-  public List<Bigram> BigramsForKeys(string precedingKey, string key);
+  public List<Bigram> BigramsFor(string precedingKey, string key);
 
   /// <summary>
   /// 給定鍵，確認是否有單元圖記錄在庫。
