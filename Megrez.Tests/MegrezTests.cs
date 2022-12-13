@@ -51,7 +51,7 @@ public class MegrezTests : TestDataClass {
 
   [Test]
   public void Test02_RankedLanguageModel() {
-    Compositor.LangModelRanked lmRanked = new Compositor.LangModelRanked(withLM: new TestLMForRanked());
+    Compositor.LangModelRanked lmRanked = new Compositor.LangModelRanked(langModel: new TestLMForRanked());
     Assert.IsTrue(lmRanked.HasUnigramsFor(new() { "foo" }));
     Assert.IsFalse(lmRanked.HasUnigramsFor(new() { "bar" }));
     Assert.IsEmpty(lmRanked.UnigramsFor(new() { "bar" }));

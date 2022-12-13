@@ -5,6 +5,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using static System.String;
 
 namespace Megrez.Tests;
 
@@ -13,7 +14,7 @@ public class SimpleLM : LangModelProtocol {
   public SimpleLM(string input, bool swapKeyValue = false) {
     List<string> sStream = new(input.Split('\n'));
     foreach (string line in sStream) {
-      if (line.Length == 0 || line.FirstOrDefault().CompareTo('#') == 0) continue;
+      if (IsNullOrEmpty(line) || line.FirstOrDefault().CompareTo('#') == 0) continue;
       List<string> lineStream = new(line.Split(' '));
       if (lineStream.Count >= 2) {
         string col0 = lineStream[0];  // 假設其不為 nil
@@ -50,7 +51,7 @@ public class SimpleLM : LangModelProtocol {
 }
 
 public class MockLM : LangModelProtocol {
-  public bool HasUnigramsFor(List<string> keyArray) => !string.IsNullOrEmpty(keyArray.Joined());
+  public bool HasUnigramsFor(List<string> keyArray) => !IsNullOrEmpty(keyArray.Joined());
   public List<Unigram> UnigramsFor(List<string> keyArray) => new() { new Unigram(value: keyArray.Joined(), score: -1) };
 }
 

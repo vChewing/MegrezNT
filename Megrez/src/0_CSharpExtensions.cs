@@ -2,6 +2,7 @@
 // Was initially rebranded from (c) Lukhnos Liu's C++ library "Gramambular 2" (MIT License).
 // ====================
 // This code is released under the MIT license (SPDX-License-Identifier: MIT)
+
 #pragma warning disable CS1591
 
 using System;
@@ -12,6 +13,9 @@ using System.Linq;
 using System.Text;
 
 namespace Megrez {
+/// <summary>
+/// C# 某些地方有點難用，就在這裡客製化一些功能拓展。
+/// </summary>
 public static class CSharpExtensions {
   // MARK: - String.Joined (Swift-Style)
 
@@ -81,6 +85,9 @@ public static class CSharpExtensions {
 
 // MARK: - Range with Int Bounds
 
+/// <summary>
+/// 一個「可以返回整數的上下限」的自訂 Range 類型。
+/// </summary>
 public struct BRange : IEnumerable<int> {
   public Range Range { get; }
   public int Lowerbound { get; }

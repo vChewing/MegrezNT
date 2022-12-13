@@ -2,13 +2,23 @@
 // Was initially rebranded from (c) Lukhnos Liu's C++ library "Gramambular 2" (MIT License).
 // ====================
 // This code is released under the MIT license (SPDX-License-Identifier: MIT)
-#pragma warning disable CS1591
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace Megrez {
 public partial struct Compositor {
+  /// <summary>
+  /// 爬軌函式，會更新當前組字器的 <see cref="WalkedNodes"/>。<para/>
+  /// 找到軌格陣圖內權重最大的路徑。該路徑代表了可被觀測到的最可能的隱藏事件鏈。
+  /// 這裡使用 Cormen 在 2001 年出版的教材當中提出的「有向無環圖的最短路徑」的
+  /// 算法來計算這種路徑。不過，這裡不是要計算距離最短的路徑，而是計算距離最長
+  /// 的路徑（所以要找最大的權重），因為在對數概率下，較大的數值意味著較大的概率。
+  /// 對於 <c>G = (V, E)</c>，該算法的運行次數為 <c>O(|V|+|E|)</c>，其中 <c>G</c>
+  /// 是一個有向無環圖。這意味著，即使軌格很大，也可以用很少的算力就可以爬軌。
+  /// </summary>
+  /// <returns>爬軌結果＋該過程是否順利執行。</returns>
   public (List<Node> WalkedNodes, bool Succeeded) Walk() {
     List<Node> result = new();
     try {
