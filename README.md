@@ -11,6 +11,6 @@ Megrez Engine is a module made for processing lingual data of an input method. T
 
 ## 著作權 (Credits)
 
-- CSharpened and further development by (c) 2022 and onwards The vChewing Project (MIT-NTL License).
+- CSharpened and further development by (c) 2022 and onwards The vChewing Project (MIT License).
 	- Original Swift programmer: Shiki Suen
-- Was initially rebranded from (c) Lukhnos Liu's C++ library "Gramambular" (MIT License).
+- Was initially rebranded from (c) Lukhnos Liu's C++ library "Gramambular 2" (MIT License).

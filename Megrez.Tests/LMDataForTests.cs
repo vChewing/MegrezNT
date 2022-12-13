@@ -1,30 +1,11 @@
-﻿// CSharpened by (c) 2022 and onwards The vChewing Project (MIT-NTL License).
-// Rebranded from (c) Lukhnos Liu's C++ library "Gramambular" (MIT License).
-/*
-Permission is hereby granted, free of charge, to any person obtaining a copy of
-this software and associated documentation files (the "Software"), to deal in
-the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-the Software, and to permit persons to whom the Software is furnished to do so,
-subject to the following conditions:
+﻿// CSharpened and further development by (c) 2022 and onwards The vChewing Project (MIT License).
+// Was initially rebranded from (c) Lukhnos Liu's C++ library "Gramambular 2" (MIT License).
+// ====================
+// This code is released under the MIT license (SPDX-License-Identifier: MIT)
 
-1. The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-2. No trademark license is granted to use the trade names, trademarks, service
-marks, or product names of Contributor, except as required to fulfill notice
-requirements above.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
-
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
+using static System.String;
 
 namespace Megrez.Tests;
 
@@ -33,42 +14,60 @@ public class SimpleLM : LangModelProtocol {
   public SimpleLM(string input, bool swapKeyValue = false) {
     List<string> sStream = new(input.Split('\n'));
     foreach (string line in sStream) {
-      if (line.Length == 0 || line.FirstOrDefault().CompareTo('#') == 0) continue;
+      if (IsNullOrEmpty(line) || line.FirstOrDefault().CompareTo('#') == 0) continue;
       List<string> lineStream = new(line.Split(' '));
       if (lineStream.Count >= 2) {
         string col0 = lineStream[0];  // 假設其不為 nil
         string col1 = lineStream[1];  // 假設其不為 nil
         double col2 = 0;              // 防呆
         if (lineStream.Count >= 3 && double.TryParse(lineStream[2], out double number)) col2 = number;
-        Unigram u = new(new KeyValuePaired(), 0);
-        if (swapKeyValue)
-          u.KeyValue = new(col1, col0);
-        else
-          u.KeyValue = new(col0, col1);
+        string key = "";
+        string value = "";
+        if (swapKeyValue) {
+          key = col1;
+          value = col0;
+        } else {
+          key = col0;
+          value = col1;
+        }
+        Unigram u = new(value);
         u.Score = col2;
-        if (!_database.ContainsKey(u.KeyValue.Key)) _database.Add(u.KeyValue.Key, new List<Unigram> {});
-        _database[u.KeyValue.Key].Add(u);
+        if (!_database.ContainsKey(key)) _database.Add(key, new List<Unigram>());
+        _database[key].Add(u);
       }
     }
   }
-  public List<Bigram> BigramsFor(string precedingKey, string key) { return new(); }
-  public List<Unigram> UnigramsFor(string key) => _database.ContainsKey(key) ? _database[key] : new();
-  public bool HasUnigramsFor(string key) => _database.ContainsKey(key);
+  public bool HasUnigramsFor(List<string> keyArray) => _database.ContainsKey(keyArray.Joined());
+  public List<Unigram> UnigramsFor(List<string> keyArray) => _database.ContainsKey(keyArray.Joined())
+                                                                 ? _database[keyArray.Joined()]
+                                                                 : new();
+  public void Trim(string key, string value) {
+    if (!_database.TryGetValue(key, out var arr)) return;
+    if (arr is not {} theArr) return;
+    theArr = theArr.Where(x => x.Value != value).ToList();
+    if (theArr.IsEmpty()) return;
+    _database[key] = theArr;
+  }
 }
 
 public class MockLM : LangModelProtocol {
-  List<Bigram> LangModelProtocol.BigramsFor(string precedingKey, string key) => new();
-
-  bool LangModelProtocol.HasUnigramsFor(string key) => !string.IsNullOrEmpty(key);
-
-  List<Unigram> LangModelProtocol.UnigramsFor(string key) => new() { new(new(key, key), -1) };
+  public bool HasUnigramsFor(List<string> keyArray) => !IsNullOrEmpty(keyArray.Joined());
+  public List<Unigram> UnigramsFor(List<string> keyArray) => new() { new Unigram(value: keyArray.Joined(), score: -1) };
 }
 
 public class TestLM : LangModelProtocol {
-  public List<Bigram> BigramsFor(string precedingKey, string key) => new();
+  public bool HasUnigramsFor(List<string> keyArray) => keyArray.Joined() == "foo";
+  public List<Unigram> UnigramsFor(List<string> keyArray) => keyArray.Joined() == "foo"
+                                                                 ? new() { new(keyArray.Joined(), -1) }
+                                                                 : new();
+}
 
-  public bool HasUnigramsFor(string key) => key == "foo";
-  public List<Unigram> UnigramsFor(string key) => key == "foo" ? new() { new(new(key, key), -1) } : new();
+public class TestLMForRanked : LangModelProtocol {
+  public bool HasUnigramsFor(List<string> keyArray) => keyArray.Joined() == "foo";
+  public List<Unigram> UnigramsFor(List<string> keyArray) => keyArray.Joined() == "foo"
+                                                                 ? new() { new("middle", -5), new("highest", -2),
+                                                                           new("lowest", -10) }
+                                                                 : new();
 }
 
 public class TestDataClass {
@@ -106,7 +105,6 @@ mi4feng1 🐝 -11
 # 下述詞頻資料取自 libTaBE 資料庫 (http://sourceforge.net/projects/libtabe/)
 # (2002 最終版). 該專案於 1999 年由 Pai-Hsiang Hsiao 發起、以 BSD 授權發行。
 #
-
 ni3 你 -6.000000 // Non-LibTaBE
 zhe4 這 -6.000000 // Non-LibTaBE
 yang4 樣 -6.000000 // Non-LibTaBE
@@ -193,5 +191,6 @@ jiao4 教 -3.676169
 jiao4 較 -3.24869962
 jiao4yu4 教育 -3.32220565
 yu4 育 -3.30192952
+
 ";
 }
