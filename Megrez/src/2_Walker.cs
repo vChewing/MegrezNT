@@ -82,7 +82,6 @@ public partial struct Compositor {
       return (result, true);
     } finally {
       WalkedNodes = result;
-      UpdateCursorJumpingTables();
     }
   }
 }

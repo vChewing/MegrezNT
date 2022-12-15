@@ -290,21 +290,31 @@ public static class NodeExtensions {
   /// </summary>
   /// <param name="self">節點。</param>
   /// <returns> (Result A, Result B) 辭典陣列。Result A 以索引查座標，Result B 以座標查索引。</returns>
-  public static (Dictionary<int, int>, Dictionary<int, int>) NodeBorderPointDictPair(this List<Compositor.Node> self) {
+  private static (Dictionary<int, int> RegionCursorMap, Dictionary<int, int> CursorRegionMap)
+      NodeBorderPointDictPair(this List<Compositor.Node> self) {
     Dictionary<int, int> resultA = new();
-    Dictionary<int, int> resultB = new();
-    int i = 0;
-    foreach ((int j, Compositor.Node neta) in self.Enumerated()) {
-      resultA[j] = i;
+    Dictionary<int, int> resultB = new() { [-1] = 0 };  // 防呆
+    int cursorCounter = 0;
+    foreach ((int nodeCounter, Compositor.Node neta) in self.Enumerated()) {
+      resultA[nodeCounter] = cursorCounter;
       foreach (string _ in neta.KeyArray) {
-        resultB[i] = j;
-        i += 1;
+        resultB[cursorCounter] = nodeCounter;
+        cursorCounter += 1;
       }
     }
-    resultA[resultA.Count] = i;
-    resultB[i] = resultB.Count;
+    resultA[self.Count] = cursorCounter;
+    resultB[cursorCounter] = self.Count;
     return (resultA, resultB);
   }
+
+  /// <summary>
+  /// 返回一個辭典，以座標查索引。允許以游標位置查詢其屬於第幾個幅位座標（從 0 開始算）。
+  /// </summary>
+  /// <param name="self">節點。</param>
+  /// <returns>一個辭典，以座標查索引。允許以游標位置查詢其屬於第幾個幅位座標（從 0 開始算）。</returns>
+  public static Dictionary<int, int> CursorRegionMap(this List<Compositor.Node> self) =>
+      self.NodeBorderPointDictPair().CursorRegionMap;
+
   /// <summary>
   /// 根據給定的游標，返回其前後最近的邊界點。
   /// </summary>
@@ -319,11 +329,12 @@ public static class NodeExtensions {
     if (givenCursor >= totalKeyCount) return nilReturn;
     int cursor = Math.Max(0, givenCursor);  // 防呆。
     nilReturn = new(cursor, cursor);
-    (Dictionary<int, int>, Dictionary<int, int>)dictPair = self.NodeBorderPointDictPair();
+    (Dictionary<int, int> RegionCursorMap, Dictionary<int, int> CursorRegionMap) dictPair =
+        self.NodeBorderPointDictPair();
     // 下文按道理來講不應該會出現 nilReturn。
-    if (!dictPair.Item2.TryGetValue(cursor, out int rearNodeID)) return nilReturn;
-    if (!dictPair.Item1.TryGetValue(rearNodeID, out int rearIndex)) return nilReturn;
-    if (!dictPair.Item1.TryGetValue(rearNodeID + 1, out int frontIndex)) return nilReturn;
+    if (!dictPair.CursorRegionMap.TryGetValue(cursor, out int rearNodeID)) return nilReturn;
+    if (!dictPair.RegionCursorMap.TryGetValue(rearNodeID, out int rearIndex)) return nilReturn;
+    if (!dictPair.RegionCursorMap.TryGetValue(rearNodeID + 1, out int frontIndex)) return nilReturn;
     return new(rearIndex, frontIndex);
   }
   /// <summary>

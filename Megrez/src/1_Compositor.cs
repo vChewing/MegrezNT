@@ -152,11 +152,6 @@ public partial struct Compositor {
   }
 
   /// <summary>
-  /// 允許查詢當前游標位置屬於第幾個幅位座標（從 0 開始算）。
-  /// </summary>
-  public Dictionary<int, int> CursorRegionMap { get; private set; }
-
-  /// <summary>
   /// 初期化一個組字器。<para/>
   /// 一個組字器用來在給定一系列的索引鍵的情況下（藉由一系列的觀測行為）返回一套資料值。
   /// 用於輸入法的話，給定的索引鍵可以是注音、且返回的資料值都是漢語字詞組合。該組字器
@@ -173,7 +168,6 @@ public partial struct Compositor {
   public Compositor(LangModelProtocol langModel, string separator = "-") {
     _theLangModel = new(langModel);
     TheSeparator = separator;
-    CursorRegionMap = new();
     Keys = new();
     Spans = new();
   }
@@ -189,7 +183,6 @@ public partial struct Compositor {
     Keys.Clear();
     Spans.Clear();
     WalkedNodes.Clear();
-    CursorRegionMap.Clear();
   }
 
   /// <summary>
@@ -258,9 +251,11 @@ public partial struct Compositor {
         if (target == 0) return false;
         break;
     }
-    // var currentRegion = CursorRegionMap[target];  // <- 這樣雖然 C# 不會建置報錯，但可能會在運行時查詢失敗。
-    // if (CursorRegionMap[target] is not int currentRegion) return false; <- 這樣是錯的。
-    if (!CursorRegionMap.TryGetValue(key: target, out int currentRegion)) return false;  // <- 這樣是對的。
+    // var currentRegion = WalkedNodes.CursorRegionMap()[target];  // <- 這樣雖然 C#
+    // 不會建置報錯，但可能會在運行時查詢失敗。 if (WalkedNodes.CursorRegionMap()[target] is not int currentRegion)
+    // return false; <- 這樣是錯的。
+    if (!WalkedNodes.CursorRegionMap().TryGetValue(key: target, out int currentRegion))
+      return false;  // <- 這樣是對的。
     int aRegionForward = Math.Max(currentRegion - 1, 0);
     int currentRegionBorderRear = WalkedNodes.GetRange(0, currentRegion).Select(x => x.SpanLength).Sum();
 
@@ -439,22 +434,6 @@ public partial struct Compositor {
       }
     }
     return nodesChanged;
-  }
-
-  /// <summary>
-  /// 更新游標跳轉換算表。
-  /// </summary>
-  internal void UpdateCursorJumpingTables() {
-    Dictionary<int, int> cursorRegionMapDict = new() { [-1] = 0 };  // 防呆。
-    int counter = 0;
-    foreach ((int i, Node theNode) in WalkedNodes.Enumerated()) {
-      foreach (int _ in new BRange(0, theNode.SpanLength)) {
-        cursorRegionMapDict[counter] = i;
-        counter += 1;
-      }
-    }
-    cursorRegionMapDict[counter] = WalkedNodes.Count;
-    CursorRegionMap = cursorRegionMapDict;
   }
 }
 }  // namespace Megrez
