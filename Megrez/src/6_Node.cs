@@ -353,5 +353,29 @@ public static class NodeExtensions {
     int mudamuda = 0;  // muda = useless.
     return self.FindNodeAt(givenCursor, ref mudamuda);
   }
+
+  /// <summary>
+  /// 提供一組逐字的字音配對陣列（不使用 Megrez 的 KeyValuePaired 類型），但字音不匹配的節點除外。
+  /// </summary>
+  /// <param name="self">節點。</param>
+  /// <returns>一組逐字的字音配對陣列。</returns>
+  public static List<(string key, string value)> SmashedPairs(this List<Compositor.Node> self) {
+    List<(string key, string value)> arrData = new();
+    string separator = Compositor.TheSeparator;
+    foreach (Compositor.Node node in self) {
+      if (node.IsReadingMismatched) {
+        string newKey = node.JoinedKey();
+        if (!string.IsNullOrEmpty(separator) && newKey != separator && newKey.Contains(separator))
+          newKey = newKey.Replace(separator, "\t");
+        arrData.Add((newKey, node.Value));
+        continue;
+      }
+      List<string> arrValueChars = node.Value.LiteralCharComponents();
+      foreach ((int i, string key) in node.KeyArray.Enumerated()) {
+        arrData.Add((key, arrValueChars[i]));
+      }
+    }
+    return arrData;
+  }
 }
 }  // namespace Megrez

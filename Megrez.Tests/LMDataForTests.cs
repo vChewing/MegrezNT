@@ -21,8 +21,8 @@ public class SimpleLM : LangModelProtocol {
         string col1 = lineStream[1];  // 假設其不為 nil
         double col2 = 0;              // 防呆
         if (lineStream.Count >= 3 && double.TryParse(lineStream[2], out double number)) col2 = number;
-        string key = "";
-        string value = "";
+        string key;
+        string value;
         if (swapKeyValue) {
           key = col1;
           value = col0;
@@ -42,7 +42,7 @@ public class SimpleLM : LangModelProtocol {
                                                                  ? _database[keyArray.Joined()]
                                                                  : new();
   public void Trim(string key, string value) {
-    if (!_database.TryGetValue(key, out var arr)) return;
+    if (!_database.TryGetValue(key, out List<Unigram>? arr)) return;
     if (arr is not {} theArr) return;
     theArr = theArr.Where(x => x.Value != value).ToList();
     if (theArr.IsEmpty()) return;
