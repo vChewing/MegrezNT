@@ -50,7 +50,7 @@ public partial struct Compositor {
       Vertex root = new(node: new(new() { "_ROOT_" }, spanLength: 0, unigrams: new())) { Distance = 0 };
       root.Edges.AddRange(vertexSpans.First());
 
-      List<Vertex> ordered = TopoSort(root);
+      List<Vertex> ordered = TopoSort(ref root);
       foreach ((int j, Vertex neta) in ordered.Reversed().Enumerated()) {
         foreach ((int k, _) in neta.Edges.Enumerated()) {
           if (neta.Edges[k] is {} relaxV) Relax(neta, ref relaxV);
