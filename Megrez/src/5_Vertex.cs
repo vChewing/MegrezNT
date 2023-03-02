@@ -42,6 +42,18 @@ public partial struct Compositor {
     /// </summary>
     /// <param name="node">字詞節點。</param>
     public Vertex(Node node) { Node = node; }
+
+    /// <summary>
+    /// 讓一個 Vertex 順藤摸瓜地將自己的所有的連帶的 Vertex 都摧毀，再摧毀自己。
+    /// 此過程必須在一套 Vertex 全部使用完畢之後執行一次，可防止記憶體洩漏。
+    /// </summary>
+    public void Destroy() {
+      while (Prev?.Prev is not null) Prev?.Destroy();
+      Prev = null;
+      Edges.ForEach(delegate(Vertex edge) { edge.Destroy(); });
+      Edges.Clear();
+      Node = new(keyArray: new List<string>(), unigrams: new List<Unigram>(), spanLength: 0);
+    }
   }
 
   /// <summary>
@@ -93,7 +105,7 @@ public partial struct Compositor {
   /// </summary>
   /// <param name="root">根頂點。</param>
   /// <returns>排序結果（頂點陣列）。</returns>
-  internal List<Vertex> TopoSort(Vertex root) {
+  internal List<Vertex> TopoSort(ref Vertex root) {
     List<Vertex> result = new();
     List<TopoSortState> stack = new();
     stack.Add(new(root));
