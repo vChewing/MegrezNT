@@ -421,7 +421,7 @@ public partial struct Compositor {
           List<Unigram> unigramsA = TheLangModel.UnigramsFor(joinedKeyArray);
           if (unigramsA.IsEmpty()) {
             if (theNode.KeyArray.Count == 1) continue;
-            Spans[position].Nodes.RemoveAll(x => Equals(x, theNode));
+            Spans[position].Nullify(givenNode: theNode);
           } else {
             theNode.SyncingUnigramsFrom(unigramsA);
           }

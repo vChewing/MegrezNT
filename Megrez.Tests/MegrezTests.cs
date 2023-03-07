@@ -51,7 +51,8 @@ public class MegrezTests : TestDataClass {
 
   [Test]
   public void Test02_RankedLanguageModel() {
-    Compositor.LangModelRanked lmRanked = new Compositor.LangModelRanked(langModel: new TestLMForRanked());
+    LangModelProtocol lmTest = new TestLMForRanked();
+    Compositor.LangModelRanked lmRanked = new(langModel: ref lmTest);
     Assert.IsTrue(lmRanked.HasUnigramsFor(new() { "foo" }));
     Assert.IsFalse(lmRanked.HasUnigramsFor(new() { "bar" }));
     Assert.IsEmpty(lmRanked.UnigramsFor(new() { "bar" }));
@@ -315,7 +316,7 @@ public class MegrezTests : TestDataClass {
   [Test]
   public void Test13_WalkerBenchMark() {
     Console.WriteLine("// Stress test preparation begins.");
-    Compositor compositor = new Compositor(langModel: new SimpleLM(input: StrStressData));
+    Compositor compositor = new(langModel: new SimpleLM(input: StrStressData));
     foreach (int _ in new BRange(0, 1919)) compositor.InsertKey("yi1");
     Console.WriteLine("// Stress test preparation started with keys inserted: " + compositor.Keys.Count);
     DateTime startTime = DateTime.Now;
@@ -516,5 +517,12 @@ public class MegrezTests : TestDataClass {
     string newResult = compositor.Walk().WalkedNodes.Values().Joined();
     Assert.AreEqual(actual: new List<string> { oldResult, newResult },
                     expected: new List<string> { "年中獎金", "年終獎金" });
+    compositor.Cursor = 4;
+    compositor.DropKey(direction: Compositor.TypingDirection.ToRear);
+    compositor.DropKey(direction: Compositor.TypingDirection.ToRear);
+    theLM.Trim(key: "nian2zhong1", value: "年終");
+    compositor.Update(updateExisting: true);
+    string newResult2 = compositor.Walk().WalkedNodes.Values().Joined(separator: ",");
+    Assert.AreEqual(actual: newResult2, expected: "年,中");
   }
 }
