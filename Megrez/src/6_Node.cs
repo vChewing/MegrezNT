@@ -110,8 +110,9 @@ public partial struct Compositor {
     /// </summary>
     /// <param name="obj"></param>
     /// <returns></returns>
-    public override bool Equals(object obj) => obj is Node node && KeyArray == node.KeyArray
-                                               && SpanLength == node.SpanLength && Unigrams == node.Unigrams
+    public override bool Equals(object obj) => obj is Node node
+                                               && KeyArray.SequenceEqual(node.KeyArray) && SpanLength == node.SpanLength
+                                               && Unigrams == node.Unigrams
                                                && CurrentOverrideType == node.CurrentOverrideType;
 
     /// <summary>

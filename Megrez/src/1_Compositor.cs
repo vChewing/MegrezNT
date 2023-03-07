@@ -166,7 +166,7 @@ public partial struct Compositor {
   /// <param name="langModel">要對接的語言模組。</param>
   /// <param name="separator">多字讀音鍵當中用以分割漢字讀音的記號，預設為「-」。詳見 <see cref="Separator"/>。</param>
   public Compositor(LangModelProtocol langModel, string separator = "-") {
-    _theLangModel = new(langModel);
+    _theLangModel = new(ref langModel);
     TheSeparator = separator;
     Keys = new();
     Spans = new();
@@ -383,7 +383,7 @@ public partial struct Compositor {
   /// </summary>
   /// <param name="range">指定範圍。</param>
   /// <returns>拿到的資料。</returns>
-  internal List<string> GetJoinedKeyArray(BRange range) =>
+  private List<string> GetJoinedKeyArray(BRange range) =>
       range.Upperbound <= Keys.Count && range.Lowerbound >= 0
           ? Keys.GetRange(range.Lowerbound, range.Upperbound - range.Lowerbound).ToList()
           : new();
@@ -395,10 +395,10 @@ public partial struct Compositor {
   /// <param name="length">指定幅位長度。</param>
   /// <param name="keyArray">指定索引鍵陣列。</param>
   /// <returns>拿取的節點。拿不到的話就會是 null。</returns>
-  internal Node? GetNodeAt(int location, int length, List<string> keyArray) {
+  private Node? GetNodeAt(int location, int length, List<string> keyArray) {
     location = Math.Max(Math.Min(location, Spans.Count - 1), 0);  // 防呆。
     if (Spans[location].NodeOf(length) is not {} node) return null;
-    return keyArray == node.KeyArray ? node : null;
+    return (node.KeyArray.SequenceEqual(keyArray)) ? node : null;
   }
 
   /// <summary>
@@ -415,7 +415,8 @@ public partial struct Compositor {
     foreach (int position in range) {
       foreach (int theLength in new BRange(1, Math.Min(MaxSpanLength, range.Upperbound - position) + 1)) {
         List<string> joinedKeyArray = GetJoinedKeyArray(new(position, position + theLength));
-        if (GetNodeAt(position, theLength, joinedKeyArray) is {} theNode) {
+        Node? theNode = GetNodeAt(position, theLength, joinedKeyArray);
+        if (theNode is {}) {
           if (!updateExisting) continue;
           List<Unigram> unigramsA = TheLangModel.UnigramsFor(joinedKeyArray);
           if (unigramsA.IsEmpty()) {

@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Megrez {
 public partial struct Compositor {
@@ -61,12 +62,16 @@ public partial struct Compositor {
     /// <returns>該操作是否成功執行。</returns>
     public bool DropNodesOfOrBeyond(int length) {
       if (!AllowedLengths.Contains(length)) return false;
-      foreach ((_, int i) in new BRange(length, MaxSpanLength + 1).Enumerated()) Nodes[i - 1] = null;
+      foreach (int i in new BRange(length, MaxSpanLength + 1)) {
+        if (i > Nodes.Count) continue;  // 防呆
+        Nodes[i - 1] = null;
+      }
       MaxLength = 0;
       if (length <= 1) return false;
       int maxR = length - 2;
       foreach (int i in new BRange(0, maxR + 1)) {
-        if (Nodes.Count < maxR) continue;
+        BRange countRange = new(0, maxR - i + 1);
+        if (!countRange.Contains(maxR - i)) continue;  // 防呆
         MaxLength = maxR - i + 1;
         break;
       }

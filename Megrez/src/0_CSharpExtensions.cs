@@ -59,13 +59,13 @@ public static class CSharpExtensions {
 
   public static void StableSort<T>(this T[] values, Comparison<T> comparison) {
     KeyValuePair<int, T>[] keys = new KeyValuePair<int, T>[values.Length];
-    for (int i = 0; i < values.Length; i++) keys[i] = new KeyValuePair<int, T>(i, values[i]);
+    for (int i = 0; i < values.Length; i++) keys[i] = new(i, values[i]);
     Array.Sort(keys, values, new StabilizingComparer<T>(comparison));
   }
 
   public static List<T> StableSorted<T>(this List<T> values, Comparison<T> comparison) {
     KeyValuePair<int, T>[] keys = new KeyValuePair<int, T>[values.Count()];
-    for (int i = 0; i < values.Count(); i++) keys[i] = new KeyValuePair<int, T>(i, values[i]);
+    for (int i = 0; i < values.Count(); i++) keys[i] = new(i, values[i]);
     T[] theValues = values.ToArray();
     Array.Sort(keys, theValues, new StabilizingComparer<T>(comparison));
     return theValues.ToList();
