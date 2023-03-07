@@ -32,7 +32,7 @@ public class SimpleLM : LangModelProtocol {
         }
         Unigram u = new(value);
         u.Score = col2;
-        if (!_database.ContainsKey(key)) _database.Add(key, new List<Unigram>());
+        if (!_database.ContainsKey(key)) _database.Add(key, new());
         _database[key].Add(u);
       }
     }
@@ -45,14 +45,17 @@ public class SimpleLM : LangModelProtocol {
     if (!_database.TryGetValue(key, out List<Unigram>? arr)) return;
     if (arr is not {} theArr) return;
     theArr = theArr.Where(x => x.Value != value).ToList();
-    if (theArr.IsEmpty()) return;
+    if (theArr.IsEmpty()) {
+      _database.Remove(key);
+      return;
+    }
     _database[key] = theArr;
   }
 }
 
 public class MockLM : LangModelProtocol {
   public bool HasUnigramsFor(List<string> keyArray) => !IsNullOrEmpty(keyArray.Joined());
-  public List<Unigram> UnigramsFor(List<string> keyArray) => new() { new Unigram(value: keyArray.Joined(), score: -1) };
+  public List<Unigram> UnigramsFor(List<string> keyArray) => new() { new(value: keyArray.Joined(), score: -1) };
 }
 
 public class TestLM : LangModelProtocol {

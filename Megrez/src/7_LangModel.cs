@@ -37,7 +37,7 @@ public partial struct Compositor {
     /// 一個專門用來與其它語言模型對接的外皮模組層，將所有獲取到的資料自動做固定排序處理。
     /// </summary>
     /// <param name="langModel">要對接的語言模型副本。</param>
-    public LangModelRanked(LangModelProtocol langModel) { TheLangModel = langModel; }
+    public LangModelRanked(ref LangModelProtocol langModel) { TheLangModel = langModel; }
     /// <summary>
     /// 給定索引鍵陣列，讓語言模型找給一組經過穩定排序的單元圖陣列。
     /// </summary>

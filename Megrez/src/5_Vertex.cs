@@ -52,7 +52,7 @@ public partial struct Compositor {
       Prev = null;
       Edges.ForEach(delegate(Vertex edge) { edge.Destroy(); });
       Edges.Clear();
-      Node = new(keyArray: new List<string>(), unigrams: new List<Unigram>(), spanLength: 0);
+      Node = new(keyArray: new(), unigrams: new(), spanLength: 0);
     }
   }
 

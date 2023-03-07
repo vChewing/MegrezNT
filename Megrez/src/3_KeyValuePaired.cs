@@ -58,7 +58,7 @@ public partial struct Compositor {
     /// <param name="obj"></param>
     /// <returns></returns>
     public override bool Equals(object obj) {
-      return obj is KeyValuePaired pair && JoinedKey() == pair.JoinedKey() && Value == pair.Value;
+      return obj is KeyValuePaired pair && JoinedKey().SequenceEqual(pair.JoinedKey()) && Value == pair.Value;
     }
 
     /// <summary>
@@ -83,7 +83,7 @@ public partial struct Compositor {
     /// <param name="rhs"></param>
     /// <returns></returns>
     public static bool operator ==(KeyValuePaired lhs, KeyValuePaired rhs) {
-      return lhs.KeyArray.Count == rhs.KeyArray.Count && lhs.Value == rhs.Value;
+      return lhs.KeyArray.SequenceEqual(rhs.KeyArray) && lhs.Value == rhs.Value;
     }
     /// <summary>
     ///
