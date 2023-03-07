@@ -430,7 +430,7 @@ public partial struct Compositor {
         }
         List<Unigram> unigramsB = TheLangModel.UnigramsFor(joinedKeyArray);
         if (unigramsB.IsEmpty()) continue;
-        Spans[position].Add(new(joinedKeyArray, theLength, unigramsB));
+        Spans[position].Append(new(joinedKeyArray, theLength, unigramsB));
         nodesChanged += 1;
       }
     }

@@ -20,9 +20,9 @@ public class MegrezTests : TestDataClass {
     Compositor.Node n3 = new(keyArray: new() { "gao1", "ke1", "ji4" }, spanLength: 3,
                              unigrams: langModel.UnigramsFor(new() { "gao1ke1ji4" }));
     Assert.AreEqual(actual: span.MaxLength, expected: 0);
-    span.Add(node: n1);
+    span.Append(node: n1);
     Assert.AreEqual(actual: span.MaxLength, expected: 1);
-    span.Add(node: n3);
+    span.Append(node: n3);
     Assert.AreEqual(actual: span.MaxLength, expected: 3);
     Assert.AreEqual(actual: span.NodeOf(length: 1), expected: n1);
     Assert.AreEqual(actual: span.NodeOf(length: 2), expected: null);
@@ -33,8 +33,8 @@ public class MegrezTests : TestDataClass {
     Assert.AreEqual(actual: span.NodeOf(length: 2), expected: null);
     Assert.AreEqual(actual: span.NodeOf(length: 3), expected: null);
 
-    span.Add(node: n1);
-    span.Add(node: n3);
+    span.Append(node: n1);
+    span.Append(node: n3);
     span.DropNodesOfOrBeyond(length: 2);
     Assert.AreEqual(actual: span.MaxLength, expected: 1);
     Assert.AreEqual(actual: span.NodeOf(length: 1), expected: n1);
@@ -44,7 +44,7 @@ public class MegrezTests : TestDataClass {
     Assert.AreEqual(actual: span.MaxLength, expected: 0);
     Assert.AreEqual(actual: span.NodeOf(length: 1), expected: null);
     Compositor.Node n114514 = new(new(), 114_514, new());
-    Assert.IsFalse(span.Add(n114514));
+    Assert.IsFalse(span.Append(n114514));
     Assert.IsNull(span.NodeOf(length: 0));
     Assert.IsNull(span.NodeOf(length: Compositor.MaxSpanLength + 1));
   }

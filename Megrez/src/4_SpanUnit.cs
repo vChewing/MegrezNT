@@ -16,12 +16,12 @@ public partial struct Compositor {
     /// <summary>
     /// 節點陣列。每個位置上的節點可能是 null。
     /// </summary>
-    public List<Node?> Nodes = new();
+    public Dictionary<int, Node> Nodes = new();
     /// <summary>
     /// 該幅位單元內的所有節點當中持有最長幅位的節點長度。
     /// 該變數受該幅位的自身操作函式而被動更新。
     /// </summary>
-    public int MaxLength { get; private set; }
+    public int MaxLength => Nodes.Keys.Count > 0? Nodes.Keys.Max() : 0;
     /// <summary>
     /// 該幅位單元內的節點的幅位長度上限。
     /// </summary>
@@ -30,17 +30,22 @@ public partial struct Compositor {
     /// <summary>
     /// 幅位乃指一組共享起點的節點。
     /// </summary>
-    public SpanUnit() {
-      Clear();  // 該函式會自動給 MaxLength 賦值。
-    }
+    public SpanUnit() => Clear();  // 該函式會自動給 MaxLength 賦值。
 
     /// <summary>
     /// 清除該幅位單元內的全部的節點，且重設最長節點長度為 0，然後再在節點陣列內預留空位。
     /// </summary>
-    public void Clear() {
-      Nodes.Clear();
-      foreach (int _ in new BRange(0, MaxSpanLength)) Nodes.Add(null);
-      MaxLength = 0;
+    public void Clear() => Nodes.Clear();
+
+    /// <summary>
+    /// 往該幅位塞入一個節點。
+    /// </summary>
+    /// <param name="node">要塞入的節點。</param>
+    /// <returns>該操作是否成功執行。</returns>
+    public bool Append(Node node) {
+      if (!AllowedLengths.Contains(node.SpanLength)) return false;
+      Nodes[node.SpanLength] = node;
+      return true;
     }
 
     /// <summary>
@@ -52,26 +57,7 @@ public partial struct Compositor {
     /// 於是就提供了這個專門的工具函式。
     /// </remarks>
     /// <param name="givenNode">要參照的節點。</param>
-    public void Nullify(Node givenNode) {
-      BRange theRange = new(lowerbound: 0, upperbound: Nodes.Count);
-      foreach (int theIndex in theRange) {
-        Node? currentNode = Nodes[theIndex];
-        if (!Equals(currentNode, givenNode)) continue;
-        Nodes[theIndex] = null;
-      }
-    }
-
-    /// <summary>
-    /// 往該幅位塞入一個節點。
-    /// </summary>
-    /// <param name="node">要塞入的節點。</param>
-    /// <returns>該操作是否成功執行。</returns>
-    public bool Add(Node node) {
-      if (!AllowedLengths.Contains(node.SpanLength)) return false;
-      Nodes[node.SpanLength - 1] = node;
-      MaxLength = Math.Max(MaxLength, node.SpanLength);
-      return true;
-    }
+    public void Nullify(Node givenNode) => Nodes.Remove(givenNode.SpanLength);
 
     /// <summary>
     /// 丟掉任何不小於給定幅位長度的節點。
@@ -80,18 +66,9 @@ public partial struct Compositor {
     /// <returns>該操作是否成功執行。</returns>
     public bool DropNodesOfOrBeyond(int length) {
       if (!AllowedLengths.Contains(length)) return false;
+      length = Math.Min(length, MaxSpanLength);
       foreach (int i in new BRange(length, MaxSpanLength + 1)) {
-        if (i > Nodes.Count) continue;  // 防呆
-        Nodes[i - 1] = null;
-      }
-      MaxLength = 0;
-      if (length <= 1) return false;
-      int maxR = length - 2;
-      foreach (int i in new BRange(0, maxR + 1)) {
-        BRange countRange = new(0, maxR - i + 1);
-        if (!countRange.Contains(maxR - i)) continue;  // 防呆
-        MaxLength = maxR - i + 1;
-        break;
+        Nodes.Remove(i);
       }
       return true;
     }
@@ -101,7 +78,7 @@ public partial struct Compositor {
     /// </summary>
     /// <param name="length">給定的幅位長度。</param>
     /// <returns>查詢結果。</returns>
-    public Node? NodeOf(int length) => AllowedLengths.Contains(length) ? Nodes[length - 1] : null;
+    public Node? NodeOf(int length) => Nodes.ContainsKey(length) ? Nodes[length] : null;
   }
 
   // MARK: - Internal Implementations.

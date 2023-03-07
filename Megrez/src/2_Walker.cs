@@ -26,7 +26,7 @@ public partial struct Compositor {
       List<List<Vertex>> vertexSpans = new();
       foreach (SpanUnit _ in Spans) vertexSpans.Add(new());
       foreach ((int i, SpanUnit span) in Spans.Enumerated()) {
-        foreach (int j in new BRange(1, span.MaxLength + 1)) {
+        foreach (int j in new BRange(1, Math.Max(1, span.MaxLength) + 1)) {
           if (span.NodeOf(j) is not {} theNode) continue;
           vertexSpans[i].Add(new(theNode));
         }

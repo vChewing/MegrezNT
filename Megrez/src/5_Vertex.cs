@@ -41,7 +41,7 @@ public partial struct Compositor {
     /// 這是一個可變的數據結構，用於有向無環圖的構建和單源最短路徑的計算。
     /// </summary>
     /// <param name="node">字詞節點。</param>
-    public Vertex(Node node) { Node = node; }
+    public Vertex(Node node) => Node = node;
 
     /// <summary>
     /// 讓一個 Vertex 順藤摸瓜地將自己的所有的連帶的 Vertex 都摧毀，再摧毀自己。
@@ -62,7 +62,7 @@ public partial struct Compositor {
   /// </summary>
   /// <param name="u">參照頂點，會在必要時成為 v 的前述頂點。</param>
   /// <param name="v">要影響的頂點。</param>
-  internal void Relax(Vertex u, ref Vertex v) {
+  private void Relax(Vertex u, ref Vertex v) {
     // 從 u 到 w 的距離，也就是 v 的權重。
     double w = v.Node.Score;
     // 這裡計算最大權重：
@@ -76,7 +76,7 @@ public partial struct Compositor {
   /// <summary>
   /// 位相幾何排序處理時的處理狀態。
   /// </summary>
-  internal class TopoSortState {
+  private class TopoSortState {
     public int IterIndex { get; set; }
     public Vertex Vertex { get; }
     public TopoSortState(Vertex vertex, int iterIndex = 0) {
@@ -105,7 +105,7 @@ public partial struct Compositor {
   /// </summary>
   /// <param name="root">根頂點。</param>
   /// <returns>排序結果（頂點陣列）。</returns>
-  internal List<Vertex> TopoSort(ref Vertex root) {
+  private List<Vertex> TopoSort(ref Vertex root) {
     List<Vertex> result = new();
     List<TopoSortState> stack = new();
     stack.Add(new(root));
