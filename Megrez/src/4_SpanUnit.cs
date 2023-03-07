@@ -44,6 +44,24 @@ public partial struct Compositor {
     }
 
     /// <summary>
+    /// 丟掉任何與給定節點完全雷同的節點。
+    /// </summary>
+    /// <remarks>
+    /// Swift 不像 C# 那樣有容量鎖定型陣列，
+    /// 對某個位置的內容的刪除行為都可能會導致其它內容錯位、繼發其它不可知故障。
+    /// 於是就提供了這個專門的工具函式。
+    /// </remarks>
+    /// <param name="givenNode">要參照的節點。</param>
+    public void Nullify(Node givenNode) {
+      BRange theRange = new(lowerbound: 0, upperbound: Nodes.Count);
+      foreach (int theIndex in theRange) {
+        Node? currentNode = Nodes[theIndex];
+        if (!Equals(currentNode, givenNode)) continue;
+        Nodes[theIndex] = null;
+      }
+    }
+
+    /// <summary>
     /// 往該幅位塞入一個節點。
     /// </summary>
     /// <param name="node">要塞入的節點。</param>

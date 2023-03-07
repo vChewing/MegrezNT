@@ -3,16 +3,16 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
-    <ReleaseVersion>2.5.2</ReleaseVersion>
+    <ReleaseVersion>2.5.3</ReleaseVersion>
     <PackageId>vChewing.Megrez</PackageId>
     <Authors>Shiki Suen</Authors>
     <Company>Atelier Inmu</Company>
     <Copyright>(c) 2022 and onwards The vChewing Project for Megrez-specific changes; (c) 2022 and onwards Lukhnos Liu for upstream contents.</Copyright>
     <RepositoryUrl>https://github.com/ShikiSuen/MegrezNT</RepositoryUrl>
     <NeutralLanguage>zh-TW</NeutralLanguage>
-    <AssemblyVersion>2.5.2</AssemblyVersion>
-    <FileVersion>2.5.2</FileVersion>
-    <Version>2.5.2</Version>
+    <AssemblyVersion>2.5.3</AssemblyVersion>
+    <FileVersion>2.5.3</FileVersion>
+    <Version>2.5.3</Version>
     <Product>Megrez</Product>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageReadmeFile>README.md</PackageReadmeFile>
