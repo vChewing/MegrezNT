@@ -8,142 +8,142 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace Megrez {
-public partial struct Compositor {
+/// <summary>
+/// 鍵值配對，乃索引鍵陣列與讀音的配對單元。
+/// </summary>
+public struct KeyValuePaired {
   /// <summary>
-  /// 鍵值配對，乃索引鍵陣列與讀音的配對單元。
+  /// 索引鍵陣列。一般情況下用來放置讀音等可以用來作為索引的內容。
   /// </summary>
-  public struct KeyValuePaired {
-    /// <summary>
-    /// 索引鍵陣列。一般情況下用來放置讀音等可以用來作為索引的內容。
-    /// </summary>
-    public List<string> KeyArray { get; }
-    /// <summary>
-    /// 資料值。
-    /// </summary>
-    public string Value { get; }
-    /// <summary>
-    /// 初期化一組鍵值配對。
-    /// </summary>
-    /// <param name="keyArray">索引鍵陣列。一般情況下用來放置讀音等可以用來作為索引的內容。</param>
-    /// <param name="value">資料值。</param>
-    public KeyValuePaired(List<string> keyArray, string value) {
-      KeyArray = keyArray;
-      Value = value;
-    }
-    /// <summary>
-    /// 初期化一組鍵值配對。
-    /// </summary>
-    /// <param name="key">索引鍵。一般情況下用來放置讀音等可以用來作為索引的內容。</param>
-    /// <param name="value">資料值。</param>
-    public KeyValuePaired(string key, string value) {
-      KeyArray = key.Split(TheSeparator.ToCharArray()).ToList();
-      Value = value;
-    }
-
-    /// <summary>
-    /// 將索引鍵按照給定的分隔符銜接成一個字串。
-    /// </summary>
-    /// <param name="separator">給定的分隔符，預設值為 <see cref="Compositor.TheSeparator"/>。</param>
-    /// <returns>已經銜接完畢的字串。</returns>
-    public string JoinedKey(string? separator = null) => string.Join(separator ?? TheSeparator, KeyArray.ToArray());
-
-    /// <summary>
-    /// 判斷當前鍵值配對是否合規。如果鍵與值有任一為空，則結果為 false。
-    /// </summary>
-    public bool IsValid => !string.IsNullOrEmpty(JoinedKey()) && !string.IsNullOrEmpty(Value);
-
-    /// <summary>
-    ///
-    /// </summary>
-    /// <param name="obj"></param>
-    /// <returns></returns>
-    public override bool Equals(object obj) {
-      return obj is KeyValuePaired pair && JoinedKey().SequenceEqual(pair.JoinedKey()) && Value == pair.Value;
-    }
-
-    /// <summary>
-    /// 做為預設雜湊函式。
-    /// </summary>
-    /// <returns>目前物件的雜湊碼。</returns>
-    public override int GetHashCode() => HashCode.Combine(KeyArray, Value);
-    /// <summary>
-    /// 傳回代表目前物件的字串。
-    /// </summary>
-    /// <returns>表示目前物件的字串。</returns>
-    public override string ToString() => $"({JoinedKey()},{Value})";
-
-    /// <summary>
-    /// 會在某些特殊場合用到的字串表達方法。
-    /// </summary>
-    public string ToNGramKey => IsValid ? $"({JoinedKey()},{Value})" : "()";
-    /// <summary>
-    ///
-    /// </summary>
-    /// <param name="lhs"></param>
-    /// <param name="rhs"></param>
-    /// <returns></returns>
-    public static bool operator ==(KeyValuePaired lhs, KeyValuePaired rhs) {
-      return lhs.KeyArray.SequenceEqual(rhs.KeyArray) && lhs.Value == rhs.Value;
-    }
-    /// <summary>
-    ///
-    /// </summary>
-    /// <param name="lhs"></param>
-    /// <param name="rhs"></param>
-    /// <returns></returns>
-    public static bool operator !=(KeyValuePaired lhs, KeyValuePaired rhs) {
-      return lhs.KeyArray.Count != rhs.KeyArray.Count || lhs.Value != rhs.Value;
-    }
-
-    /// <summary>
-    ///
-    /// </summary>
-    /// <param name="lhs"></param>
-    /// <param name="rhs"></param>
-    /// <returns></returns>
-    public static bool operator<(KeyValuePaired lhs, KeyValuePaired rhs) {
-      return lhs.KeyArray.Count < rhs.KeyArray.Count ||
-             lhs.KeyArray.Count == rhs.KeyArray.Count &&
-                 string.Compare(lhs.Value, rhs.Value, StringComparison.Ordinal) < 0;
-    }
-
-    /// <summary>
-    ///
-    /// </summary>
-    /// <param name="lhs"></param>
-    /// <param name="rhs"></param>
-    /// <returns></returns>
-    public static bool operator>(KeyValuePaired lhs, KeyValuePaired rhs) {
-      return lhs.KeyArray.Count > rhs.KeyArray.Count ||
-             lhs.KeyArray.Count == rhs.KeyArray.Count &&
-                 string.Compare(lhs.Value, rhs.Value, StringComparison.Ordinal) > 0;
-    }
-
-    /// <summary>
-    ///
-    /// </summary>
-    /// <param name="lhs"></param>
-    /// <param name="rhs"></param>
-    /// <returns></returns>
-    public static bool operator <=(KeyValuePaired lhs, KeyValuePaired rhs) {
-      return lhs.KeyArray.Count <= rhs.KeyArray.Count ||
-             lhs.KeyArray.Count == rhs.KeyArray.Count &&
-                 string.Compare(lhs.Value, rhs.Value, StringComparison.Ordinal) <= 0;
-    }
-
-    /// <summary>
-    ///
-    /// </summary>
-    /// <param name="lhs"></param>
-    /// <param name="rhs"></param>
-    /// <returns></returns>
-    public static bool operator >=(KeyValuePaired lhs, KeyValuePaired rhs) {
-      return lhs.KeyArray.Count >= rhs.KeyArray.Count ||
-             lhs.KeyArray.Count == rhs.KeyArray.Count &&
-                 string.Compare(lhs.Value, rhs.Value, StringComparison.Ordinal) >= 0;
-    }
+  public List<string> KeyArray { get; }
+  /// <summary>
+  /// 資料值。
+  /// </summary>
+  public string Value { get; }
+  /// <summary>
+  /// 初期化一組鍵值配對。
+  /// </summary>
+  /// <param name="keyArray">索引鍵陣列。一般情況下用來放置讀音等可以用來作為索引的內容。</param>
+  /// <param name="value">資料值。</param>
+  public KeyValuePaired(List<string> keyArray, string value) {
+    KeyArray = keyArray;
+    Value = value;
+  }
+  /// <summary>
+  /// 初期化一組鍵值配對。
+  /// </summary>
+  /// <param name="key">索引鍵。一般情況下用來放置讀音等可以用來作為索引的內容。</param>
+  /// <param name="value">資料值。</param>
+  public KeyValuePaired(string key, string value) {
+    KeyArray = key.Split(Compositor.TheSeparator.ToCharArray()).ToList();
+    Value = value;
   }
 
+  /// <summary>
+  /// 將索引鍵按照給定的分隔符銜接成一個字串。
+  /// </summary>
+  /// <param name="separator">給定的分隔符，預設值為 <see cref="Compositor.TheSeparator"/>。</param>
+  /// <returns>已經銜接完畢的字串。</returns>
+  public string JoinedKey(string? separator = null) => string.Join(separator ?? Compositor.TheSeparator,
+                                                                   KeyArray.ToArray());
+
+  /// <summary>
+  /// 判斷當前鍵值配對是否合規。如果鍵與值有任一為空，則結果為 false。
+  /// </summary>
+  public bool IsValid => !string.IsNullOrEmpty(JoinedKey()) && !string.IsNullOrEmpty(Value);
+
+  /// <summary>
+  ///
+  /// </summary>
+  /// <param name="obj"></param>
+  /// <returns></returns>
+  public override bool Equals(object obj) {
+    return obj is KeyValuePaired pair && JoinedKey().SequenceEqual(pair.JoinedKey()) && Value == pair.Value;
+  }
+
+  /// <summary>
+  /// 做為預設雜湊函式。
+  /// </summary>
+  /// <returns>目前物件的雜湊碼。</returns>
+  public override int GetHashCode() => HashCode.Combine(KeyArray, Value);
+  /// <summary>
+  /// 傳回代表目前物件的字串。
+  /// </summary>
+  /// <returns>表示目前物件的字串。</returns>
+  public override string ToString() => $"({JoinedKey()},{Value})";
+
+  /// <summary>
+  /// 會在某些特殊場合用到的字串表達方法。
+  /// </summary>
+  public string ToNGramKey => IsValid ? $"({JoinedKey()},{Value})" : "()";
+  /// <summary>
+  ///
+  /// </summary>
+  /// <param name="lhs"></param>
+  /// <param name="rhs"></param>
+  /// <returns></returns>
+  public static bool operator ==(KeyValuePaired lhs, KeyValuePaired rhs) {
+    return lhs.KeyArray.SequenceEqual(rhs.KeyArray) && lhs.Value == rhs.Value;
+  }
+  /// <summary>
+  ///
+  /// </summary>
+  /// <param name="lhs"></param>
+  /// <param name="rhs"></param>
+  /// <returns></returns>
+  public static bool operator !=(KeyValuePaired lhs, KeyValuePaired rhs) {
+    return lhs.KeyArray.Count != rhs.KeyArray.Count || lhs.Value != rhs.Value;
+  }
+
+  /// <summary>
+  ///
+  /// </summary>
+  /// <param name="lhs"></param>
+  /// <param name="rhs"></param>
+  /// <returns></returns>
+  public static bool operator<(KeyValuePaired lhs, KeyValuePaired rhs) {
+    return lhs.KeyArray.Count < rhs.KeyArray.Count ||
+           lhs.KeyArray.Count == rhs.KeyArray.Count &&
+               string.Compare(lhs.Value, rhs.Value, StringComparison.Ordinal) < 0;
+  }
+
+  /// <summary>
+  ///
+  /// </summary>
+  /// <param name="lhs"></param>
+  /// <param name="rhs"></param>
+  /// <returns></returns>
+  public static bool operator>(KeyValuePaired lhs, KeyValuePaired rhs) {
+    return lhs.KeyArray.Count > rhs.KeyArray.Count ||
+           lhs.KeyArray.Count == rhs.KeyArray.Count &&
+               string.Compare(lhs.Value, rhs.Value, StringComparison.Ordinal) > 0;
+  }
+
+  /// <summary>
+  ///
+  /// </summary>
+  /// <param name="lhs"></param>
+  /// <param name="rhs"></param>
+  /// <returns></returns>
+  public static bool operator <=(KeyValuePaired lhs, KeyValuePaired rhs) {
+    return lhs.KeyArray.Count <= rhs.KeyArray.Count ||
+           lhs.KeyArray.Count == rhs.KeyArray.Count &&
+               string.Compare(lhs.Value, rhs.Value, StringComparison.Ordinal) <= 0;
+  }
+
+  /// <summary>
+  ///
+  /// </summary>
+  /// <param name="lhs"></param>
+  /// <param name="rhs"></param>
+  /// <returns></returns>
+  public static bool operator >=(KeyValuePaired lhs, KeyValuePaired rhs) {
+    return lhs.KeyArray.Count >= rhs.KeyArray.Count ||
+           lhs.KeyArray.Count == rhs.KeyArray.Count &&
+               string.Compare(lhs.Value, rhs.Value, StringComparison.Ordinal) >= 0;
+  }
+}
+public partial struct Compositor {
   /// <summary>
   /// 候選字陣列內容的獲取範圍類型。
   /// </summary>

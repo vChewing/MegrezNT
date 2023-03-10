@@ -15,10 +15,9 @@ public class MegrezTests : TestDataClass {
   public void Test01_SpanUnitInternalAbilities() {
     SimpleLM langModel = new(input: StrSampleData);
     Compositor.SpanUnit span = new();
-    Compositor.Node n1 =
-        new(keyArray: new() { "gao" }, spanLength: 1, unigrams: langModel.UnigramsFor(new() { "gao1" }));
-    Compositor.Node n3 = new(keyArray: new() { "gao1", "ke1", "ji4" }, spanLength: 3,
-                             unigrams: langModel.UnigramsFor(new() { "gao1ke1ji4" }));
+    Node n1 = new(keyArray: new() { "gao" }, spanLength: 1, unigrams: langModel.UnigramsFor(new() { "gao1" }));
+    Node n3 = new(keyArray: new() { "gao1", "ke1", "ji4" }, spanLength: 3,
+                  unigrams: langModel.UnigramsFor(new() { "gao1ke1ji4" }));
     Assert.AreEqual(actual: span.MaxLength, expected: 0);
     span.Append(node: n1);
     Assert.AreEqual(actual: span.MaxLength, expected: 1);
@@ -43,7 +42,7 @@ public class MegrezTests : TestDataClass {
     span.DropNodesOfOrBeyond(length: 1);
     Assert.AreEqual(actual: span.MaxLength, expected: 0);
     Assert.AreEqual(actual: span.NodeOf(length: 1), expected: null);
-    Compositor.Node n114514 = new(new(), 114_514, new());
+    Node n114514 = new(new(), 114_514, new());
     Assert.IsFalse(span.Append(n114514));
     Assert.IsNull(span.NodeOf(length: 0));
     Assert.IsNull(span.NodeOf(length: Compositor.MaxSpanLength + 1));
@@ -364,7 +363,7 @@ public class MegrezTests : TestDataClass {
     compositor.InsertKey("jiang3");
     compositor.Walk();
     compositor.InsertKey("jin1");
-    List<Compositor.Node> result = compositor.Walk().WalkedNodes;
+    List<Node> result = compositor.Walk().WalkedNodes;
     Assert.AreEqual(actual: result.Values(), expected: new List<string> { "高科技", "公司", "的", "年中", "獎金" });
     Assert.AreEqual(actual: compositor.Length, expected: 10);
     compositor.Cursor = 7;
@@ -418,7 +417,7 @@ public class MegrezTests : TestDataClass {
     compositor.InsertKey("gao1");
     compositor.InsertKey("ke1");
     compositor.InsertKey("ji4");
-    List<Compositor.Node> result = compositor.Walk().WalkedNodes;
+    List<Node> result = compositor.Walk().WalkedNodes;
     Assert.AreEqual(actual: result.Values(), expected: new List<string> { "高科技" });
     compositor.InsertKey("gong1");
     compositor.InsertKey("si1");
@@ -432,7 +431,7 @@ public class MegrezTests : TestDataClass {
     compositor.InsertKey("gao1");
     compositor.InsertKey("ke1");
     compositor.InsertKey("ji4");
-    List<Compositor.Node> result = compositor.Walk().WalkedNodes;
+    List<Node> result = compositor.Walk().WalkedNodes;
     Assert.AreEqual(actual: result.Values(), expected: new List<string> { "高科技" });
     compositor.Cursor = 0;
     Assert.IsTrue(compositor.OverrideCandidateLiteral("膏", location: compositor.Cursor));
@@ -466,7 +465,7 @@ public class MegrezTests : TestDataClass {
     compositor.InsertKey("zhong1");
     compositor.InsertKey("jiang3");
     compositor.InsertKey("jin1");
-    List<Compositor.Node> result = compositor.Walk().WalkedNodes;
+    List<Node> result = compositor.Walk().WalkedNodes;
     Assert.AreEqual(actual: result.Values(), expected: new List<string> { "年中", "獎金" });
 
     Assert.IsTrue(compositor.OverrideCandidateLiteral("終講", location: 1));
@@ -491,7 +490,7 @@ public class MegrezTests : TestDataClass {
     compositor.InsertKey("yan4");
     compositor.InsertKey("wei2");
     compositor.InsertKey("xian3");
-    List<Compositor.Node>? result = compositor.Walk().WalkedNodes;
+    List<Node>? result = compositor.Walk().WalkedNodes;
     Assert.AreEqual(actual: result.Values(), expected: new List<string> { "高熱", "火焰", "危險" });
 
     Assert.IsTrue(compositor.OverrideCandidate(new(keyArray: new() { "huo3" }, value: "🔥"), location: 2));
@@ -524,5 +523,19 @@ public class MegrezTests : TestDataClass {
     compositor.Update(updateExisting: true);
     string newResult2 = compositor.Walk().WalkedNodes.Values().Joined(separator: ",");
     Assert.AreEqual(actual: newResult2, expected: "年,中");
+  }
+
+  [Test]
+  public void Test21_Compositor_hardCopy() {
+    SimpleLM theLM = new(input: StrSampleData);
+    string rawReadings = "gao1 ke1 ji4 gong1 si1 de5 nian2 zhong1 jiang3 jin1";
+    Compositor compositorA = new(langModel: theLM, separator: "");
+    foreach (string key in rawReadings.Split(separator: " ")) {
+      compositorA.InsertKey(key);
+    }
+    Compositor compositorB = compositorA.HardCopy();
+    List<Node> resultA = compositorA.Walk().WalkedNodes;
+    List<Node> resultB = compositorB.Walk().WalkedNodes;
+    Assert.True(resultA.SequenceEqual(resultB));
   }
 }
