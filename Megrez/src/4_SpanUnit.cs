@@ -109,28 +109,48 @@ public partial struct Compositor {
   /// 找出所有與該位置重疊的節點。其返回值為一個節錨陣列（包含節點、以及其起始位置）。
   /// </summary>
   /// <param name="givenLocation">游標位置。</param>
+  /// <param name="filter">指定內容保留類型（是在游標前方還是在後方、還是包含交叉節點在內的全部結果）。</param>
   /// <returns>一個包含所有與該位置重疊的節點的陣列。</returns>
-  internal List<NodeAnchor> FetchOverlappingNodesAt(int givenLocation) {
-    List<NodeAnchor> results = new();
-    if (Spans.IsEmpty() || givenLocation >= Spans.Count) return results;
-
-    // 先獲取該位置的所有單字節點。
+  private List<NodeAnchor> FetchOverlappingNodesAt(int givenLocation,
+                                                   CandidateFetchFilter filter = CandidateFetchFilter.All) {
+    HashSet<NodeAnchor> resultsOfSingleAt = new();
+    HashSet<NodeAnchor> resultsBeginAt = new();
+    HashSet<NodeAnchor> resultsEndAt = new();
+    HashSet<NodeAnchor> resultsCrossingAt = new();
+    BRange rangeOfValidLocations = new(lowerbound: 0, upperbound: Spans.Count);
+    if (Spans.IsEmpty() || !rangeOfValidLocations.Contains(givenLocation)) return new();
     foreach (int spanLength in new BRange(1, Spans[givenLocation].MaxLength + 1)) {
       if (Spans[givenLocation].NodeOf(spanLength) is not {} node) continue;
-      results.Add(new(node, givenLocation));
+      if (node.KeyArray.IsEmpty() || string.IsNullOrEmpty(node.KeyArray.Joined())) continue;
+      if (node.SpanLength == 1) {
+        resultsOfSingleAt.Add(new(node: node, spanIndex: givenLocation));
+      } else {
+        resultsBeginAt.Add(new(node: node, spanIndex: givenLocation));
+      }
     }
-
-    // 再獲取以當前位置結尾或開頭的節點。
     int begin = givenLocation - Math.Min(givenLocation, MaxSpanLength - 1);
     foreach (int theLocation in new BRange(begin, givenLocation)) {
       (int alpha, int bravo) = (givenLocation - theLocation + 1, Spans[theLocation].MaxLength);
       if (alpha > bravo) continue;
       foreach (int theLength in new BRange(alpha, bravo + 1)) {
+        bool isEndAt = theLength <= givenLocation - begin;
         if (Spans[theLocation].NodeOf(theLength) is not {} node) continue;
-        results.Add(new(node, theLocation));
+        if (node.KeyArray.IsEmpty() || string.IsNullOrEmpty(node.KeyArray.Joined())) continue;
+        NodeAnchor theAnchor = new(node: node, spanIndex: theLocation + 1);
+        if (resultsOfSingleAt.Contains(theAnchor) || resultsBeginAt.Contains(theAnchor)) continue;
+        if (isEndAt) {
+          resultsEndAt.Add(theAnchor);
+        } else {
+          resultsCrossingAt.Add(theAnchor);
+        }
       }
     }
-    return results;
+    return filter switch {
+      CandidateFetchFilter.BeginAt => new HashSet<NodeAnchor>(resultsOfSingleAt.Union(resultsBeginAt)).ToList(),
+      CandidateFetchFilter.EndAt => new HashSet<NodeAnchor>(resultsOfSingleAt.Union(resultsEndAt)).ToList(),
+      _ => new HashSet<NodeAnchor>(resultsOfSingleAt.Union(resultsEndAt).Union(resultsBeginAt.Union(resultsCrossingAt)))
+               .ToList()
+    };
   }
 }
 }  // namespace Megrez

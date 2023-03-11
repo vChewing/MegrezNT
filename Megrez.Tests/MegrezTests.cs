@@ -538,4 +538,22 @@ public class MegrezTests : TestDataClass {
     List<Node> resultB = compositorB.Walk().WalkedNodes;
     Assert.True(resultA.SequenceEqual(resultB));
   }
+
+  [Test]
+  public void Test22_Compositor_preventNodeCrossing() {
+    SimpleLM theLM = new(input: StrSampleData);
+    string rawReadings = "ke1 ke1";
+    Compositor compositor = new(langModel: theLM, separator: "");
+    foreach (string key in rawReadings.Split(separator: " ")) {
+      compositor.InsertKey(key);
+    }
+    int maxCandidateLengthA = compositor.FetchCandidatesAt(location: 1, filter: Compositor.CandidateFetchFilter.BeginAt)
+                                  .Select((x) => x.KeyArray.Count)
+                                  .Max();
+    int maxCandidateLengthB = compositor.FetchCandidatesAt(location: 1, filter: Compositor.CandidateFetchFilter.EndAt)
+                                  .Select((x) => x.KeyArray.Count)
+                                  .Max();
+    Assert.AreEqual(actual: maxCandidateLengthA, expected: 1);
+    Assert.AreEqual(actual: maxCandidateLengthB, expected: 1);
+  }
 }

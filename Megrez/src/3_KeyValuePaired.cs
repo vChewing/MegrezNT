@@ -168,8 +168,8 @@ public partial struct Compositor {
   /// 話，那麼這裡會用到 location - 1、以免去在呼叫該函式後再處理的麻煩。
   /// </summary>
   /// <param name="location">游標位置。</param>
-  /// <param name="filter">候選字音配對陣列。</param>
-  /// <returns></returns>
+  /// <param name="filter">指定內容保留類型（是在游標前方還是在後方）。</param>
+  /// <returns>候選字音配對陣列。</returns>
   public List<KeyValuePaired> FetchCandidatesAt(int location, CandidateFetchFilter filter = CandidateFetchFilter.All) {
     List<KeyValuePaired> result = new();
     if (Keys.IsEmpty()) return result;
@@ -177,25 +177,9 @@ public partial struct Compositor {
 
     // 按照讀音的長度（幅位長度）來給節點排序。
     List<NodeAnchor> anchors =
-        FetchOverlappingNodesAt(location).StableSorted((x, y) => x.SpanLength.CompareTo(y.SpanLength));
-    string keyAtCursor = Keys[location];
-    foreach (Node theNode in anchors.Select(x => x.Node).Where(x => !x.KeyArray.IsEmpty())) {
-      foreach (Unigram gram in theNode.Unigrams) {
-        switch (filter) {
-          case CandidateFetchFilter.All:
-            // 得加上這道篩選，所以會出現很多無效結果。
-            if (!theNode.KeyArray.Contains(keyAtCursor)) continue;
-            break;
-          case CandidateFetchFilter.BeginAt:
-            if (theNode.KeyArray.First() != keyAtCursor) continue;
-            break;
-          case CandidateFetchFilter.EndAt:
-            if (theNode.KeyArray.Last() != keyAtCursor) continue;
-            break;
-        }
-        result.Add(new(theNode.KeyArray, gram.Value));
-      }
-    }
+        FetchOverlappingNodesAt(location, filter: filter).StableSorted((x, y) => x.SpanLength.CompareTo(y.SpanLength));
+    result.AddRange(from theNode in anchors.Select(x => x.Node)
+                        from gram in theNode.Unigrams select new KeyValuePaired(theNode.KeyArray, gram.Value));
     return result;
   }
 
