@@ -165,21 +165,27 @@ public partial struct Compositor {
   /// <summary>
   /// 返回在當前位置的所有候選字詞（以詞音配對的形式）。<para/>如果組字器內有幅位、且游標
   /// 位於組字器的（文字輸入順序的）最前方（也就是游標位置的數值是最大合規數值）的
-  /// 話，那麼這裡會用到 location - 1、以免去在呼叫該函式後再處理的麻煩。
+  /// 話，那麼這裡會對 location 的位置自動減去 1、以免去在呼叫該函式後再處理的麻煩。
   /// </summary>
-  /// <param name="location">游標位置。</param>
+  /// <param name="givenLocation">游標位置，必須是顯示的游標位置、不得做任何事先糾偏處理。</param>
   /// <param name="filter">候選字音配對陣列。</param>
   /// <returns></returns>
-  public List<KeyValuePaired> FetchCandidatesAt(int location, CandidateFetchFilter filter = CandidateFetchFilter.All) {
+  public List<KeyValuePaired> FetchCandidatesAt(int? givenLocation = null,
+                                                CandidateFetchFilter filter = CandidateFetchFilter.All) {
     List<KeyValuePaired> result = new();
     if (Keys.IsEmpty()) return result;
+    int location = Math.Max(0, Math.Min(givenLocation ?? Cursor, Keys.Count));
+    if (filter == CandidateFetchFilter.EndAt) {
+      if (location == Keys.Count) filter = CandidateFetchFilter.All;
+      location -= 1;
+    }
     location = Math.Max(0, Math.Min(location, Keys.Count - 1));
-
     // 按照讀音的長度（幅位長度）來給節點排序。
     List<NodeAnchor> anchors =
         FetchOverlappingNodesAt(location).StableSorted((x, y) => x.SpanLength.CompareTo(y.SpanLength));
     string keyAtCursor = Keys[location];
-    foreach (Node theNode in anchors.Select(x => x.Node).Where(x => !x.KeyArray.IsEmpty())) {
+    foreach (NodeAnchor theAnchor in anchors) {
+      Node theNode = theAnchor.Node;
       foreach (Unigram gram in theNode.Unigrams) {
         switch (filter) {
           case CandidateFetchFilter.All:
@@ -187,10 +193,11 @@ public partial struct Compositor {
             if (!theNode.KeyArray.Contains(keyAtCursor)) continue;
             break;
           case CandidateFetchFilter.BeginAt:
-            if (theNode.KeyArray.First() != keyAtCursor) continue;
+            if (theAnchor.SpanIndex != location) continue;
             break;
           case CandidateFetchFilter.EndAt:
             if (theNode.KeyArray.Last() != keyAtCursor) continue;
+            if (theNode.SpanLength >= 2 && theAnchor.SpanIndex + theAnchor.SpanLength - 1 != location) continue;
             break;
         }
         result.Add(new(theNode.KeyArray, gram.Value));
