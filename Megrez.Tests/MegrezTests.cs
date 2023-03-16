@@ -538,4 +538,42 @@ public class MegrezTests : TestDataClass {
     List<Node> resultB = compositorB.Walk().WalkedNodes;
     Assert.True(resultA.SequenceEqual(resultB));
   }
+
+  [Test]
+  public void Test22_Compositor_SanitizingNodeCrossing() {
+    SimpleLM theLM = new(input: StrSampleData);
+    string rawReadings = "ke1 ke1";
+    Compositor compositor = new(langModel: theLM, separator: "");
+    foreach (string key in rawReadings.Split(separator: " ")) {
+      compositor.InsertKey(key);
+    }
+    int a = compositor.FetchCandidatesAt(givenLocation: 1, filter: Compositor.CandidateFetchFilter.BeginAt)
+                .Select(x => x.KeyArray.Count)
+                .Max();
+    int b = compositor.FetchCandidatesAt(givenLocation: 1, filter: Compositor.CandidateFetchFilter.EndAt)
+                .Select(x => x.KeyArray.Count)
+                .Max();
+    int c = compositor.FetchCandidatesAt(givenLocation: 0, filter: Compositor.CandidateFetchFilter.BeginAt)
+                .Select(x => x.KeyArray.Count)
+                .Max();
+    int d = compositor.FetchCandidatesAt(givenLocation: 2, filter: Compositor.CandidateFetchFilter.EndAt)
+                .Select(x => x.KeyArray.Count)
+                .Max();
+    Assert.AreEqual(actual: $"{a} {b} {c} {d}", expected: "1 1 2 2");
+    compositor.Cursor = compositor.Length;
+    compositor.InsertKey("jin1");
+    a = compositor.FetchCandidatesAt(givenLocation: 1, filter: Compositor.CandidateFetchFilter.BeginAt)
+            .Select(x => x.KeyArray.Count)
+            .Max();
+    b = compositor.FetchCandidatesAt(givenLocation: 1, filter: Compositor.CandidateFetchFilter.EndAt)
+            .Select(x => x.KeyArray.Count)
+            .Max();
+    c = compositor.FetchCandidatesAt(givenLocation: 0, filter: Compositor.CandidateFetchFilter.BeginAt)
+            .Select(x => x.KeyArray.Count)
+            .Max();
+    d = compositor.FetchCandidatesAt(givenLocation: 2, filter: Compositor.CandidateFetchFilter.EndAt)
+            .Select(x => x.KeyArray.Count)
+            .Max();
+    Assert.AreEqual(actual: $"{a} {b} {c} {d}", expected: "1 1 2 2");
+  }
 }

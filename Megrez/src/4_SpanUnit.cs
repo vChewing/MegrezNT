@@ -112,11 +112,13 @@ public partial struct Compositor {
   /// <returns>一個包含所有與該位置重疊的節點的陣列。</returns>
   internal List<NodeAnchor> FetchOverlappingNodesAt(int givenLocation) {
     List<NodeAnchor> results = new();
-    if (Spans.IsEmpty() || givenLocation >= Spans.Count) return results;
+    givenLocation = Math.Max(0, Math.Min(givenLocation, Keys.Count - 1));
+    if (Spans.IsEmpty()) return results;
 
     // 先獲取該位置的所有單字節點。
     foreach (int spanLength in new BRange(1, Spans[givenLocation].MaxLength + 1)) {
       if (Spans[givenLocation].NodeOf(spanLength) is not {} node) continue;
+      if (string.IsNullOrEmpty(node.KeyArray.Joined())) continue;
       results.Add(new(node, givenLocation));
     }
 
@@ -127,6 +129,7 @@ public partial struct Compositor {
       if (alpha > bravo) continue;
       foreach (int theLength in new BRange(alpha, bravo + 1)) {
         if (Spans[theLocation].NodeOf(theLength) is not {} node) continue;
+        if (string.IsNullOrEmpty(node.KeyArray.Joined())) continue;
         results.Add(new(node, theLocation));
       }
     }
