@@ -13,29 +13,27 @@ public class SimpleLM : LangModelProtocol {
   private Dictionary<string, List<Unigram>> _database = new();
   public SimpleLM(string input, bool swapKeyValue = false) {
     List<string> sStream = new(input.Split('\n'));
-    foreach (string line in sStream) {
-      if (IsNullOrEmpty(line) || line.FirstOrDefault().CompareTo('#') == 0) continue;
+    sStream.ForEach(line => {
+      if (IsNullOrEmpty(line) || line.FirstOrDefault().CompareTo('#') == 0) return;
       List<string> lineStream = new(line.Split(' '));
-      if (lineStream.Count >= 2) {
-        string col0 = lineStream[0];  // 假設其不為 nil
-        string col1 = lineStream[1];  // 假設其不為 nil
-        double col2 = 0;              // 防呆
-        if (lineStream.Count >= 3 && double.TryParse(lineStream[2], out double number)) col2 = number;
-        string key;
-        string value;
-        if (swapKeyValue) {
-          key = col1;
-          value = col0;
-        } else {
-          key = col0;
-          value = col1;
-        }
-        Unigram u = new(value);
-        u.Score = col2;
-        if (!_database.ContainsKey(key)) _database.Add(key, new());
-        _database[key].Add(u);
+      if (lineStream.Count < 2) return;
+      string col0 = lineStream[0];  // 假設其不為 nil
+      string col1 = lineStream[1];  // 假設其不為 nil
+      double col2 = 0;              // 防呆
+      if (lineStream.Count >= 3 && double.TryParse(lineStream[2], out double number)) col2 = number;
+      string key;
+      string value;
+      if (swapKeyValue) {
+        key = col1;
+        value = col0;
+      } else {
+        key = col0;
+        value = col1;
       }
-    }
+      Unigram u = new(value) { Score = col2 };
+      if (!_database.ContainsKey(key)) _database.Add(key, new());
+      _database[key].Add(u);
+    });
   }
   public bool HasUnigramsFor(List<string> keyArray) => _database.ContainsKey(keyArray.Joined());
   public List<Unigram> UnigramsFor(List<string> keyArray) => _database.ContainsKey(keyArray.Joined())
