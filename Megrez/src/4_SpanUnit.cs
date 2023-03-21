@@ -15,7 +15,7 @@ public partial struct Compositor {
   /// <remarks>
   /// 其實就是個 [int: Node] 形態的辭典。然而，C# 沒有 Swift 那樣的 TypeAlias 機制，所以還是不要精簡了。
   /// </remarks>
-  public struct SpanUnit {
+  public partial struct SpanUnit {
     /// <summary>
     /// 節點陣列。每個位置上的節點可能是 null。
     /// </summary>
@@ -110,16 +110,15 @@ public partial struct Compositor {
   /// </summary>
   /// <param name="givenLocation">游標位置。</param>
   /// <returns>一個包含所有與該位置重疊的節點的陣列。</returns>
-  internal List<NodeAnchor> FetchOverlappingNodesAt(int givenLocation) {
-    List<NodeAnchor> results = new();
+  public List<(int Location, Node Node)> FetchOverlappingNodesAt(int givenLocation) {
+    List<(int Location, Node Node)> results = new();
     givenLocation = Math.Max(0, Math.Min(givenLocation, Keys.Count - 1));
     if (Spans.IsEmpty()) return results;
 
     // 先獲取該位置的所有單字節點。
     foreach (int spanLength in new BRange(1, Spans[givenLocation].MaxLength + 1)) {
       if (Spans[givenLocation].NodeOf(spanLength) is not {} node) continue;
-      if (string.IsNullOrEmpty(node.KeyArray.Joined())) continue;
-      results.Add(new(node, givenLocation));
+      InsertAnchor(spanIndex: givenLocation, node: node, targetContainer: ref results);
     }
 
     // 再獲取以當前位置結尾或開頭的節點。
@@ -129,11 +128,23 @@ public partial struct Compositor {
       if (alpha > bravo) continue;
       foreach (int theLength in new BRange(alpha, bravo + 1)) {
         if (Spans[theLocation].NodeOf(theLength) is not {} node) continue;
-        if (string.IsNullOrEmpty(node.KeyArray.Joined())) continue;
-        results.Add(new(node, theLocation));
+        InsertAnchor(spanIndex: theLocation, node: node, targetContainer: ref results);
       }
     }
     return results;
+  }
+
+  private static void InsertAnchor(int spanIndex, Node node, ref List<(int Location, Node Node)> targetContainer) {
+    if (string.IsNullOrEmpty(node.KeyArray.Joined())) return;
+    (int Location, Node Node) anchor = (Location: spanIndex, Node: node);
+    foreach (int i in new BRange(lowerbound: 0, upperbound: targetContainer.Count + 1)) {
+      if (targetContainer.IsEmpty()) break;
+      if (targetContainer.First().Node.SpanLength > anchor.Node.SpanLength) continue;
+      targetContainer.Insert(i, anchor);
+      return;
+    }
+    if (!targetContainer.IsEmpty()) return;
+    targetContainer.Add(anchor);
   }
 }
 }  // namespace Megrez

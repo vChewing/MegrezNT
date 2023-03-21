@@ -181,10 +181,9 @@ public partial struct Compositor {
     }
     location = Math.Max(0, Math.Min(location, Keys.Count - 1));
     // 按照讀音的長度（幅位長度）來給節點排序。
-    List<NodeAnchor> anchors =
-        FetchOverlappingNodesAt(location).StableSorted((x, y) => x.SpanLength.CompareTo(y.SpanLength));
+    List<(int Location, Node Node)> anchors = FetchOverlappingNodesAt(location);
     string keyAtCursor = Keys[location];
-    foreach (NodeAnchor theAnchor in anchors) {
+    anchors.ForEach(theAnchor => {
       Node theNode = theAnchor.Node;
       foreach (Unigram gram in theNode.Unigrams) {
         switch (filter) {
@@ -193,16 +192,16 @@ public partial struct Compositor {
             if (!theNode.KeyArray.Contains(keyAtCursor)) continue;
             break;
           case CandidateFetchFilter.BeginAt:
-            if (theAnchor.SpanIndex != location) continue;
+            if (theAnchor.Location != location) continue;
             break;
           case CandidateFetchFilter.EndAt:
             if (theNode.KeyArray.Last() != keyAtCursor) continue;
-            if (theNode.SpanLength >= 2 && theAnchor.SpanIndex + theAnchor.SpanLength - 1 != location) continue;
+            if (theNode.SpanLength >= 2 && theAnchor.Location + theAnchor.Node.SpanLength - 1 != location) continue;
             break;
         }
         result.Add(new(theNode.KeyArray, gram.Value));
       }
-    }
+    });
     return result;
   }
 
@@ -241,11 +240,11 @@ public partial struct Compositor {
   internal bool OverrideCandidateAgainst(List<string>? keyArray, int location, string value,
                                          Node.OverrideType overrideType) {
     location = Math.Max(Math.Min(location, Keys.Count), 0);  // 防呆。
-    List<NodeAnchor> arrOverlappedNodes = FetchOverlappingNodesAt(Math.Min(Keys.Count - 1, location));
+    List<(int Location, Node Node)> arrOverlappedNodes = FetchOverlappingNodesAt(Math.Min(Keys.Count - 1, location));
     Node fakeNode = new(new() { "_NULL_" }, spanLength: 0, new());
-    NodeAnchor overridden = new(fakeNode, spanIndex: 0);
+    (int Location, Node Node) overridden = (Location: 0, fakeNode);
     // 這裡必須用 SequenceEqual，因為 C# 只能用這種方法才能準確判定兩個字串陣列是否雷同。
-    foreach (NodeAnchor anchor in arrOverlappedNodes.Where(
+    foreach (var anchor in arrOverlappedNodes.Where(
                  anchor => (keyArray == null || anchor.Node.KeyArray.SequenceEqual(keyArray)) &&
                            anchor.Node.SelectOverrideUnigram(value, overrideType))) {
       overridden = anchor;
@@ -253,13 +252,13 @@ public partial struct Compositor {
     }
     if (Equals(overridden.Node, fakeNode)) return false;  // 啥也不覆寫。
 
-    int lengthUpperBound = Math.Min(Spans.Count, overridden.SpanIndex + overridden.Node.SpanLength);
-    foreach (int i in new BRange(overridden.SpanIndex, lengthUpperBound)) {
+    int lengthUpperBound = Math.Min(Spans.Count, overridden.Location + overridden.Node.SpanLength);
+    foreach (int i in new BRange(overridden.Location, lengthUpperBound)) {
       // 咱們還得弱化所有在相同的幅位座標的節點的複寫權重。舉例說之前爬軌的結果是「A BC」
       // 且 A 與 BC 都是被覆寫的結果，然後使用者現在在與 A 相同的幅位座標位置
       // 選了「DEF」，那麼 BC 的覆寫狀態就有必要重設（但 A 不用重設）。
       arrOverlappedNodes = FetchOverlappingNodesAt(i);
-      foreach (NodeAnchor anchor in arrOverlappedNodes.Where(anchor => !Equals(anchor.Node, overridden.Node))) {
+      foreach (var anchor in arrOverlappedNodes.Where(anchor => !Equals(anchor.Node, overridden.Node))) {
         if (!overridden.Node.JoinedKey("\t").Contains(anchor.Node.JoinedKey("\t")) ||
             !overridden.Node.Value.Contains(anchor.Node.Value)) {
           anchor.Node.Reset();

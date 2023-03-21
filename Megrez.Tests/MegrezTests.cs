@@ -503,7 +503,7 @@ public class MegrezTests : TestDataClass {
   }
 
   [Test]
-  public void Test20_Compositor_updateUnigramData() {
+  public void Test20_Compositor_UpdateUnigramData() {
     SimpleLM theLM = new(input: StrSampleData);
     Compositor compositor = new(langModel: theLM, separator: "");
     compositor.InsertKey("nian2");
@@ -526,7 +526,7 @@ public class MegrezTests : TestDataClass {
   }
 
   [Test]
-  public void Test21_Compositor_hardCopy() {
+  public void Test21_Compositor_HardCopy() {
     SimpleLM theLM = new(input: StrSampleData);
     string rawReadings = "gao1 ke1 ji4 gong1 si1 de5 nian2 zhong1 jiang3 jin1";
     Compositor compositorA = new(langModel: theLM, separator: "");
@@ -575,5 +575,37 @@ public class MegrezTests : TestDataClass {
             .Select(x => x.KeyArray.Count)
             .Max();
     Assert.AreEqual(actual: $"{a} {b} {c} {d}", expected: "1 1 2 2");
+  }
+
+  [Test]
+  public void Test23_Compositor_CheckGetCandidates() {
+    SimpleLM theLM = new(input: StrSampleData);
+    string rawReadings = "gao1 ke1 ji4 gong1 si1 de5 nian2 zhong1 jiang3 jin1";
+    Compositor compositor = new(langModel: theLM, separator: "");
+    foreach (string key in rawReadings.Split(separator: " ")) {
+      compositor.InsertKey(key);
+    }
+    List<string> stack1A = new();
+    List<string> stack1B = new();
+    List<string> stack2A = new();
+    List<string> stack2B = new();
+    foreach (int i in new BRange(lowerbound: 0, upperbound: compositor.Keys.Count + 1)) {
+      stack1A.Add(compositor.FetchCandidatesAt(i, Compositor.CandidateFetchFilter.BeginAt)
+                      .Select(x => x.Value)
+                      .Joined(separator: "-"));
+      stack1B.Add(compositor.FetchCandidatesAt(i, Compositor.CandidateFetchFilter.EndAt)
+                      .Select(x => x.Value)
+                      .Joined(separator: "-"));
+      stack2A.Add(compositor.FetchCandidatesDeprecatedAt(i, Compositor.CandidateFetchFilter.BeginAt)
+                      .Select(x => x.Value)
+                      .Joined(separator: "-"));
+      stack2B.Add(compositor.FetchCandidatesDeprecatedAt(i, Compositor.CandidateFetchFilter.EndAt)
+                      .Select(x => x.Value)
+                      .Joined(separator: "-"));
+    }
+    stack1B.RemoveAt(0);
+    stack2B.RemoveAt(stack2B.Count - 1);
+    Assert.IsTrue(stack1A.SequenceEqual(stack2A));
+    Assert.IsTrue(stack1B.SequenceEqual(stack2B));
   }
 }
