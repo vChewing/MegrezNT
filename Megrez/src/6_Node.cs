@@ -16,7 +16,7 @@ namespace Megrez {
 /// 單元圖結果陣列。舉例說，如果一個詞有兩個漢字組成的話，那麼讀音也是有兩個、其
 /// 索引鍵也是由兩個讀音組成的，那麼這個節點的幅位長度就是 2。
 /// </summary>
-public class Node {
+public partial class Node {
   // MARK: - Enums
 
   /// <summary>

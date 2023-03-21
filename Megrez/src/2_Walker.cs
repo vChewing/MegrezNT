@@ -23,49 +23,46 @@ public partial struct Compositor {
     List<Node> result = new();
     try {
       if (Spans.IsEmpty()) return (result, true);
-      List<List<Vertex>> vertexSpans = new();
-      foreach (SpanUnit _ in Spans) vertexSpans.Add(new());
-      foreach ((int i, SpanUnit span) in Spans.Enumerated()) {
-        foreach (int j in new BRange(1, Math.Max(1, span.MaxLength) + 1)) {
-          if (span.NodeOf(j) is not {} theNode) continue;
-          vertexSpans[i].Add(new(theNode));
-        }
-      }
+      List<Dictionary<int, Vertex>> vertexSpans = Spans.Select(span => span.ToVertexSpan()).ToList();
 
       Vertex terminal = new(node: new(new() { "_TERMINAL_" }, spanLength: 0, unigrams: new()));
+      Vertex root = new(node: new(new() { "_ROOT_" }, spanLength: 0, unigrams: new())) { Distance = 0 };
 
-      foreach ((int i, List<Vertex> vertexSpan) in vertexSpans.Enumerated()) {
-        foreach (Vertex vertex in vertexSpan) {
-          int nextVertexPosition = i + vertex.Node.SpanLength;
+      vertexSpans.Enumerated().ToList().ForEach(spanNeta => {
+        (int location, Dictionary<int, Vertex> vertexSpan) = spanNeta;
+        vertexSpan.Values.ToList().ForEach(vertex => {
+          int nextVertexPosition = location + vertex.Node.SpanLength;
           if (nextVertexPosition == vertexSpans.Count) {
             vertex.Edges.Add(terminal);
-            continue;
+            return;
           }
-          foreach (Vertex nextVertex in vertexSpans[nextVertexPosition]) {
-            vertex.Edges.Add(nextVertex);
-          }
-        }
-      }
+          vertexSpans[nextVertexPosition].Values.ToList().ForEach(nextVertex => { vertex.Edges.Add(nextVertex); });
+        });
+      });
 
-      Vertex root = new(node: new(new() { "_ROOT_" }, spanLength: 0, unigrams: new())) { Distance = 0 };
-      root.Edges.AddRange(vertexSpans.First());
+      root.Edges.AddRange(vertexSpans.First().Values);
 
-      List<Vertex> ordered = TopoSort(ref root);
-      foreach ((int j, Vertex neta) in ordered.Reversed().Enumerated()) {
-        foreach ((int k, _) in neta.Edges.Enumerated()) {
-          if (neta.Edges[k] is {} relaxV) Relax(neta, ref relaxV);
-        }
-        ordered[j] = neta;
-      }
+      TopoSort(ref root).Reversed().ForEach(neta => {
+        neta.Edges.Enumerated().ToList().ForEach(edge => {
+          if (neta.Edges[edge.index] is {} relaxV) neta.Relax(ref relaxV);
+        });
+      });
 
+      Vertex iterated = terminal;
       List<Node> walked = new();
       int totalLengthOfKeys = 0;
-      Vertex iterated = terminal;
+
       while (iterated.Prev is {} itPrev) {
         walked.Add(itPrev.Node);
         iterated = itPrev;
         totalLengthOfKeys += iterated.Node.SpanLength;
       }
+
+      // 清理內容，否則會有記憶體洩漏。
+      vertexSpans.Clear();
+      iterated.Destroy();
+      root.Destroy();
+      terminal.Destroy();
 
       if (totalLengthOfKeys != Keys.Count) {
         Console.WriteLine("!!! MEGREZ ERROR A.");
@@ -82,6 +79,18 @@ public partial struct Compositor {
       return (result, true);
     } finally {
       WalkedNodes = result;
+    }
+  }
+
+  public partial struct SpanUnit {
+    /// <summary>
+    /// 將當前幅位單元由節點辭典轉為頂點辭典。
+    /// </summary>
+    /// <returns>當前幅位單元（頂點辭典）。</returns>
+    internal Dictionary<int, Vertex> ToVertexSpan() {
+      Dictionary<int, Vertex> result = new();
+      Nodes.ToList().ForEach(neta => { result[neta.Key] = new(node: neta.Value); });
+      return result;
     }
   }
 }

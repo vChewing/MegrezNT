@@ -54,23 +54,23 @@ public partial struct Compositor {
       Edges.Clear();
       Node = new(keyArray: new(), unigrams: new(), spanLength: 0);
     }
-  }
 
-  /// <summary>
-  /// 卸勁函式。<para/>
-  /// 「卸勁 (relax)」一詞出自 Cormen 在 2001 年的著作「Introduction to Algorithms」的 585 頁。
-  /// </summary>
-  /// <param name="u">參照頂點，會在必要時成為 v 的前述頂點。</param>
-  /// <param name="v">要影響的頂點。</param>
-  private void Relax(Vertex u, ref Vertex v) {
-    // 從 u 到 w 的距離，也就是 v 的權重。
-    double w = v.Node.Score;
-    // 這裡計算最大權重：
-    // 如果 v 目前的距離值小於「u 的距離值＋w（w 是 u 到 w 的距離，也就是 v 的權重）」，
-    // 我們就更新 v 的距離及其前述頂點。
-    if (v.Distance >= u.Distance + w) return;
-    v.Distance = u.Distance + w;
-    v.Prev = u;
+    /// <summary>
+    /// 卸勁函式。<para/>
+    /// 「卸勁 (relax)」一詞出自 Cormen 在 2001 年的著作「Introduction to Algorithms」的 585 頁。
+    /// </summary>
+    /// <remarks>自己就是參照頂點 (u)，會在必要時成為 target (v) 的前述頂點。</remarks>
+    /// <param name="target">要影響的頂點。</param>
+    public void Relax(ref Vertex target) {
+      // 從 u 到 w 的距離，也就是 v 的權重。
+      double w = target.Node.Score;
+      // 這裡計算最大權重：
+      // 如果 v 目前的距離值小於「u 的距離值＋w（w 是 u 到 w 的距離，也就是 v 的權重）」，
+      // 我們就更新 v 的距離及其前述頂點。
+      if (target.Distance >= Distance + w) return;
+      target.Distance = Distance + w;
+      target.Prev = this;
+    }
   }
 
   /// <summary>

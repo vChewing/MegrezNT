@@ -15,7 +15,7 @@ public partial struct Compositor {
   /// <remarks>
   /// 其實就是個 [int: Node] 形態的辭典。然而，C# 沒有 Swift 那樣的 TypeAlias 機制，所以還是不要精簡了。
   /// </remarks>
-  public struct SpanUnit {
+  public partial struct SpanUnit {
     /// <summary>
     /// 節點陣列。每個位置上的節點可能是 null。
     /// </summary>
