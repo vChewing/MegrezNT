@@ -50,7 +50,7 @@ public partial struct Compositor {
     public void Destroy() {
       while (Prev?.Prev is not null) Prev?.Destroy();
       Prev = null;
-      Edges.ForEach(delegate(Vertex edge) { edge.Destroy(); });
+      Edges.ForEach(edge => edge.Destroy());
       Edges.Clear();
       Node = new(keyArray: new(), unigrams: new(), spanLength: 0);
     }
@@ -92,13 +92,13 @@ public partial struct Compositor {
   /// 這樣我們就不會受到當前線程的堆棧大小的限制。以下是等價的原始算法。
   /// <code>
   ///  void TopoSort(vertex: Vertex) {
-  ///    foreach (Vertex vertexNode in vertex.Edges) {
+  ///    vertex.Edges.ForEach ((x) => {
   ///      if (!vertexNode.TopoSorted) {
   ///        DFS(vertexNode, result);
   ///        vertexNode.TopoSorted = true;
   ///      }
   ///      result.Add(vertexNode);
-  ///    }
+  ///    });
   ///  }
   /// </code>
   /// 至於其遞迴版本，則類似於 Cormen 在 2001 年的著作「Introduction to Algorithms」當中的樣子。

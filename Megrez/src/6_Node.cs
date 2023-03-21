@@ -239,52 +239,6 @@ public partial class Node {
   }
 }
 
-public partial struct Compositor {
-  /// <summary>
-  /// 節錨。在 Gramambular 2 當中又被稱為「NodeInSpan」。
-  /// </summary>
-  public struct NodeAnchor {
-    /// <summary>
-    /// 節點。
-    /// </summary>
-    public Node Node { get; }
-    /// <summary>
-    /// 幅位座標。
-    /// </summary>
-    public int SpanIndex { get; }
-    /// <summary>
-    /// 節錨。在 Gramambular 2 當中又被稱為「NodeInSpan」。
-    /// </summary>
-    /// <param name="node">給定節點。</param>
-    /// <param name="spanIndex">給定幅位座標。</param>
-    public NodeAnchor(Node node, int spanIndex) {
-      Node = node;
-      SpanIndex = spanIndex;
-    }
-    /// <summary>
-    /// 幅位長度。
-    /// </summary>
-    public int SpanLength => Node.SpanLength;
-    /// <summary>
-    /// 單元圖陣列。
-    /// </summary>
-    public List<Unigram> Unigrams => Node.Unigrams;
-    /// <summary>
-    /// 索引鍵陣列。
-    /// </summary>
-    public List<string> KeyArray => Node.KeyArray;
-    /// <summary>
-    /// 給出該節點內部單元圖陣列內目前被索引位置所指向的單元圖的資料值。
-    /// </summary>
-    public string Value => Node.Value;
-    /// <summary>
-    /// 做為預設雜湊函式。
-    /// </summary>
-    /// <returns>目前物件的雜湊碼。</returns>
-    public override int GetHashCode() => HashCode.Combine(Node, SpanIndex);
-  }
-}
-
 // MARK: - [Node] Implementations.
 
 /// <summary>
