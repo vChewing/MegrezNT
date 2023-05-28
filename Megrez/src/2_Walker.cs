@@ -16,6 +16,11 @@ public partial struct Compositor {
   /// 的路徑（所以要找最大的權重），因為在對數概率下，較大的數值意味著較大的概率。
   /// 對於 <c>G = (V, E)</c>，該算法的運行次數為 <c>O(|V|+|E|)</c>，其中 <c>G</c>
   /// 是一個有向無環圖。這意味著，即使軌格很大，也可以用很少的算力就可以爬軌。
+  /// <remarks>
+  /// 利用該數學方法進行輸入法智能組句的（已知可考的）最開始的案例是郭家寶（ByVoid）
+  /// 的《<a href="https://byvoid.com/zht/blog/slm_based_pinyin_ime/">基於統計語言模型的拼音輸入法</a>》；
+  /// 再後來則是 2022 年中時期劉燈的 Gramambular 2 組字引擎。
+  /// </remarks>
   /// </summary>
   /// <returns>爬軌結果＋該過程是否順利執行。</returns>
   public List<Node> Walk() {
