@@ -9,7 +9,7 @@ namespace Megrez {
 /// <summary>
 /// 單元圖。
 /// </summary>
-public struct Unigram {
+public class Unigram {
   /// <summary>
   /// 資料值，通常是詞語或單個字。
   /// </summary>

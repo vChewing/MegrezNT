@@ -11,32 +11,32 @@ namespace Megrez {
 /// <summary>
 /// 鍵值配對，乃索引鍵陣列與讀音的配對單元。
 /// </summary>
-public struct KeyValuePaired {
+public class KeyValuePaired : Unigram {
   /// <summary>
   /// 索引鍵陣列。一般情況下用來放置讀音等可以用來作為索引的內容。
   /// </summary>
   public List<string> KeyArray { get; }
   /// <summary>
-  /// 資料值。
-  /// </summary>
-  public string Value { get; }
-  /// <summary>
   /// 初期化一組鍵值配對。
   /// </summary>
   /// <param name="keyArray">索引鍵陣列。一般情況下用來放置讀音等可以用來作為索引的內容。</param>
   /// <param name="value">資料值。</param>
-  public KeyValuePaired(List<string> keyArray, string value) {
+  /// <param name="score">權重（雙精度小數）。</param>
+  public KeyValuePaired(List<string> keyArray, string value, double score = 0) {
     KeyArray = keyArray;
     Value = value;
+    Score = score;
   }
   /// <summary>
   /// 初期化一組鍵值配對。
   /// </summary>
   /// <param name="key">索引鍵。一般情況下用來放置讀音等可以用來作為索引的內容。</param>
   /// <param name="value">資料值。</param>
-  public KeyValuePaired(string key, string value) {
+  /// <param name="score">權重（雙精度小數）。</param>
+  public KeyValuePaired(string key, string value, double score = 0) {
     KeyArray = key.Split(Compositor.TheSeparator.ToCharArray()).ToList();
     Value = value;
+    Score = score;
   }
 
   /// <summary>
@@ -58,7 +58,8 @@ public struct KeyValuePaired {
   /// <param name="obj"></param>
   /// <returns></returns>
   public override bool Equals(object obj) {
-    return obj is KeyValuePaired pair && JoinedKey().SequenceEqual(pair.JoinedKey()) && Value == pair.Value;
+    return obj is KeyValuePaired pair && JoinedKey().SequenceEqual(pair.JoinedKey()) && Value == pair.Value &&
+           Math.Abs(Score - pair.Score) < -0.000000000000001;
   }
 
   /// <summary>
@@ -70,7 +71,7 @@ public struct KeyValuePaired {
   /// 傳回代表目前物件的字串。
   /// </summary>
   /// <returns>表示目前物件的字串。</returns>
-  public override string ToString() => $"({JoinedKey()},{Value})";
+  public override string ToString() => $"({JoinedKey()},{Value},{Score})";
 
   /// <summary>
   /// 會在某些特殊場合用到的字串表達方法。
