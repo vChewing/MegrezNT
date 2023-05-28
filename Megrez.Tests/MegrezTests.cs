@@ -330,7 +330,7 @@ public class MegrezTests : TestDataClass {
     string testStr = "高科技公司的年終獎金";
     List<string> arrStr = testStr.LiteralCharComponents();
     foreach (string c in arrStr) compositor.InsertKey(c);
-    Assert.AreEqual(actual: compositor.Walk().WalkedNodes.JoinedKeys(separator: ""),
+    Assert.AreEqual(actual: compositor.Walk().JoinedKeys(separator: ""),
                     expected: new List<string> { "高科技", "公司", "的", "年終", "獎金" });
   }
 
@@ -363,7 +363,7 @@ public class MegrezTests : TestDataClass {
     compositor.InsertKey("jiang3");
     compositor.Walk();
     compositor.InsertKey("jin1");
-    List<Node> result = compositor.Walk().WalkedNodes;
+    List<Node> result = compositor.Walk();
     Assert.AreEqual(actual: result.Values(), expected: new List<string> { "高科技", "公司", "的", "年中", "獎金" });
     Assert.AreEqual(actual: compositor.Length, expected: 10);
     compositor.Cursor = 7;
@@ -373,7 +373,7 @@ public class MegrezTests : TestDataClass {
     Assert.IsTrue(candidates.Contains("中"));
     Assert.IsTrue(candidates.Contains("鍾"));
     Assert.IsTrue(compositor.OverrideCandidateLiteral("年終", location: 7));
-    result = compositor.Walk().WalkedNodes;
+    result = compositor.Walk();
     Assert.AreEqual(actual: result.Values(), expected: new List<string> { "高科技", "公司", "的", "年終", "獎金" });
     List<string> candidatesBeginAt =
         compositor.FetchCandidatesAt(3, filter: Compositor.CandidateFetchFilter.BeginAt).Select(x => x.Value).ToList();
@@ -417,11 +417,11 @@ public class MegrezTests : TestDataClass {
     compositor.InsertKey("gao1");
     compositor.InsertKey("ke1");
     compositor.InsertKey("ji4");
-    List<Node> result = compositor.Walk().WalkedNodes;
+    List<Node> result = compositor.Walk();
     Assert.AreEqual(actual: result.Values(), expected: new List<string> { "高科技" });
     compositor.InsertKey("gong1");
     compositor.InsertKey("si1");
-    result = compositor.Walk().WalkedNodes;
+    result = compositor.Walk();
     Assert.AreEqual(actual: result.Values(), expected: new List<string> { "高科技", "公司" });
   }
 
@@ -431,29 +431,29 @@ public class MegrezTests : TestDataClass {
     compositor.InsertKey("gao1");
     compositor.InsertKey("ke1");
     compositor.InsertKey("ji4");
-    List<Node> result = compositor.Walk().WalkedNodes;
+    List<Node> result = compositor.Walk();
     Assert.AreEqual(actual: result.Values(), expected: new List<string> { "高科技" });
     compositor.Cursor = 0;
     Assert.IsTrue(compositor.OverrideCandidateLiteral("膏", location: compositor.Cursor));
-    result = compositor.Walk().WalkedNodes;
+    result = compositor.Walk();
     Assert.AreEqual(actual: result.Values(), expected: new List<string> { "膏", "科技" });
     Assert.IsTrue(compositor.OverrideCandidateLiteral("高科技", location: 1));
-    result = compositor.Walk().WalkedNodes;
+    result = compositor.Walk();
     Assert.AreEqual(actual: result.Values(), expected: new List<string> { "高科技" });
     Assert.IsTrue(compositor.OverrideCandidateLiteral("膏", location: 0));
-    result = compositor.Walk().WalkedNodes;
+    result = compositor.Walk();
     Assert.AreEqual(actual: result.Values(), expected: new List<string> { "膏", "科技" });
 
     Assert.IsTrue(compositor.OverrideCandidateLiteral("柯", location: 1));
-    result = compositor.Walk().WalkedNodes;
+    result = compositor.Walk();
     Assert.AreEqual(actual: result.Values(), expected: new List<string> { "膏", "柯", "際" });
 
     Assert.IsTrue(compositor.OverrideCandidateLiteral("暨", location: 2));
-    result = compositor.Walk().WalkedNodes;
+    result = compositor.Walk();
     Assert.AreEqual(actual: result.Values(), expected: new List<string> { "膏", "柯", "暨" });
 
     Assert.IsTrue(compositor.OverrideCandidateLiteral("高科技", location: 3));
-    result = compositor.Walk().WalkedNodes;
+    result = compositor.Walk();
     Assert.AreEqual(actual: result.Values(), expected: new List<string> { "高科技" });
   }
 
@@ -465,19 +465,19 @@ public class MegrezTests : TestDataClass {
     compositor.InsertKey("zhong1");
     compositor.InsertKey("jiang3");
     compositor.InsertKey("jin1");
-    List<Node> result = compositor.Walk().WalkedNodes;
+    List<Node> result = compositor.Walk();
     Assert.AreEqual(actual: result.Values(), expected: new List<string> { "年中", "獎金" });
 
     Assert.IsTrue(compositor.OverrideCandidateLiteral("終講", location: 1));
-    result = compositor.Walk().WalkedNodes;
+    result = compositor.Walk();
     Assert.AreEqual(actual: result.Values(), expected: new List<string> { "年", "終講", "金" });
 
     Assert.IsTrue(compositor.OverrideCandidateLiteral("槳襟", location: 2));
-    result = compositor.Walk().WalkedNodes;
+    result = compositor.Walk();
     Assert.AreEqual(actual: result.Values(), expected: new List<string> { "年中", "槳襟" });
 
     Assert.IsTrue(compositor.OverrideCandidateLiteral("年終", location: 0));
-    result = compositor.Walk().WalkedNodes;
+    result = compositor.Walk();
     Assert.AreEqual(actual: result.Values(), expected: new List<string> { "年終", "槳襟" });
   }
 
@@ -490,15 +490,15 @@ public class MegrezTests : TestDataClass {
     compositor.InsertKey("yan4");
     compositor.InsertKey("wei2");
     compositor.InsertKey("xian3");
-    List<Node>? result = compositor.Walk().WalkedNodes;
+    List<Node>? result = compositor.Walk();
     Assert.AreEqual(actual: result.Values(), expected: new List<string> { "高熱", "火焰", "危險" });
 
     Assert.IsTrue(compositor.OverrideCandidate(new(keyArray: new() { "huo3" }, value: "🔥"), location: 2));
-    result = compositor.Walk().WalkedNodes;
+    result = compositor.Walk();
     Assert.AreEqual(actual: result.Values(), expected: new List<string> { "高熱", "🔥", "焰", "危險" });
 
     Assert.IsTrue(compositor.OverrideCandidate(new(keyArray: new() { "huo3", "yan4" }, value: "🔥"), location: 2));
-    result = compositor.Walk().WalkedNodes;
+    result = compositor.Walk();
     Assert.AreEqual(actual: result.Values(), expected: new List<string> { "高熱", "🔥", "危險" });
   }
 
@@ -510,10 +510,10 @@ public class MegrezTests : TestDataClass {
     compositor.InsertKey("zhong1");
     compositor.InsertKey("jiang3");
     compositor.InsertKey("jin1");
-    string oldResult = compositor.Walk().WalkedNodes.Values().Joined();
+    string oldResult = compositor.Walk().Values().Joined();
     theLM.Trim(key: "nian2zhong1", value: "年中");
     compositor.Update(updateExisting: true);
-    string newResult = compositor.Walk().WalkedNodes.Values().Joined();
+    string newResult = compositor.Walk().Values().Joined();
     Assert.AreEqual(actual: new List<string> { oldResult, newResult },
                     expected: new List<string> { "年中獎金", "年終獎金" });
     compositor.Cursor = 4;
@@ -521,7 +521,7 @@ public class MegrezTests : TestDataClass {
     compositor.DropKey(direction: Compositor.TypingDirection.ToRear);
     theLM.Trim(key: "nian2zhong1", value: "年終");
     compositor.Update(updateExisting: true);
-    string newResult2 = compositor.Walk().WalkedNodes.Values().Joined(separator: ",");
+    string newResult2 = compositor.Walk().Values().Joined(separator: ",");
     Assert.AreEqual(actual: newResult2, expected: "年,中");
   }
 
@@ -534,8 +534,8 @@ public class MegrezTests : TestDataClass {
       compositorA.InsertKey(key);
     }
     Compositor compositorB = compositorA.HardCopy();
-    List<Node> resultA = compositorA.Walk().WalkedNodes;
-    List<Node> resultB = compositorB.Walk().WalkedNodes;
+    List<Node> resultA = compositorA.Walk();
+    List<Node> resultB = compositorB.Walk();
     Assert.True(resultA.SequenceEqual(resultB));
   }
 

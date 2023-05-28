@@ -3,7 +3,6 @@
 // ====================
 // This code is released under the MIT license (SPDX-License-Identifier: MIT)
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -19,79 +18,129 @@ public partial struct Compositor {
   /// 是一個有向無環圖。這意味著，即使軌格很大，也可以用很少的算力就可以爬軌。
   /// </summary>
   /// <returns>爬軌結果＋該過程是否順利執行。</returns>
-  public (List<Node> WalkedNodes, bool Succeeded) Walk() {
+  public List<Node> Walk() {
     List<Node> result = new();
     try {
-      if (Spans.IsEmpty()) return (result, true);
-      List<Dictionary<int, Vertex>> vertexSpans = Spans.Select(span => span.ToVertexSpan()).ToList();
-
-      Vertex terminal = new(node: new(new() { "_TERMINAL_" }, spanLength: 0, unigrams: new()));
-      Vertex root = new(node: new(new() { "_ROOT_" }, spanLength: 0, unigrams: new())) { Distance = 0 };
-
-      vertexSpans.Enumerated().ToList().ForEach(spanNeta => {
-        (int location, Dictionary<int, Vertex> vertexSpan) = spanNeta;
-        vertexSpan.Values.ToList().ForEach(vertex => {
-          int nextVertexPosition = location + vertex.Node.SpanLength;
-          if (nextVertexPosition == vertexSpans.Count) {
-            vertex.Edges.Add(terminal);
-            return;
-          }
-          vertexSpans[nextVertexPosition].Values.ToList().ForEach(nextVertex => { vertex.Edges.Add(nextVertex); });
-        });
-      });
-
-      root.Edges.AddRange(vertexSpans.First().Values);
-
-      TopoSort(ref root).Reversed().ForEach(neta => {
-        neta.Edges.Enumerated().ToList().ForEach(edge => {
-          if (neta.Edges[edge.index] is {} relaxV) neta.Relax(ref relaxV);
-        });
-      });
-
-      Vertex iterated = terminal;
-      List<Node> walked = new();
-      int totalLengthOfKeys = 0;
-
+      SortAndRelax();
+      if (Spans.IsEmpty()) return result;
+      Node iterated = Node.LeadingNode;
+      WalkedNodes.Clear();
       while (iterated.Prev is {} itPrev) {
-        walked.Add(itPrev.Node);
+        WalkedNodes.Insert(0, itPrev.Copy());
         iterated = itPrev;
-        totalLengthOfKeys += iterated.Node.SpanLength;
       }
-
-      // 清理內容，否則會有記憶體洩漏。
-      vertexSpans.Clear();
-      iterated.Destroy();
-      root.Destroy();
-      terminal.Destroy();
-
-      if (totalLengthOfKeys != Keys.Count) {
-        Console.WriteLine("!!! MEGREZ ERROR A.");
-        return (result, false);
-      }
-
-      if (walked.Count < 2) {
-        Console.WriteLine("!!! MEGREZ ERROR B.");
-        return (result, false);
-      }
-
-      walked.Remove(walked.Last());
-      result = walked.Reversed();
-      return (result, true);
+      iterated.DestroyVertex();
+      WalkedNodes.RemoveAt(0);
+      return WalkedNodes;
     } finally {
-      WalkedNodes = result;
+      ReinitVertexNetwork();
     }
   }
 
-  public partial struct SpanUnit {
-    /// <summary>
-    /// 將當前幅位單元由節點辭典轉為頂點辭典。
-    /// </summary>
-    /// <returns>當前幅位單元（頂點辭典）。</returns>
-    internal Dictionary<int, Vertex> ToVertexSpan() {
-      Dictionary<int, Vertex> result = new();
-      Nodes.ToList().ForEach(neta => { result[neta.Key] = new(node: neta.Value); });
-      return result;
+  /// 先進行位相幾何排序、再卸勁。
+  internal void SortAndRelax() {
+    ReinitVertexNetwork();
+    List<SpanUnit> theSpans = Spans;
+    if (theSpans.IsEmpty()) return;
+    Node.TrailingNode.Distance = 0;
+    theSpans.Enumerated().ToList().ForEach(spanNeta => {
+      (int location, SpanUnit vertexSpan) = spanNeta;
+      vertexSpan.Nodes.Values.ToList().ForEach(node => {
+        int nextVertexPosition = location + node.SpanLength;
+        if (nextVertexPosition == theSpans.Count) {
+          node.Edges.Add(Node.LeadingNode);
+          return;
+        }
+        theSpans[nextVertexPosition].Nodes.Values.ToList().ForEach(nextVertex => { node.Edges.Add(nextVertex); });
+      });
+    });
+
+    Node.TrailingNode.Edges.AddRange(Spans.First().Nodes.Values);
+
+    TopoSort().Reversed().ForEach(neta => {
+      neta.Edges.Enumerated().ToList().ForEach(edge => {
+        if (neta.Edges[edge.index] is {} relaxV) Relax(neta, ref relaxV);
+      });
+    });
+  }
+
+  /// <summary>
+  /// 摧毀所有與共用起始虛擬節點有牽涉的節點自身的 Vertex 特性資料。
+  /// </summary>
+  internal static void ReinitVertexNetwork() {
+    Node.TrailingNode.DestroyVertex();
+    Node.LeadingNode.DestroyVertex();
+  }
+
+  /// <summary>
+  /// 位相幾何排序處理時的處理狀態。
+  /// </summary>
+  private class TopoSortState {
+    public int IterIndex { get; set; }
+    public Node Node { get; }
+    public TopoSortState(Node node, int iterIndex = 0) {
+      Node = node;
+      IterIndex = iterIndex;
     }
+  }
+
+  /// <summary>
+  /// 對持有單個根頂點的有向無環圖進行位相幾何排序（topological
+  /// sort）、且將排序結果以頂點陣列的形式給出。<para/>
+  /// 這裡使用我們自己的堆棧和狀態定義實現了一個非遞迴版本，
+  /// 這樣我們就不會受到當前線程的堆棧大小的限制。以下是等價的原始算法。
+  /// <code>
+  ///  void TopoSort(vertex: Vertex) {
+  ///    vertex.Edges.ForEach ((x) => {
+  ///      if (!vertexNode.TopoSorted) {
+  ///        DFS(vertexNode, result);
+  ///        vertexNode.TopoSorted = true;
+  ///      }
+  ///      result.Add(vertexNode);
+  ///    });
+  ///  }
+  /// </code>
+  /// 至於其遞迴版本，則類似於 Cormen 在 2001 年的著作「Introduction to Algorithms」當中的樣子。
+  /// </summary>
+  /// <returns>排序結果（頂點陣列）。</returns>
+  private List<Node> TopoSort() {
+    List<Node> result = new();
+    List<TopoSortState> stack = new();
+    stack.Add(new(Node.TrailingNode));
+    while (!stack.IsEmpty()) {
+      TopoSortState state = stack.Last();
+      Node theNode = state.Node;
+      if (state.IterIndex < state.Node.Edges.Count) {
+        Node newNode = state.Node.Edges[state.IterIndex];
+        state.IterIndex += 1;
+        if (!newNode.TopoSorted) {
+          stack.Add(new(newNode));
+          continue;
+        }
+      }
+      theNode.TopoSorted = true;
+      result.Add(theNode);
+      stack.Remove(stack.Last());
+    }
+    return result;
+  }
+
+  /// <summary>
+  /// 卸勁函式。<para/>
+  /// 「卸勁 (relax)」一詞出自 Cormen 在 2001 年的著作「Introduction to Algorithms」的 585 頁。
+  /// </summary>
+  /// <remarks>自己就是參照頂點 (u)，會在必要時成為 v (v) 的前述頂點。</remarks>
+  /// <param name="u">基準頂點。</param>
+  /// <param name="v">要影響的頂點。</param>
+  private static void Relax(Node u, ref Node v) {
+    // 從 u 到 w 的距離，也就是 v 的權重。
+    double w = v.Score;
+    // 這裡計算最大權重：
+    // 如果 v 目前的距離值小於「u 的距離值＋w（w 是 u 到 w 的距離，也就是 v 的權重）」，
+    // 我們就更新 v 的距離及其前述頂點。
+    if (v.Distance >= u.Distance + w) return;
+    v.Distance = u.Distance + w;
+    v.Prev = u;
   }
 }
 }
