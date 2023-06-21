@@ -26,10 +26,10 @@ public partial struct Compositor {
   public List<Node> Walk() {
     List<Node> result = new();
     try {
+      WalkedNodes.Clear();
       SortAndRelax();
       if (Spans.IsEmpty()) return result;
       Node iterated = Node.LeadingNode;
-      WalkedNodes.Clear();
       while (iterated.Prev is {} itPrev) {
         WalkedNodes.Insert(0, itPrev.Copy());
         iterated = itPrev;
