@@ -30,7 +30,7 @@ public class SimpleLM : LangModelProtocol {
         key = col0;
         value = col1;
       }
-      Unigram u = new(value) { Score = col2 };
+      Unigram u = new(value, col2);
       if (!_database.ContainsKey(key)) _database.Add(key, new());
       _database[key].Add(u);
     });
