@@ -11,11 +11,21 @@ namespace Megrez {
 /// <summary>
 /// 鍵值配對，乃索引鍵陣列與讀音的配對單元。
 /// </summary>
-public class KeyValuePaired : Unigram {
+public class KeyValuePaired {
   /// <summary>
   /// 索引鍵陣列。一般情況下用來放置讀音等可以用來作為索引的內容。
   /// </summary>
   public List<string> KeyArray { get; }
+  /// <summary>
+  /// 資料值，通常是詞語或單個字。
+  /// </summary>
+  /// <value>資料值。</value>
+  public string Value { get; }
+  /// <summary>
+  /// 權重（雙精度小數）。
+  /// </summary>
+  /// <value>權重。</value>
+  public double Score { get; }
   /// <summary>
   /// 初期化一組鍵值配對。
   /// </summary>
@@ -66,7 +76,7 @@ public class KeyValuePaired : Unigram {
   /// 做為預設雜湊函式。
   /// </summary>
   /// <returns>目前物件的雜湊碼。</returns>
-  public override int GetHashCode() => HashCode.Combine(KeyArray, Value);
+  public override int GetHashCode() => HashCode.Combine(KeyArray, Value, Score);
   /// <summary>
   /// 傳回代表目前物件的字串。
   /// </summary>

@@ -9,17 +9,17 @@ namespace Megrez {
 /// <summary>
 /// 單元圖。
 /// </summary>
-public class Unigram {
+public struct Unigram {
   /// <summary>
   /// 資料值，通常是詞語或單個字。
   /// </summary>
   /// <value>資料值。</value>
-  public string Value { get; set; }
+  public string Value { get; }
   /// <summary>
   /// 權重（雙精度小數）。
   /// </summary>
   /// <value>權重。</value>
-  public double Score { get; set; }
+  public double Score { get; }
   /// <summary>
   /// 初期化一筆「單元圖」。一筆單元圖由一筆資料值與一筆權重數值組成。
   /// </summary>
