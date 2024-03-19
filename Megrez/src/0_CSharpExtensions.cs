@@ -4,6 +4,7 @@
 // This code is released under the MIT license (SPDX-License-Identifier: MIT)
 
 #pragma warning disable CS1591
+#nullable enable
 
 using System;
 using System.Collections;
@@ -19,13 +20,11 @@ namespace Megrez {
 public static class CSharpExtensions {
   // MARK: - String.Joined (Swift-Style)
 
-  public static string Joined(this IEnumerable<string> self, string? separator = null) {
-    if (separator == null || separator.LiteralCount() == 0) {
-      StringBuilder output = new();
-      foreach (string x in self) output.Append(x);
-      return output.ToString();
-    }
-    return string.Join(separator, self);
+  public static string Joined(this IEnumerable<string> self, string separator = "") {
+    if (!string.IsNullOrEmpty(separator)) return string.Join(separator, self);
+    StringBuilder output = new();
+    foreach (string x in self) output.Append(x);
+    return output.ToString();
   }
 
   // MARK: - UTF8 String Length
@@ -47,8 +46,8 @@ public static class CSharpExtensions {
 
   // MARK: - Enumerable.Enumerated() (Swift-Style)
 
-  public static IEnumerable<(int index, T item)> Enumerated<T>(this IEnumerable<T> source) =>
-      source.Select((item, index) => (index, item));
+  public static IEnumerable<EnumeratedItem<T>> Enumerated<T>(this IEnumerable<T> source) =>
+      source.Select((item, index) => new EnumeratedItem<T>(index, item));
 
   // MARK: - List.Reversed() (Swift-Style)
   public static List<T> Reversed<T>(this List<T> self) => self.ToArray().Reverse().ToList();
@@ -89,13 +88,11 @@ public static class CSharpExtensions {
 /// 一個「可以返回整數的上下限」的自訂 Range 類型。
 /// </summary>
 public struct BRange : IEnumerable<int> {
-  public Range Range { get; }
   public int Lowerbound { get; }
   public int Upperbound { get; }
   public BRange(int lowerbound, int upperbound) {
     Lowerbound = Math.Min(lowerbound, upperbound);
     Upperbound = Math.Max(lowerbound, upperbound);
-    Range = Lowerbound..Upperbound;
   }
 
   public List<int> ToList() {
@@ -106,10 +103,19 @@ public struct BRange : IEnumerable<int> {
     return result;
   }
 
-  public IEnumerable<(int index, int item)> Enumerated() => ToList().Enumerated();
+  public IEnumerable<EnumeratedItem<int>> Enumerated() => ToList().Enumerated();
 
   IEnumerator<int> IEnumerable<int>.GetEnumerator() => ToList().GetEnumerator();
 
   IEnumerator IEnumerable.GetEnumerator() => ToList().GetEnumerator();
+}
+
+public struct EnumeratedItem<T> {
+  public int Offset;
+  public T Value;
+  public EnumeratedItem(int offset, T value) {
+    Offset = offset;
+    Value = value;
+  }
 }
 }  // namespace Megrez

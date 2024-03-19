@@ -3,6 +3,7 @@
 // ====================
 // This code is released under the MIT license (SPDX-License-Identifier: MIT)
 
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -76,7 +77,8 @@ public class KeyValuePaired {
   /// 做為預設雜湊函式。
   /// </summary>
   /// <returns>目前物件的雜湊碼。</returns>
-  public override int GetHashCode() => HashCode.Combine(KeyArray, Value, Score);
+  public override int GetHashCode() =>
+      new KeyValuePair<List<string>, Unigram>(KeyArray, new(Value, Score)).GetHashCode();
   /// <summary>
   /// 傳回代表目前物件的字串。
   /// </summary>
@@ -192,7 +194,7 @@ public partial struct Compositor {
     }
     location = Math.Max(0, Math.Min(location, Keys.Count - 1));
     // 按照讀音的長度（幅位長度）來給節點排序。
-    List<(int Location, Node Node)> anchors = FetchOverlappingNodesAt(location);
+    List<NodeWithLocation> anchors = FetchOverlappingNodesAt(location);
     string keyAtCursor = Keys[location];
     anchors.ForEach(theAnchor => {
       Node theNode = theAnchor.Node;
@@ -251,9 +253,9 @@ public partial struct Compositor {
   internal bool OverrideCandidateAgainst(List<string>? keyArray, int location, string value,
                                          Node.OverrideType overrideType) {
     location = Math.Max(Math.Min(location, Keys.Count), 0);  // 防呆。
-    List<(int Location, Node Node)> arrOverlappedNodes = FetchOverlappingNodesAt(Math.Min(Keys.Count - 1, location));
+    List<NodeWithLocation> arrOverlappedNodes = FetchOverlappingNodesAt(Math.Min(Keys.Count - 1, location));
     Node fakeNode = new(new() { "_NULL_" }, spanLength: 0, new());
-    (int Location, Node Node) overridden = (Location: 0, fakeNode);
+    NodeWithLocation overridden = new(0, fakeNode);
     // 這裡必須用 SequenceEqual，因為 C# 只能用這種方法才能準確判定兩個字串陣列是否雷同。
     foreach (var anchor in arrOverlappedNodes.Where(
                  anchor => (keyArray == null || anchor.Node.KeyArray.SequenceEqual(keyArray)) &&

@@ -3,12 +3,13 @@
 // ====================
 // This code is released under the MIT license (SPDX-License-Identifier: MIT)
 
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 
-namespace Megrez.Tests;
+namespace Megrez.Tests {
 
 public class MegrezTests : TestDataClass {
   [Test]
@@ -51,7 +52,7 @@ public class MegrezTests : TestDataClass {
   [Test]
   public void Test02_RankedLanguageModel() {
     LangModelProtocol lmTest = new TestLMForRanked();
-    Compositor.LangModelRanked lmRanked = new(langModel: ref lmTest);
+    Compositor.LangModelRanked lmRanked = new Compositor.LangModelRanked(langModel: ref lmTest);
     Assert.IsTrue(lmRanked.HasUnigramsFor(new() { "foo" }));
     Assert.IsFalse(lmRanked.HasUnigramsFor(new() { "bar" }));
     Assert.IsEmpty(lmRanked.UnigramsFor(new() { "bar" }));
@@ -64,7 +65,7 @@ public class MegrezTests : TestDataClass {
 
   [Test]
   public void Test03_BasicFeaturesOfCompositor() {
-    Compositor compositor = new(langModel: new MockLM(), separator: "");
+    Compositor compositor = new Compositor(langModel: new MockLM(), separator: "");
     Assert.AreEqual(actual: compositor.Separator, expected: "");
     Assert.AreEqual(actual: compositor.Cursor, expected: 0);
     Assert.AreEqual(actual: compositor.Length, expected: 0);
@@ -85,7 +86,7 @@ public class MegrezTests : TestDataClass {
 
   [Test]
   public void Test04_InvalidOperations() {
-    Compositor compositor = new(langModel: new TestLM(), separator: ";");
+    Compositor compositor = new Compositor(langModel: new TestLM(), separator: ";");
     Assert.IsFalse(compositor.InsertKey("bar"));
     Assert.IsFalse(compositor.InsertKey(""));
     Assert.IsFalse(compositor.InsertKey(""));
@@ -103,7 +104,7 @@ public class MegrezTests : TestDataClass {
 
   [Test]
   public void Test05_DeleteToTheFrontOfCursor() {
-    Compositor compositor = new(langModel: new MockLM());
+    Compositor compositor = new Compositor(langModel: new MockLM());
     compositor.InsertKey("a");
     compositor.Cursor = 0;
     Assert.AreEqual(actual: compositor.Cursor, expected: 0);
@@ -121,7 +122,7 @@ public class MegrezTests : TestDataClass {
 
   [Test]
   public void Test06_MultipleSpanUnits() {
-    Compositor compositor = new(langModel: new MockLM(), separator: ";");
+    Compositor compositor = new Compositor(langModel: new MockLM(), separator: ";");
     compositor.InsertKey("a");
     compositor.InsertKey("b");
     compositor.InsertKey("c");
@@ -141,7 +142,7 @@ public class MegrezTests : TestDataClass {
 
   [Test]
   public void Test07_SpanUnitDeletionFromFront() {
-    Compositor compositor = new(langModel: new MockLM(), separator: ";");
+    Compositor compositor = new Compositor(langModel: new MockLM(), separator: ";");
     compositor.InsertKey("a");
     compositor.InsertKey("b");
     compositor.InsertKey("c");
@@ -159,7 +160,7 @@ public class MegrezTests : TestDataClass {
 
   [Test]
   public void Test08_SpanUnitDeletionFromMiddle() {
-    Compositor compositor = new(langModel: new MockLM(), separator: ";");
+    Compositor compositor = new Compositor(langModel: new MockLM(), separator: ";");
     compositor.InsertKey("a");
     compositor.InsertKey("b");
     compositor.InsertKey("c");
@@ -194,7 +195,7 @@ public class MegrezTests : TestDataClass {
 
   [Test]
   public void Test09_SpanUnitDeletionFromRear() {
-    Compositor compositor = new(langModel: new MockLM(), separator: ";");
+    Compositor compositor = new Compositor(langModel: new MockLM(), separator: ";");
     compositor.InsertKey("a");
     compositor.InsertKey("b");
     compositor.InsertKey("c");
@@ -214,7 +215,7 @@ public class MegrezTests : TestDataClass {
 
   [Test]
   public void Test10_SpanUnitInsertion() {
-    Compositor compositor = new(langModel: new MockLM(), separator: ";");
+    Compositor compositor = new Compositor(langModel: new MockLM(), separator: ";");
     compositor.InsertKey("a");
     compositor.InsertKey("b");
     compositor.InsertKey("c");
@@ -242,7 +243,7 @@ public class MegrezTests : TestDataClass {
 
   [Test]
   public void Test11_LongGridDeletion() {
-    Compositor compositor = new(langModel: new MockLM(), separator: "");
+    Compositor compositor = new Compositor(langModel: new MockLM(), separator: "");
     compositor.InsertKey("a");
     compositor.InsertKey("b");
     compositor.InsertKey("c");
@@ -277,7 +278,7 @@ public class MegrezTests : TestDataClass {
 
   [Test]
   public void Test12_LongGridInsertion() {
-    Compositor compositor = new(langModel: new MockLM(), separator: "");
+    Compositor compositor = new Compositor(langModel: new MockLM(), separator: "");
     compositor.InsertKey("a");
     compositor.InsertKey("b");
     compositor.InsertKey("c");
@@ -315,7 +316,7 @@ public class MegrezTests : TestDataClass {
   [Test]
   public void Test13_WalkerBenchMark() {
     Console.WriteLine("// Stress test preparation begins.");
-    Compositor compositor = new(langModel: new SimpleLM(input: StrStressData));
+    Compositor compositor = new Compositor(langModel: new SimpleLM(input: StrStressData));
     foreach (int _ in new BRange(0, 1919)) compositor.InsertKey("yi1");
     Console.WriteLine("// Stress test preparation started with keys inserted: " + compositor.Keys.Count);
     DateTime startTime = DateTime.Now;
@@ -326,7 +327,8 @@ public class MegrezTests : TestDataClass {
 
   [Test]
   public void Test14_WordSegmentation() {
-    Compositor compositor = new(langModel: new SimpleLM(input: StrSampleData, swapKeyValue: true), separator: "");
+    Compositor compositor =
+        new Compositor(langModel: new SimpleLM(input: StrSampleData, swapKeyValue: true), separator: "");
     string testStr = "高科技公司的年終獎金";
     List<string> arrStr = testStr.LiteralCharComponents();
     foreach (string c in arrStr) compositor.InsertKey(c);
@@ -336,7 +338,7 @@ public class MegrezTests : TestDataClass {
 
   [Test]
   public void Test15_Compositor_InputTestAndCursorJump() {
-    Compositor compositor = new(langModel: new SimpleLM(input: StrSampleData), separator: "");
+    Compositor compositor = new Compositor(langModel: new SimpleLM(input: StrSampleData), separator: "");
     compositor.InsertKey("gao1");
     compositor.Walk();
     compositor.InsertKey("ji4");
@@ -413,7 +415,7 @@ public class MegrezTests : TestDataClass {
 
   [Test]
   public void Test16_Compositor_InputTest2() {
-    Compositor compositor = new(langModel: new SimpleLM(input: StrSampleData), separator: "");
+    Compositor compositor = new Compositor(langModel: new SimpleLM(input: StrSampleData), separator: "");
     compositor.InsertKey("gao1");
     compositor.InsertKey("ke1");
     compositor.InsertKey("ji4");
@@ -427,7 +429,7 @@ public class MegrezTests : TestDataClass {
 
   [Test]
   public void Test17_Compositor_OverrideOverlappingNodes() {
-    Compositor compositor = new(langModel: new SimpleLM(input: StrSampleData), separator: "");
+    Compositor compositor = new Compositor(langModel: new SimpleLM(input: StrSampleData), separator: "");
     compositor.InsertKey("gao1");
     compositor.InsertKey("ke1");
     compositor.InsertKey("ji4");
@@ -483,7 +485,7 @@ public class MegrezTests : TestDataClass {
 
   [Test]
   public void Test19_Compositor_CandidateDisambiguation() {
-    Compositor compositor = new(langModel: new SimpleLM(input: StrEmojiSampleData), separator: "");
+    Compositor compositor = new Compositor(langModel: new SimpleLM(input: StrEmojiSampleData), separator: "");
     compositor.InsertKey("gao1");
     compositor.InsertKey("re4");
     compositor.InsertKey("huo3");
@@ -504,8 +506,8 @@ public class MegrezTests : TestDataClass {
 
   [Test]
   public void Test20_Compositor_UpdateUnigramData() {
-    SimpleLM theLM = new(input: StrSampleData);
-    Compositor compositor = new(langModel: theLM, separator: "");
+    SimpleLM theLM = new SimpleLM(input: StrSampleData);
+    Compositor compositor = new Compositor(langModel: theLM, separator: "");
     compositor.InsertKey("nian2");
     compositor.InsertKey("zhong1");
     compositor.InsertKey("jiang3");
@@ -527,10 +529,10 @@ public class MegrezTests : TestDataClass {
 
   [Test]
   public void Test21_Compositor_HardCopy() {
-    SimpleLM theLM = new(input: StrSampleData);
+    SimpleLM theLM = new SimpleLM(input: StrSampleData);
     string rawReadings = "gao1 ke1 ji4 gong1 si1 de5 nian2 zhong1 jiang3 jin1";
-    Compositor compositorA = new(langModel: theLM, separator: "");
-    foreach (string key in rawReadings.Split(separator: " ")) {
+    Compositor compositorA = new Compositor(langModel: theLM, separator: "");
+    foreach (string key in rawReadings.Split(separator: ' ')) {
       compositorA.InsertKey(key);
     }
     Compositor compositorB = compositorA.HardCopy();
@@ -541,10 +543,10 @@ public class MegrezTests : TestDataClass {
 
   [Test]
   public void Test22_Compositor_SanitizingNodeCrossing() {
-    SimpleLM theLM = new(input: StrSampleData);
+    SimpleLM theLM = new SimpleLM(input: StrSampleData);
     string rawReadings = "ke1 ke1";
-    Compositor compositor = new(langModel: theLM, separator: "");
-    foreach (string key in rawReadings.Split(separator: " ")) {
+    Compositor compositor = new Compositor(langModel: theLM, separator: "");
+    foreach (string key in rawReadings.Split(separator: ' ')) {
       compositor.InsertKey(key);
     }
     int a = compositor.FetchCandidatesAt(givenLocation: 1, filter: Compositor.CandidateFetchFilter.BeginAt)
@@ -579,10 +581,10 @@ public class MegrezTests : TestDataClass {
 
   [Test]
   public void Test23_Compositor_CheckGetCandidates() {
-    SimpleLM theLM = new(input: StrSampleData);
+    SimpleLM theLM = new SimpleLM(input: StrSampleData);
     string rawReadings = "gao1 ke1 ji4 gong1 si1 de5 nian2 zhong1 jiang3 jin1";
-    Compositor compositor = new(langModel: theLM, separator: "");
-    foreach (string key in rawReadings.Split(separator: " ")) {
+    Compositor compositor = new Compositor(langModel: theLM, separator: "");
+    foreach (string key in rawReadings.Split(separator: ' ')) {
       compositor.InsertKey(key);
     }
     List<string> stack1A = new();
@@ -608,4 +610,6 @@ public class MegrezTests : TestDataClass {
     Assert.IsTrue(stack1A.SequenceEqual(stack2A));
     Assert.IsTrue(stack1B.SequenceEqual(stack2B));
   }
+}
+
 }

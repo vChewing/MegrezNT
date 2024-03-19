@@ -3,6 +3,7 @@
 // ====================
 // This code is released under the MIT license (SPDX-License-Identifier: MIT)
 
+#nullable enable
 using System.Collections.Generic;
 
 namespace Megrez {
