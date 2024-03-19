@@ -1,18 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ReleaseVersion>2.7.3</ReleaseVersion>
+    <ReleaseVersion>2.7.4</ReleaseVersion>
     <PackageId>vChewing.Megrez</PackageId>
     <Authors>Shiki Suen</Authors>
     <Company>Atelier Inmu</Company>
     <Copyright>(c) 2022 and onwards The vChewing Project for Megrez-specific changes; (c) 2022 and onwards Lukhnos Liu for upstream contents.</Copyright>
     <RepositoryUrl>https://github.com/ShikiSuen/MegrezNT</RepositoryUrl>
     <NeutralLanguage>zh-TW</NeutralLanguage>
-    <AssemblyVersion>2.7.3</AssemblyVersion>
-    <FileVersion>2.7.3</FileVersion>
-    <Version>2.7.3</Version>
+    <AssemblyVersion>2.7.4</AssemblyVersion>
+    <FileVersion>2.7.4</FileVersion>
+    <Version>2.7.4</Version>
     <Product>Megrez</Product>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -21,6 +19,7 @@
     <Description>Megrez Engine is a module made for processing lingual data of an input method.</Description>
     <PackageProjectUrl>https://github.com/ShikiSuen/MegrezNT</PackageProjectUrl>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TargetFrameworks>net46;net6.0</TargetFrameworks>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

@@ -3,6 +3,7 @@
 // ====================
 // This code is released under the MIT license (SPDX-License-Identifier: MIT)
 
+#nullable enable
 using System.Collections.Generic;
 using System.Linq;
 
@@ -49,7 +50,8 @@ public partial struct Compositor {
     if (theSpans.IsEmpty()) return;
     Node.TrailingNode.Distance = 0;
     theSpans.Enumerated().ToList().ForEach(spanNeta => {
-      (int location, SpanUnit vertexSpan) = spanNeta;
+      int location = spanNeta.Offset;
+      SpanUnit vertexSpan = spanNeta.Value;
       vertexSpan.Nodes.Values.ToList().ForEach(node => {
         int nextVertexPosition = location + node.SpanLength;
         if (nextVertexPosition == theSpans.Count) {
@@ -64,7 +66,7 @@ public partial struct Compositor {
 
     TopoSort().Reversed().ForEach(neta => {
       neta.Edges.Enumerated().ToList().ForEach(edge => {
-        if (neta.Edges[edge.index] is {} relaxV) Relax(neta, ref relaxV);
+        if (neta.Edges[edge.Offset] is {} relaxV) Relax(neta, ref relaxV);
       });
     });
   }

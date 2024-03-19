@@ -3,19 +3,21 @@
 // ====================
 // This code is released under the MIT license (SPDX-License-Identifier: MIT)
 
+#nullable enable
 using System.Collections.Generic;
 using System.Linq;
 using static System.String;
+// ReSharper disable InconsistentNaming
 
-namespace Megrez.Tests;
+namespace Megrez.Tests {
 
 public class SimpleLM : LangModelProtocol {
-  private Dictionary<string, List<Unigram>> _database = new();
+  private Dictionary<string, List<Unigram>> _database = new Dictionary<string, List<Unigram>>();
   public SimpleLM(string input, bool swapKeyValue = false) {
-    List<string> sStream = new(input.Split('\n'));
+    List<string> sStream = new List<string>(input.Split('\n'));
     sStream.ForEach(line => {
       if (IsNullOrEmpty(line) || line.FirstOrDefault().CompareTo('#') == 0) return;
-      List<string> lineStream = new(line.Split(' '));
+      List<string> lineStream = new List<string>(line.Split(' '));
       if (lineStream.Count < 2) return;
       string col0 = lineStream[0];  // 假設其不為 nil
       string col1 = lineStream[1];  // 假設其不為 nil
@@ -30,7 +32,7 @@ public class SimpleLM : LangModelProtocol {
         key = col0;
         value = col1;
       }
-      Unigram u = new(value, col2);
+      Unigram u = new Unigram(value, col2);
       if (!_database.ContainsKey(key)) _database.Add(key, new());
       _database[key].Add(u);
     });
@@ -41,6 +43,7 @@ public class SimpleLM : LangModelProtocol {
                                                                  : new();
   public void Trim(string key, string value) {
     if (!_database.TryGetValue(key, out List<Unigram>? arr)) return;
+
     if (arr is not {} theArr) return;
     theArr = theArr.Where(x => x.Value != value).ToList();
     if (theArr.IsEmpty()) {
@@ -53,22 +56,25 @@ public class SimpleLM : LangModelProtocol {
 
 public class MockLM : LangModelProtocol {
   public bool HasUnigramsFor(List<string> keyArray) => !IsNullOrEmpty(keyArray.Joined());
-  public List<Unigram> UnigramsFor(List<string> keyArray) => new() { new(value: keyArray.Joined(), score: -1) };
+  public List<Unigram> UnigramsFor(List<string> keyArray) => new List<Unigram> { new Unigram(value: keyArray.Joined(),
+                                                                                             score: -1) };
 }
 
 public class TestLM : LangModelProtocol {
   public bool HasUnigramsFor(List<string> keyArray) => keyArray.Joined() == "foo";
   public List<Unigram> UnigramsFor(List<string> keyArray) => keyArray.Joined() == "foo"
-                                                                 ? new() { new(keyArray.Joined(), -1) }
-                                                                 : new();
+                                                                 ? new List<Unigram> { new Unigram(keyArray.Joined(),
+                                                                                                   -1) }
+                                                                 : new List<Unigram>();
 }
 
 public class TestLMForRanked : LangModelProtocol {
   public bool HasUnigramsFor(List<string> keyArray) => keyArray.Joined() == "foo";
   public List<Unigram> UnigramsFor(List<string> keyArray) => keyArray.Joined() == "foo"
-                                                                 ? new() { new("middle", -5), new("highest", -2),
-                                                                           new("lowest", -10) }
-                                                                 : new();
+                                                                 ? new List<Unigram> { new Unigram("middle", -5),
+                                                                                       new Unigram("highest", -2),
+                                                                                       new Unigram("lowest", -10) }
+                                                                 : new List<Unigram>();
 }
 
 public class TestDataClass {
@@ -195,4 +201,5 @@ jiao4yu4 教育 -3.32220565
 yu4 育 -3.30192952
 
 ";
+}
 }

@@ -3,6 +3,7 @@
 // ====================
 // This code is released under the MIT license (SPDX-License-Identifier: MIT)
 
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -150,8 +151,12 @@ public partial class Node {
   /// 做為預設雜湊函式。
   /// </summary>
   /// <returns>目前物件的雜湊碼。</returns>
-  public override int GetHashCode() => HashCode.Combine(OverridingScore, KeyArray, SpanLength, Unigrams,
-                                                        CurrentUnigramIndex, CurrentOverrideType);
+  public override int GetHashCode() {
+    int[] x = { OverridingScore.GetHashCode(),     KeyArray.GetHashCode(),
+                SpanLength.GetHashCode(),          Unigrams.GetHashCode(),
+                CurrentUnigramIndex.GetHashCode(), CurrentOverrideType.GetHashCode() };
+    return x.GetHashCode();
+  }
 
   // MARK: - Dynamic Variables
 
@@ -229,7 +234,9 @@ public partial class Node {
   /// <returns>操作是否順利完成。</returns>
   public bool SelectOverrideUnigram(string value, OverrideType type) {
     if (type == OverrideType.NoOverrides) return false;
-    foreach ((int i, Unigram gram) in Unigrams.Enumerated()) {
+    foreach (EnumeratedItem<Unigram> pair in Unigrams.Enumerated()) {
+      int i = pair.Offset;
+      Unigram gram = pair.Value;
       if (value != gram.Value) continue;
       CurrentUnigramIndex = i;
       CurrentOverrideType = type;
@@ -313,18 +320,43 @@ public static class NodeExtensions {
   /// <param name="self">節點。</param>
   /// <returns>總讀音單元數量。</returns>
   public static int TotalKeyCount(this List<Node> self) => self.Select(x => x.KeyArray.Count).Sum();
+
+  /// <summary>
+  /// (Result A, Result B) 辭典陣列。Result A 以索引查座標，Result B 以座標查索引。
+  /// </summary>
+  public struct CursorMapPair {
+    /// <summary>
+    /// 以索引查座標的辭典陣列。
+    /// </summary>
+    public Dictionary<int, int> RegionCursorMap { get; private set; }
+    /// <summary>
+    /// 以座標查索引的辭典陣列。
+    /// </summary>
+    public Dictionary<int, int> CursorRegionMap { get; private set; }
+    /// <summary>
+    /// (Result A, Result B) 辭典陣列。Result A 以索引查座標，Result B 以座標查索引。
+    /// </summary>
+    /// <param name="regionCursorMap">以索引查座標的辭典陣列。</param>
+    /// <param name="cursorRegionMap">以座標查索引的辭典陣列。</param>
+    public CursorMapPair(Dictionary<int, int> regionCursorMap, Dictionary<int, int> cursorRegionMap) {
+      RegionCursorMap = regionCursorMap;
+      CursorRegionMap = cursorRegionMap;
+    }
+  }
+
   /// <summary>
   /// 返回一連串的節點起點。結果為 (Result A, Result B) 辭典陣列。
   /// Result A 以索引查座標，Result B 以座標查索引。
   /// </summary>
   /// <param name="self">節點。</param>
   /// <returns> (Result A, Result B) 辭典陣列。Result A 以索引查座標，Result B 以座標查索引。</returns>
-  private static (Dictionary<int, int> RegionCursorMap, Dictionary<int, int> CursorRegionMap)
-      NodeBorderPointDictPair(this List<Node> self) {
+  private static CursorMapPair NodeBorderPointDictPair(this List<Node> self) {
     Dictionary<int, int> resultA = new();
     Dictionary<int, int> resultB = new() { [-1] = 0 };  // 防呆
     int cursorCounter = 0;
-    foreach ((int nodeCounter, Node neta) in self.Enumerated()) {
+    foreach (var pair in self.Enumerated()) {
+      int nodeCounter = pair.Offset;
+      Node neta = pair.Value;
       resultA[nodeCounter] = cursorCounter;
       foreach (string _ in neta.KeyArray) {
         resultB[cursorCounter] = nodeCounter;
@@ -333,7 +365,7 @@ public static class NodeExtensions {
     }
     resultA[self.Count] = cursorCounter;
     resultB[cursorCounter] = self.Count;
-    return (resultA, resultB);
+    return new(resultA, resultB);
   }
 
   /// <summary>
@@ -358,8 +390,7 @@ public static class NodeExtensions {
     if (givenCursor >= totalKeyCount) return nilReturn;
     int cursor = Math.Max(0, givenCursor);  // 防呆。
     nilReturn = new(cursor, cursor);
-    (Dictionary<int, int> RegionCursorMap, Dictionary<int, int> CursorRegionMap) dictPair =
-        self.NodeBorderPointDictPair();
+    CursorMapPair dictPair = self.NodeBorderPointDictPair();
     // 下文按道理來講不應該會出現 nilReturn。
     if (!dictPair.CursorRegionMap.TryGetValue(cursor, out int rearNodeID)) return nilReturn;
     if (!dictPair.RegionCursorMap.TryGetValue(rearNodeID, out int rearIndex)) return nilReturn;
@@ -378,8 +409,8 @@ public static class NodeExtensions {
     int cursor = Math.Max(0, Math.Min(givenCursor, self.TotalKeyCount() - 1));
     BRange range = self.ContextRange(givenCursor: cursor);
     outCursorPastNode = range.Upperbound;
-    (Dictionary<int, int>, Dictionary<int, int>)dictPair = self.NodeBorderPointDictPair();
-    if (!dictPair.Item2.TryGetValue(cursor + 1, out int rearNodeID)) return null;
+    CursorMapPair dictPair = self.NodeBorderPointDictPair();
+    if (!dictPair.CursorRegionMap.TryGetValue(cursor + 1, out int rearNodeID)) return null;
     return self.Count - 1 >= rearNodeID ? self[rearNodeID] : null;
   }
   /// <summary>
@@ -398,17 +429,17 @@ public static class NodeExtensions {
   /// </summary>
   /// <param name="self">節點。</param>
   /// <returns>一組逐字的字音配對陣列。</returns>
-  public static List<(string key, string value)> SmashedPairs(this List<Node> self) {
-    List<(string key, string value)> arrData = new();
+  public static List<KeyValuePair<string, string>> SmashedPairs(this List<Node> self) {
+    List<KeyValuePair<string, string>> arrData = new();
 
     foreach (Node node in self) {
       if (node.IsReadingMismatched && !string.IsNullOrEmpty(node.KeyArray.Joined())) {
-        arrData.Add((node.KeyArray.Joined("\t"), node.Value));
+        arrData.Add(new(node.KeyArray.Joined("\t"), node.Value));
         continue;
       }
       List<string> arrValueChars = node.Value.LiteralCharComponents();
-      foreach ((int i, string key) in node.KeyArray.Enumerated()) {
-        arrData.Add((key, arrValueChars[i]));
+      foreach (var pair in node.KeyArray.Enumerated()) {
+        arrData.Add(new(pair.Value, arrValueChars[pair.Offset]));
       }
     }
     return arrData;

@@ -3,6 +3,7 @@
 // ====================
 // This code is released under the MIT license (SPDX-License-Identifier: MIT)
 
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +16,7 @@ public partial struct Compositor {
   /// <remarks>
   /// 其實就是個 [int: Node] 形態的辭典。然而，C# 沒有 Swift 那樣的 TypeAlias 機制，所以還是不要精簡了。
   /// </remarks>
-  public partial struct SpanUnit {
+  public struct SpanUnit {
     /// <summary>
     /// 節點陣列。每個位置上的節點可能是 null。
     /// </summary>
@@ -106,12 +107,36 @@ public partial struct Compositor {
   // MARK: - Internal Implementations.
 
   /// <summary>
+  /// (Result A, Result B) 辭典陣列。Result A 以索引查座標，Result B 以座標查索引。
+  /// </summary>
+  public struct NodeWithLocation {
+    /// <summary>
+    /// 節點在注拼槽當中的位置。
+    /// </summary>
+    public int Location { get; private set; }
+    /// <summary>
+    /// 節點。
+    /// </summary>
+    public Node Node { get; private set; }
+
+    /// <summary>
+    /// (Result A, Result B) 辭典陣列。Result A 以索引查座標，Result B 以座標查索引。
+    /// </summary>
+    /// <param name="location">節點在注拼槽當中的位置。</param>
+    /// <param name="node">節點。</param>
+    public NodeWithLocation(int location, Node node) {
+      Location = location;
+      Node = node;
+    }
+  }
+
+  /// <summary>
   /// 找出所有與該位置重疊的節點。其返回值為一個節錨陣列（包含節點、以及其起始位置）。
   /// </summary>
   /// <param name="givenLocation">游標位置。</param>
   /// <returns>一個包含所有與該位置重疊的節點的陣列。</returns>
-  public List<(int Location, Node Node)> FetchOverlappingNodesAt(int givenLocation) {
-    List<(int Location, Node Node)> results = new();
+  public List<NodeWithLocation> FetchOverlappingNodesAt(int givenLocation) {
+    List<NodeWithLocation> results = new();
     givenLocation = Math.Max(0, Math.Min(givenLocation, Keys.Count - 1));
     if (Spans.IsEmpty()) return results;
 
@@ -124,7 +149,8 @@ public partial struct Compositor {
     // 再獲取以當前位置結尾或開頭的節點。
     int begin = givenLocation - Math.Min(givenLocation, MaxSpanLength - 1);
     foreach (int theLocation in new BRange(begin, givenLocation)) {
-      (int alpha, int bravo) = (givenLocation - theLocation + 1, Spans[theLocation].MaxLength);
+      int alpha = givenLocation - theLocation + 1;
+      int bravo = Spans[theLocation].MaxLength;
       if (alpha > bravo) continue;
       foreach (int theLength in new BRange(alpha, bravo + 1)) {
         if (Spans[theLocation].NodeOf(theLength) is not {} node) continue;
@@ -134,9 +160,9 @@ public partial struct Compositor {
     return results;
   }
 
-  private static void InsertAnchor(int spanIndex, Node node, ref List<(int Location, Node Node)> targetContainer) {
+  private static void InsertAnchor(int spanIndex, Node node, ref List<NodeWithLocation> targetContainer) {
     if (string.IsNullOrEmpty(node.KeyArray.Joined())) return;
-    (int Location, Node Node) anchor = (Location: spanIndex, Node: node);
+    NodeWithLocation anchor = new(spanIndex, node);
     foreach (int i in new BRange(lowerbound: 0, upperbound: targetContainer.Count + 1)) {
       if (targetContainer.IsEmpty()) break;
       if (targetContainer.First().Node.SpanLength > anchor.Node.SpanLength) continue;

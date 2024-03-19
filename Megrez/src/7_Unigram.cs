@@ -3,7 +3,9 @@
 // ====================
 // This code is released under the MIT license (SPDX-License-Identifier: MIT)
 
+#nullable enable
 using System;
+using System.Collections.Generic;
 
 namespace Megrez {
 /// <summary>
@@ -40,7 +42,7 @@ public struct Unigram {
   /// 做為預設雜湊函式。
   /// </summary>
   /// <returns>目前物件的雜湊碼。</returns>
-  public override int GetHashCode() => HashCode.Combine(Value, Score);
+  public override int GetHashCode() => new KeyValuePair<string, double>(Value, Score).GetHashCode();
   /// <summary>
   /// 傳回代表目前物件的字串。
   /// </summary>
