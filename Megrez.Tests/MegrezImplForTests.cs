@@ -20,7 +20,7 @@ internal static class Utils {
     if (self.Keys.IsEmpty()) return result;
     location = Math.Max(0, Math.Min(location, self.Keys.Count - 1));
     // 按照讀音的長度（幅位長度）來給節點排序。
-    var anchors = self.FetchOverlappingNodesAt(location);
+    List<Compositor.NodeWithLocation> anchors = self.FetchOverlappingNodesAt(location);
     string keyAtCursor = self.Keys[location];
     anchors.ForEach(anchor => {
       anchor.Node.Unigrams.ForEach(gram => {

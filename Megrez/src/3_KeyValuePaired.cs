@@ -257,7 +257,7 @@ public partial struct Compositor {
     Node fakeNode = new(new() { "_NULL_" }, spanLength: 0, new());
     NodeWithLocation overridden = new(0, fakeNode);
     // 這裡必須用 SequenceEqual，因為 C# 只能用這種方法才能準確判定兩個字串陣列是否雷同。
-    foreach (var anchor in arrOverlappedNodes.Where(
+    foreach (NodeWithLocation anchor in arrOverlappedNodes.Where(
                  anchor => (keyArray == null || anchor.Node.KeyArray.SequenceEqual(keyArray)) &&
                            anchor.Node.SelectOverrideUnigram(value, overrideType))) {
       overridden = anchor;
@@ -271,7 +271,7 @@ public partial struct Compositor {
       // 且 A 與 BC 都是被覆寫的結果，然後使用者現在在與 A 相同的幅位座標位置
       // 選了「DEF」，那麼 BC 的覆寫狀態就有必要重設（但 A 不用重設）。
       arrOverlappedNodes = FetchOverlappingNodesAt(i);
-      foreach (var anchor in arrOverlappedNodes.Where(anchor => !Equals(anchor.Node, overridden.Node))) {
+      foreach (NodeWithLocation anchor in arrOverlappedNodes.Where(anchor => !Equals(anchor.Node, overridden.Node))) {
         if (!overridden.Node.JoinedKey("\t").Contains(anchor.Node.JoinedKey("\t")) ||
             !overridden.Node.Value.Contains(anchor.Node.Value)) {
           anchor.Node.Reset();

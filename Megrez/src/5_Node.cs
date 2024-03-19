@@ -354,7 +354,7 @@ public static class NodeExtensions {
     Dictionary<int, int> resultA = new();
     Dictionary<int, int> resultB = new() { [-1] = 0 };  // 防呆
     int cursorCounter = 0;
-    foreach (var pair in self.Enumerated()) {
+    foreach (EnumeratedItem<Node> pair in self.Enumerated()) {
       int nodeCounter = pair.Offset;
       Node neta = pair.Value;
       resultA[nodeCounter] = cursorCounter;
@@ -438,7 +438,7 @@ public static class NodeExtensions {
         continue;
       }
       List<string> arrValueChars = node.Value.LiteralCharComponents();
-      foreach (var pair in node.KeyArray.Enumerated()) {
+      foreach (EnumeratedItem<string> pair in node.KeyArray.Enumerated()) {
         arrData.Add(new(pair.Value, arrValueChars[pair.Offset]));
       }
     }
