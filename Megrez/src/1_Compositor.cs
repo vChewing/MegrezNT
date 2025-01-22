@@ -283,11 +283,8 @@ public partial struct Compositor {
         if (target == 0) return false;
         break;
     }
-    // var currentRegion = WalkedNodes.CursorRegionMap()[target];  // <- 這樣雖然 C#
-    // 不會建置報錯，但可能會在運行時查詢失敗。 if (WalkedNodes.CursorRegionMap()[target] is not int currentRegion)
-    // return false; <- 這樣是錯的。
-    if (!WalkedNodes.CursorRegionMap().TryGetValue(key: target, out int currentRegion))
-      return false;  // <- 這樣是對的。
+    if (!WalkedNodes.CursorRegionMap().TryGetValue(key: target, out int currentRegion)) return false;
+    if (currentRegion >= WalkedNodes.Count) return false;  // 篩除末端邊緣座標。
     int aRegionForward = Math.Max(currentRegion - 1, 0);
     int currentRegionBorderRear = WalkedNodes.GetRange(0, currentRegion).Select(x => x.SpanLength).Sum();
 
