@@ -1,5 +1,6 @@
 // CSharpened and further development by (c) 2022 and onwards The vChewing Project (MIT License).
 // Was initially rebranded from (c) Lukhnos Liu's C++ library "Gramambular 2" (MIT License).
+// Walking algorithm (Dijkstra) implemented by (c) 2025 and onwards The vChewing Project (MIT License).
 // ====================
 // This code is released under the MIT license (SPDX-License-Identifier: MIT)
 
@@ -426,8 +427,8 @@ public partial struct Compositor {
   /// <returns>拿取的節點。拿不到的話就會是 null。</returns>
   private Node? GetNodeAt(int location, int length, List<string> keyArray) {
     location = Math.Max(Math.Min(location, Spans.Count - 1), 0);  // 防呆。
-    if (Spans[location].NodeOf(length) is not {} node) return null;
-    return (node.KeyArray.SequenceEqual(keyArray)) ? node : null;
+    return Spans[location].NodeOf(length) is not {}
+    node ? null : (node.KeyArray.SequenceEqual(keyArray)) ? node : null;
   }
 
   /// <summary>

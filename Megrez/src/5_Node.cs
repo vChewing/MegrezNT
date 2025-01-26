@@ -1,5 +1,6 @@
 // CSharpened and further development by (c) 2022 and onwards The vChewing Project (MIT License).
 // Was initially rebranded from (c) Lukhnos Liu's C++ library "Gramambular 2" (MIT License).
+// Walking algorithm (Dijkstra) implemented by (c) 2025 and onwards The vChewing Project (MIT License).
 // ====================
 // This code is released under the MIT license (SPDX-License-Identifier: MIT)
 
@@ -140,10 +141,11 @@ public partial class Node {
   /// <param name="obj"></param>
   /// <returns></returns>
   public override bool Equals(object obj) {
-    if (obj is not Node node) return false;
-    return OverridingScore == node.OverridingScore && KeyArray.SequenceEqual(node.KeyArray) &&
-           SpanLength == node.SpanLength && Unigrams == node.Unigrams &&
-           CurrentOverrideType == node.CurrentOverrideType && CurrentUnigramIndex == node.CurrentUnigramIndex;
+    return obj is not Node node
+               ? false
+               : OverridingScore == node.OverridingScore && KeyArray.SequenceEqual(node.KeyArray) &&
+                     SpanLength == node.SpanLength && Unigrams == node.Unigrams &&
+                     CurrentOverrideType == node.CurrentOverrideType && CurrentUnigramIndex == node.CurrentUnigramIndex;
   }
 
   /// <summary>
@@ -179,10 +181,10 @@ public partial class Node {
   /// </summary>
   public double Score {
     get {
-      if (Unigrams.IsEmpty()) return 0;
-      return CurrentOverrideType switch { OverrideType.HighScore => OverridingScore,
-                                          OverrideType.TopUnigramScore => Unigrams.First().Score,
-                                          _ => CurrentUnigram.Score };
+      return Unigrams.IsEmpty() ? 0
+                                : CurrentOverrideType switch { OverrideType.HighScore => OverridingScore,
+                                                               OverrideType.TopUnigramScore => Unigrams.First().Score,
+                                                               _ => CurrentUnigram.Score };
     }
   }
 
@@ -351,8 +353,8 @@ public static class NodeExtensions {
     // 下文按道理來講不應該會出現 nilReturn。
     if (!dictPair.CursorRegionMap.TryGetValue(cursor, out int rearNodeID)) return nilReturn;
     if (!dictPair.RegionCursorMap.TryGetValue(rearNodeID, out int rearIndex)) return nilReturn;
-    if (!dictPair.RegionCursorMap.TryGetValue(rearNodeID + 1, out int frontIndex)) return nilReturn;
-    return new(rearIndex, frontIndex);
+    return !dictPair.RegionCursorMap.TryGetValue(rearNodeID + 1, out int frontIndex) ? nilReturn
+                                                                                     : new(rearIndex, frontIndex);
   }
   /// <summary>
   /// 在陣列內以給定游標位置找出對應的節點。
@@ -367,8 +369,9 @@ public static class NodeExtensions {
     BRange range = self.ContextRange(givenCursor: cursor);
     outCursorPastNode = range.Upperbound;
     CursorMapPair dictPair = self.NodeBorderPointDictPair();
-    if (!dictPair.CursorRegionMap.TryGetValue(cursor + 1, out int rearNodeID)) return null;
-    return self.Count - 1 >= rearNodeID ? self[rearNodeID] : null;
+    return !dictPair.CursorRegionMap.TryGetValue(cursor + 1, out int rearNodeID) ? null
+           : self.Count - 1 >= rearNodeID                                        ? self[rearNodeID]
+                                                                                 : null;
   }
   /// <summary>
   /// 在陣列內以給定游標位置找出對應的節點。

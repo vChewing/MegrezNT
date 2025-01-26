@@ -1,153 +1,130 @@
 // CSharpened and further development by (c) 2022 and onwards The vChewing Project (MIT License).
 // Was initially rebranded from (c) Lukhnos Liu's C++ library "Gramambular 2" (MIT License).
+// Walking algorithm (Dijkstra) implemented by (c) 2025 and onwards The vChewing Project (MIT License).
 // ====================
 // This code is released under the MIT license (SPDX-License-Identifier: MIT)
 
-#nullable enable
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace Megrez {
 public partial struct Compositor {
   /// <summary>
-  /// 爬軌函式，會更新當前組字器的 <see cref="WalkedNodes"/>。<para/>
-  /// 找到軌格陣圖內權重最大的路徑。該路徑代表了可被觀測到的最可能的隱藏事件鏈。
-  /// 這裡使用 Cormen 在 2001 年出版的教材當中提出的「有向無環圖的最短路徑」的
-  /// 算法來計算這種路徑。不過，這裡不是要計算距離最短的路徑，而是計算距離最長
-  /// 的路徑（所以要找最大的權重），因為在對數概率下，較大的數值意味著較大的概率。
-  /// 對於 <c>G = (V, E)</c>，該算法的運行次數為 <c>O(|V|+|E|)</c>，其中 <c>G</c>
-  /// 是一個有向無環圖。這意味著，即使軌格很大，也可以用很少的算力就可以爬軌。
-  /// <remarks>
-  /// 利用該數學方法進行輸入法智能組句的（已知可考的）最開始的案例是郭家寶（ByVoid）
-  /// 的《<a href="https://byvoid.com/zht/blog/slm_based_pinyin_ime/">基於統計語言模型的拼音輸入法</a>》；
-  /// 再後來則是 2022 年中時期劉燈的 Gramambular 2 組字引擎。
-  /// </remarks>
+  /// 爬軌函式，會以 Dijkstra 算法更新當前組字器的 walkedNodes。<para/>
+  /// 該算法會在圖中尋找具有最高分數的路徑，即最可能的字詞組合。<para/>
+  /// 該算法所依賴的 HybridPriorityQueue 針對 Sandy Bridge 經過最佳化處理，
+  /// 使得該算法在 Sandy Bridge CPU 的電腦上比 DAG 算法擁有更優的效能。<para/>
   /// </summary>
-  /// <returns>爬軌結果＋該過程是否順利執行。</returns>
+  /// <returns>爬軌結果（已選字詞陣列）。</returns>
   public List<Node> Walk() {
-    List<Node> result = new();
-    try {
-      WalkedNodes.Clear();
-      SortAndRelax();
-      if (Spans.IsEmpty()) return result;
-      Node iterated = Node.LeadingNode;
-      while (iterated.Prev is {} itPrev) {
-        WalkedNodes.Insert(0, itPrev.Copy());
-        iterated = itPrev;
-      }
-      iterated.DestroyVertex();
-      WalkedNodes.RemoveAt(0);
-      return WalkedNodes;
-    } finally {
-      ReinitVertexNetwork();
-    }
-  }
+    WalkedNodes.Clear();
+    if (!Spans.Any()) return new();
 
-  /// 先進行位相幾何排序、再卸勁。
-  internal void SortAndRelax() {
-    ReinitVertexNetwork();
-    List<SpanUnit> theSpans = Spans;
-    if (theSpans.IsEmpty()) return;
-    Node.TrailingNode.Distance = 0;
-    theSpans.Enumerated().ToList().ForEach(spanNeta => {
-      int location = spanNeta.Offset;
-      SpanUnit vertexSpan = spanNeta.Value;
-      vertexSpan.Nodes.Values.ToList().ForEach(node => {
-        int nextVertexPosition = location + node.SpanLength;
-        if (nextVertexPosition == theSpans.Count) {
-          node.Edges.Add(Node.LeadingNode);
-          return;
+    // 初期化資料結構。
+    HybridPriorityQueue<PrioritizedState> openSet = new(reversed: true);
+    HashSet<SearchState> visited = new();
+    Dictionary<int, double> bestScore = new();
+
+    // 初期化起始狀態。
+    Node leadingNode = new(new() { "$LEADING" }, spanLength: 0, unigrams: new());
+    SearchState start = new(node: leadingNode, position: 0, prev: null, distance: 0);
+    openSet.Enqueue(new(state: start));
+    bestScore[0] = 0;
+
+    // 追蹤最佳結果。
+    SearchState? bestFinalState = null;
+    double bestFinalScore = double.MinValue;
+
+    // 主要 Dijkstra 迴圈。
+    while (!openSet.IsEmpty) {
+      if (openSet.Dequeue() is not {} currentPState) break;
+
+      // 如果已經造訪過具有更好分數的狀態，則跳過。
+      if (!visited.Add(currentPState.State)) continue;
+
+      // 檢查是否已到達終點。
+      if (currentPState.State.Position >= Keys.Count) {
+        if (currentPState.State.Distance > bestFinalScore) {
+          bestFinalScore = currentPState.State.Distance;
+          bestFinalState = currentPState.State;
         }
-        theSpans[nextVertexPosition].Nodes.Values.ToList().ForEach(nextVertex => { node.Edges.Add(nextVertex); });
-      });
-    });
+        continue;
+      }
 
-    Node.TrailingNode.Edges.AddRange(Spans.First().Nodes.Values);
+      // 處理下一個可能的節點。
+      SpanUnit currentSpan = Spans[currentPState.State.Position];
+      foreach (KeyValuePair<int, Node> spanNeta in currentSpan.Nodes) {
+        int length = spanNeta.Key;
+        Node nextNode = spanNeta.Value;
+        int nextPos = currentPState.State.Position + length;
 
-    TopoSort().Reversed().ForEach(neta => {
-      neta.Edges.Enumerated().ToList().ForEach(edge => {
-        if (neta.Edges[edge.Offset] is {} relaxV) Relax(neta, ref relaxV);
-      });
-    });
+        // 計算新的權重分數。
+        double newScore = currentPState.State.Distance + nextNode.Score;
+
+        // 如果該位置已有更優的權重分數，則跳過。
+        if (bestScore.TryGetValue(nextPos, out double existingScore) && existingScore >= newScore) continue;
+
+        SearchState nextState = new(node: nextNode, position: nextPos, prev: currentPState.State, distance: newScore);
+
+        bestScore[nextPos] = newScore;
+        openSet.Enqueue(new(state: nextState));
+      }
+    }
+
+    // 從最佳終止狀態重建路徑。
+    if (bestFinalState == null) return new();
+
+    List<Node> pathNodes = new();
+    SearchState? currentState = bestFinalState;
+
+    while (currentState != null) {
+      // 排除起始和結束的虛擬節點。
+      if (!ReferenceEquals(currentState.Node, leadingNode)) {
+        pathNodes.Insert(0, currentState.Node);
+      }
+      currentState = currentState.Prev;
+      // 備註：此處不需要手動 ASAN，因為沒有參據循環（Retain Cycle）。
+    }
+
+    WalkedNodes = pathNodes.Select(n => n.Copy()).ToList();
+    return WalkedNodes;
   }
 
-  /// <summary>
-  /// 摧毀所有與共用起始虛擬節點有牽涉的節點自身的 Vertex 特性資料。
-  /// </summary>
-  internal static void ReinitVertexNetwork() {
-    Node.TrailingNode.DestroyVertex();
-    Node.LeadingNode.DestroyVertex();
-  }
-
-  /// <summary>
-  /// 位相幾何排序處理時的處理狀態。
-  /// </summary>
-  private class TopoSortState {
-    public int IterIndex { get; set; }
+  /// <summary>用於追蹤搜尋過程中的狀態。</summary>
+  private class SearchState : IEquatable<SearchState> {
     public Node Node { get; }
-    public TopoSortState(Node node, int iterIndex = 0) {
+    public int Position { get; }
+    public SearchState? Prev { get; }
+    public double Distance { get; }
+
+    public SearchState(Node node, int position, SearchState? prev, double distance) {
       Node = node;
-      IterIndex = iterIndex;
+      Position = position;
+      Prev = prev;
+      Distance = distance;
+    }
+
+    public bool Equals(SearchState? other) {
+      return other != null && ReferenceEquals(Node, other.Node) && Position == other.Position;
+    }
+
+    public override bool Equals(object? obj) => Equals(obj as SearchState);
+
+    public override int GetHashCode() {
+      int[] x = { Node.GetHashCode(), Position.GetHashCode() };
+      return x.GetHashCode();
     }
   }
 
-  /// <summary>
-  /// 對持有單個根頂點的有向無環圖進行位相幾何排序（topological
-  /// sort）、且將排序結果以頂點陣列的形式給出。<para/>
-  /// 這裡使用我們自己的堆棧和狀態定義實現了一個非遞迴版本，
-  /// 這樣我們就不會受到當前線程的堆棧大小的限制。以下是等價的原始算法。
-  /// <code>
-  ///  void TopoSort(vertex: Vertex) {
-  ///    vertex.Edges.ForEach ((x) => {
-  ///      if (!vertexNode.TopoSorted) {
-  ///        DFS(vertexNode, result);
-  ///        vertexNode.TopoSorted = true;
-  ///      }
-  ///      result.Add(vertexNode);
-  ///    });
-  ///  }
-  /// </code>
-  /// 至於其遞迴版本，則類似於 Cormen 在 2001 年的著作「Introduction to Algorithms」當中的樣子。
-  /// </summary>
-  /// <returns>排序結果（頂點陣列）。</returns>
-  private List<Node> TopoSort() {
-    List<Node> result = new();
-    List<TopoSortState> stack = new();
-    stack.Add(new(Node.TrailingNode));
-    while (!stack.IsEmpty()) {
-      TopoSortState state = stack.Last();
-      Node theNode = state.Node;
-      if (state.IterIndex < state.Node.Edges.Count) {
-        Node newNode = state.Node.Edges[state.IterIndex];
-        state.IterIndex += 1;
-        if (!newNode.TopoSorted) {
-          stack.Add(new(newNode));
-          continue;
-        }
-      }
-      theNode.TopoSorted = true;
-      result.Add(theNode);
-      stack.Remove(stack.Last());
-    }
-    return result;
-  }
+  private record PrioritizedState : IComparable<PrioritizedState> {
+    public SearchState State { get; }
 
-  /// <summary>
-  /// 卸勁函式。<para/>
-  /// 「卸勁 (relax)」一詞出自 Cormen 在 2001 年的著作「Introduction to Algorithms」的 585 頁。
-  /// </summary>
-  /// <remarks>自己就是參照頂點 (u)，會在必要時成為 v (v) 的前述頂點。</remarks>
-  /// <param name="u">基準頂點。</param>
-  /// <param name="v">要影響的頂點。</param>
-  private static void Relax(Node u, ref Node v) {
-    // 從 u 到 w 的距離，也就是 v 的權重。
-    double w = v.Score;
-    // 這裡計算最大權重：
-    // 如果 v 目前的距離值小於「u 的距離值＋w（w 是 u 到 w 的距離，也就是 v 的權重）」，
-    // 我們就更新 v 的距離及其前述頂點。
-    if (v.Distance >= u.Distance + w) return;
-    v.Distance = u.Distance + w;
-    v.Prev = u;
+    public PrioritizedState(SearchState state) => State = state;
+
+    public int CompareTo(PrioritizedState? other) {
+      return other == null ? 1 : State.Distance.CompareTo(other.State.Distance);
+    }
   }
 }
 }

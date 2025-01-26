@@ -1,5 +1,6 @@
 // CSharpened and further development by (c) 2022 and onwards The vChewing Project (MIT License).
 // Was initially rebranded from (c) Lukhnos Liu's C++ library "Gramambular 2" (MIT License).
+// Walking algorithm (Dijkstra) implemented by (c) 2025 and onwards The vChewing Project (MIT License).
 // ====================
 // This code is released under the MIT license (SPDX-License-Identifier: MIT)
 
@@ -10,6 +11,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Megrez {
@@ -115,6 +117,172 @@ public struct EnumeratedItem<T> {
   public EnumeratedItem(int offset, T value) {
     Offset = offset;
     Value = value;
+  }
+}
+
+// MARK: - HybridPriorityQueue
+
+/// <summary>
+/// 針對 Sandy Bridge 架構最佳化的混合優先佇列實作。
+/// </summary>
+public class HybridPriorityQueue<T>
+    where T : IComparable<T> {
+  // 考慮 Sandy Bridge 的 L1 快取大小，調整閾值以符合 32KB L1D 快取行為。
+  private const int ArrayThreshold = 12;   // 增加閾值以更好地利用快取行。
+  private const int InitialCapacity = 16;  // 預設容量設為 2 的冪次以優化記憶體對齊。
+  private T[] _storage;                    // 改用陣列以減少記憶體間接引用。
+  private int _count;                      // 追蹤實際元素數量。
+  private readonly bool _isReversed;
+  private bool _usingArray;
+
+  public HybridPriorityQueue(bool reversed = false) {
+    _isReversed = reversed;
+    _storage = new T[InitialCapacity];
+    _count = 0;
+    _usingArray = true;
+  }
+
+  /// <summary>
+  /// 取得佇列中的元素數量。
+  /// </summary>
+  public int Count => _count;
+
+  /// <summary>
+  /// 檢查佇列是否為空。
+  /// </summary>
+  public bool IsEmpty => _count == 0;
+
+  public void Enqueue(T element) {
+    // 確保容量足夠
+    if (_count == _storage.Length) {
+      Array.Resize(ref _storage, _storage.Length * 2);
+    }
+
+    if (_usingArray) {
+      if (_count >= ArrayThreshold) {
+        SwitchToHeap();
+        _storage[_count++] = element;
+        HeapifyUp(_count - 1);
+        return;
+      }
+
+      // 使用二分搜尋找到插入點。
+      int insertIndex = FindInsertionPoint(element);
+      // 手動移動元素以避免使用 Array.Copy（減少函數呼叫開銷）。
+      for (int i = _count; i > insertIndex; i--) {
+        _storage[i] = _storage[i - 1];
+      }
+      _storage[insertIndex] = element;
+      _count++;
+    } else {
+      _storage[_count] = element;
+      HeapifyUp(_count++);
+    }
+  }
+
+  public T? Dequeue() {
+    if (_count == 0) return default;
+
+    T result = _storage[0];
+    _count--;
+
+    if (_usingArray) {
+      // 手動移動元素以避免使用 Array.Copy。
+      for (int i = 0; i < _count; i++) {
+        _storage[i] = _storage[i + 1];
+      }
+      return result;
+    }
+
+    // 堆積模式。
+    _storage[0] = _storage[_count];
+    if (_count > 0) HeapifyDown(0);
+    return result;
+  }
+
+  [MethodImpl(MethodImplOptions.AggressiveInlining)]
+  private int FindInsertionPoint(T element) {
+    int left = 0;
+    int right = _count;
+
+    // 展開循環以提高分支預測效率。
+    while (right - left > 1) {
+      int mid = (left + right) >> 1;
+      int midStorage = element.CompareTo(_storage[mid]);
+      if (_isReversed ? midStorage > 0 : midStorage < 0) {
+        right = mid;
+      } else {
+        left = mid;
+      }
+    }
+
+    // 處理邊界情況。
+    int leftStorage = element.CompareTo(_storage[left]);
+    bool marginCondition = _isReversed ? leftStorage <= 0 : leftStorage >= 0;
+    return left < _count && marginCondition ? left + 1 : left;
+  }
+
+  private void SwitchToHeap() {
+    _usingArray = false;
+    // 就地轉換為堆積，使用更有效率的方式。
+    for (int i = (_count >> 1) - 1; i >= 0; i--) {
+      HeapifyDown(i);
+    }
+  }
+
+  [MethodImpl(MethodImplOptions.AggressiveInlining)]
+  private void HeapifyUp(int index) {
+    T item = _storage[index];
+    while (index > 0) {
+      int parentIndex = (index - 1) >> 1;
+      T parent = _storage[parentIndex];
+      if (Compare(item, parent) >= 0) break;
+      _storage[index] = parent;
+      index = parentIndex;
+    }
+    _storage[index] = item;
+  }
+
+  [MethodImpl(MethodImplOptions.AggressiveInlining)]
+  private void HeapifyDown(int index) {
+    T item = _storage[index];
+    int half = _count >> 1;
+
+    while (index < half) {
+      int leftChild = (index << 1) + 1;
+      int rightChild = leftChild + 1;
+      int bestChild = leftChild;
+
+      T leftChildItem = _storage[leftChild];
+
+      if (rightChild < _count) {
+        T rightChildItem = _storage[rightChild];
+        if (Compare(rightChildItem, leftChildItem) < 0) {
+          bestChild = rightChild;
+          leftChildItem = rightChildItem;
+        }
+      }
+
+      if (Compare(item, leftChildItem) <= 0) break;
+
+      _storage[index] = leftChildItem;
+      index = bestChild;
+    }
+    _storage[index] = item;
+  }
+
+  [MethodImpl(MethodImplOptions.AggressiveInlining)]
+  private int Compare(T a, T b) => _isReversed ? b.CompareTo(a) : a.CompareTo(b);
+
+  /// <summary>
+  /// 清空佇列。
+  /// </summary>
+  public void Clear() {
+    _count = 0;
+    _usingArray = true;
+    if (_storage.Length > InitialCapacity) {
+      _storage = new T[InitialCapacity];
+    }
   }
 }
 }  // namespace Megrez
