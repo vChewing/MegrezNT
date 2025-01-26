@@ -12,12 +12,12 @@ using static System.String;
 namespace Megrez.Tests {
 
 public class SimpleLM : LangModelProtocol {
-  private Dictionary<string, List<Unigram>> _database = new Dictionary<string, List<Unigram>>();
+  private Dictionary<string, List<Unigram>> _database = new();
   public SimpleLM(string input, bool swapKeyValue = false) {
-    List<string> sStream = new List<string>(input.Split('\n'));
+    List<string> sStream = new(input.Split('\n'));
     sStream.ForEach(line => {
       if (IsNullOrEmpty(line) || line.FirstOrDefault().CompareTo('#') == 0) return;
-      List<string> lineStream = new List<string>(line.Split(' '));
+      List<string> lineStream = new(line.Split(' '));
       if (lineStream.Count < 2) return;
       string col0 = lineStream[0];  // 假設其不為 nil
       string col1 = lineStream[1];  // 假設其不為 nil
@@ -32,7 +32,7 @@ public class SimpleLM : LangModelProtocol {
         key = col0;
         value = col1;
       }
-      Unigram u = new Unigram(value, col2);
+      Unigram u = new(value, col2);
       if (!_database.ContainsKey(key)) _database.Add(key, new());
       _database[key].Add(u);
     });
@@ -56,24 +56,21 @@ public class SimpleLM : LangModelProtocol {
 
 public class MockLM : LangModelProtocol {
   public bool HasUnigramsFor(List<string> keyArray) => !IsNullOrEmpty(keyArray.Joined());
-  public List<Unigram> UnigramsFor(List<string> keyArray) => new List<Unigram> { new Unigram(value: keyArray.Joined(),
-                                                                                             score: -1) };
+  public List<Unigram> UnigramsFor(List<string> keyArray) => new() { new(value: keyArray.Joined(), score: -1) };
 }
 
 public class TestLM : LangModelProtocol {
   public bool HasUnigramsFor(List<string> keyArray) => keyArray.Joined() == "foo";
   public List<Unigram> UnigramsFor(List<string> keyArray) => keyArray.Joined() == "foo"
-                                                                 ? new List<Unigram> { new Unigram(keyArray.Joined(),
-                                                                                                   -1) }
+                                                                 ? new() { new(keyArray.Joined(), -1) }
                                                                  : new List<Unigram>();
 }
 
 public class TestLMForRanked : LangModelProtocol {
   public bool HasUnigramsFor(List<string> keyArray) => keyArray.Joined() == "foo";
   public List<Unigram> UnigramsFor(List<string> keyArray) => keyArray.Joined() == "foo"
-                                                                 ? new List<Unigram> { new Unigram("middle", -5),
-                                                                                       new Unigram("highest", -2),
-                                                                                       new Unigram("lowest", -10) }
+                                                                 ? new() { new("middle", -5), new("highest", -2),
+                                                                           new("lowest", -10) }
                                                                  : new List<Unigram>();
 }
 

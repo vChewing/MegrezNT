@@ -445,7 +445,7 @@ public partial struct Compositor {
     foreach (int position in range) {
       foreach (int theLength in new BRange(1, Math.Min(MaxSpanLength, range.Upperbound - position) + 1)) {
         List<string> joinedKeyArray = GetJoinedKeyArray(new(position, position + theLength));
-        BRange safeLocationRange = new BRange(0, Spans.Count);
+        BRange safeLocationRange = new(0, Spans.Count);
         Node? theNode = safeLocationRange.Contains(position) ? GetNodeAt(position, theLength, joinedKeyArray) : null;
         if (theNode is {}) {
           if (!updateExisting) continue;

@@ -244,48 +244,6 @@ public partial class Node {
     }
     return false;
   }
-
-  // MARK: - Vertex Extensions.
-
-  // 注意：這一段的任何參數都不參與 Hash。
-
-  /// 組字器「文字輸入方向上的」最後方的虛擬節點。
-  internal static Node TrailingNode = new(new() { "$TRAILING" }, spanLength: 0, unigrams: new());
-  /// 組字器「文字輸入方向上的」最前方的虛擬節點，也是根頂點。
-  internal static Node LeadingNode = new(new() { "$LEADING" }, spanLength: 0, unigrams: new());
-
-  /// <summary>
-  /// 前述頂點。
-  /// </summary>
-  public Node? Prev;
-  /// <summary>
-  /// 自身屬下的頂點陣列。
-  /// </summary>
-  public List<Node> Edges = new();
-  /// <summary>
-  /// 該變數用於最短路徑的計算。<para/>
-  /// 我們實際上是在計算具有最大權重的路徑，因此距離的初始值是負無窮的。
-  /// 如果我們要計算最短的權重/距離，我們會將其初期值設為正無窮。
-  /// </summary>
-  public double Distance = double.NegativeInfinity;
-  /// <summary>
-  /// 在進行進行位相幾何排序時會用到的狀態標記。
-  /// </summary>
-  public bool TopoSorted = false;
-
-  /// <summary>
-  /// 摧毀一個字詞節點本身的 Vertex 特性資料。
-  /// 讓一個 Vertex 順藤摸瓜地將自己的所有的連帶的 Vertex 都摧毀，再摧毀自己。
-  /// 此過程必須在一套 Vertex 全部使用完畢之後執行一次，可防止記憶體洩漏。
-  /// </summary>
-  public void DestroyVertex() {
-    while (Prev?.Prev is not null) Prev?.DestroyVertex();
-    Prev = null;
-    Edges.ForEach(edge => edge.DestroyVertex());
-    Edges.Clear();
-    Distance = double.NegativeInfinity;
-    TopoSorted = false;
-  }
 }
 
 // MARK: - [Node] Implementations.
