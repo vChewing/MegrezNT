@@ -377,7 +377,7 @@ public static class NodeExtensions {
       self.NodeBorderPointDictPair().CursorRegionMap;
 
   /// <summary>
-  /// 根據給定的游標，返回其前後最近的邊界點。
+  /// 根據給定的游標，返回其前後最近的節點邊界。
   /// </summary>
   /// <param name="self">節點。</param>
   /// <param name="givenCursor">給定的游標。</param>
