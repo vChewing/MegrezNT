@@ -3,7 +3,6 @@
 // ====================
 // This code is released under the MIT license (SPDX-License-Identifier: MIT)
 
-#nullable enable
 using System.Collections.Generic;
 using System.Linq;
 using static System.String;

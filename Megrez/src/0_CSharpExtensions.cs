@@ -4,7 +4,6 @@
 // This code is released under the MIT license (SPDX-License-Identifier: MIT)
 
 #pragma warning disable CS1591
-#nullable enable
 
 using System;
 using System.Collections;

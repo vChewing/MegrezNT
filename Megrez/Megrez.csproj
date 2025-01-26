@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <Nullable>enable</Nullable>
     <ReleaseVersion>2.7.4</ReleaseVersion>
     <PackageId>vChewing.Megrez</PackageId>
     <Authors>Shiki Suen</Authors>
