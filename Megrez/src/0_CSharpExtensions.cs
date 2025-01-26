@@ -125,8 +125,7 @@ public struct EnumeratedItem<T> {
 /// <summary>
 /// 針對 Sandy Bridge 架構最佳化的混合優先佇列實作。
 /// </summary>
-public class HybridPriorityQueue<T>
-    where T : IComparable<T> {
+public class HybridPriorityQueue<T> : IDisposable where T : IComparable<T> {
   // 考慮 Sandy Bridge 的 L1 快取大小，調整閾值以符合 32KB L1D 快取行為。
   private const int ArrayThreshold = 12;   // 增加閾值以更好地利用快取行。
   private const int InitialCapacity = 16;  // 預設容量設為 2 的冪次以優化記憶體對齊。
@@ -223,10 +222,15 @@ public class HybridPriorityQueue<T>
   }
 
   private void SwitchToHeap() {
-    _usingArray = false;
-    // 就地轉換為堆積，使用更有效率的方式。
-    for (int i = (_count >> 1) - 1; i >= 0; i--) {
-      HeapifyDown(i);
+    try {
+      _usingArray = false;
+      // 就地轉換為堆積，使用更有效率的方式。
+      for (int i = (_count >> 1) - 1; i >= 0; i--) {
+        HeapifyDown(i);
+      }
+    } catch {
+      Clear(); // 確保發生異常時也能清理。
+      throw;
     }
   }
 
@@ -283,6 +287,12 @@ public class HybridPriorityQueue<T>
     if (_storage.Length > InitialCapacity) {
       _storage = new T[InitialCapacity];
     }
+    Array.Clear(_storage, 0, _storage.Length); // 清除所有參考
+  }
+
+  public void Dispose() {
+    Clear();
+    _storage = null;
   }
 }
 }  // namespace Megrez
