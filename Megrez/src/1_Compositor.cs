@@ -427,8 +427,8 @@ public partial struct Compositor {
   /// <returns>拿取的節點。拿不到的話就會是 null。</returns>
   private Node? GetNodeAt(int location, int length, List<string> keyArray) {
     location = Math.Max(Math.Min(location, Spans.Count - 1), 0);  // 防呆。
-    if (Spans[location].NodeOf(length) is not {} node) return null;
-    return (node.KeyArray.SequenceEqual(keyArray)) ? node : null;
+    return Spans[location].NodeOf(length) is not {}
+    node ? null : (node.KeyArray.SequenceEqual(keyArray)) ? node : null;
   }
 
   /// <summary>
