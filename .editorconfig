@@ -1,3 +1,87 @@
-[*.cs]
+root = true
+
+[*.{cs}]
+charset = utf-8
+end_of_line = lf
+indent_size = 2
+indent_style = space
+insert_final_newline = true
+tab_width = 2
+trim_trailing_whitespace = true
+
 dotnet_diagnostic.CS8765.severity = none
 dotnet_diagnostic.CS8625.severity = none
+
+# 括號樣式
+csharp_new_line_before_open_brace = none
+csharp_new_line_before_else = false
+csharp_new_line_before_catch = false
+csharp_new_line_before_finally = false
+csharp_new_line_before_members_in_object_initializers = false
+csharp_new_line_before_members_in_anonymous_types = false
+csharp_new_line_between_query_expression_clauses = false
+
+# 空格規則
+csharp_space_after_cast = false
+csharp_space_after_keywords_in_control_flow_statements = true
+csharp_space_between_method_declaration_parameter_list_parentheses = false
+csharp_space_between_method_call_parameter_list_parentheses = false
+csharp_space_between_parentheses = false
+csharp_space_before_colon_in_inheritance_clause = true
+csharp_space_after_colon_in_inheritance_clause = true
+csharp_space_around_binary_operators = before_and_after
+csharp_space_before_colon_in_case_clause = false
+csharp_space_after_colon_in_case_clause = true
+csharp_space_between_empty_square_brackets = false
+csharp_space_between_square_brackets = false
+
+# 排序 using 指令
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = true
+
+# 命名慣例
+dotnet_naming_rule.private_members_with_underscore.symbols = private_fields
+dotnet_naming_rule.private_members_with_underscore.style = prefix_underscore
+dotnet_naming_rule.private_members_with_underscore.severity = suggestion
+
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+
+dotnet_naming_style.prefix_underscore.capitalization = camel_case
+dotnet_naming_style.prefix_underscore.required_prefix = _
+
+# 表達式風格
+csharp_prefer_braces = when_multiline
+csharp_preserve_single_line_statements = true
+csharp_preserve_single_line_blocks = true
+
+# 修飾詞順序
+dotnet_style_require_accessibility_modifiers = always:warning
+csharp_preferred_modifier_order = public,private,protected,internal,static,extern,new,virtual,abstract,sealed,override,readonly,unsafe,volatile,async:warning
+
+# 註解處理
+csharp_style_documentation_for_line_comments = false:none
+csharp_style_documentation_for_headers = false:none
+
+# 檔頭註解處理
+file_header_template = unset
+dotnet_diagnostic.IDE0073.severity = none
+
+# 忽略文件格式化
+dotnet_diagnostic.IDE0055.severity = none
+
+# 忽略合併衝突標記
+dotnet_style_allow_multiple_blank_lines_experimental = false
+dotnet_style_allow_statement_immediately_after_block_experimental = false
+
+# 補充排版規則
+csharp_indent_case_contents = true
+csharp_indent_switch_labels = true
+csharp_indent_block_contents = true
+csharp_indent_braces = false
+
+# 補充對齊規則
+csharp_align_multiline_parameter = true
+csharp_align_multiline_argument = true
+csharp_align_multiline_calls_chain = true
+csharp_align_multiline_array_and_object_initializer = true
