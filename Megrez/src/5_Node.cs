@@ -6,8 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Megrez
-{
+namespace Megrez {
   /// <summary>
   /// 字詞節點。<para/>
   /// 一個節點由這些內容組成：幅位長度、索引鍵、以及一組單元圖。幅位長度就是指這個
@@ -16,15 +15,13 @@ namespace Megrez
   /// 單元圖結果陣列。舉例說，如果一個詞有兩個漢字組成的話，那麼讀音也是有兩個、其
   /// 索引鍵也是由兩個讀音組成的，那麼這個節點的幅位長度就是 2。
   /// </summary>
-  public partial class Node
-  {
+  public partial class Node {
     // MARK: - Enums
 
     /// <summary>
     /// 三種不同的針對一個節點的覆寫行為。
     /// </summary>
-    public enum OverrideType
-    {
+    public enum OverrideType {
       /// <summary>
       /// 無覆寫行為。
       /// </summary>
@@ -78,11 +75,9 @@ namespace Megrez
     /// <summary>
     /// 當前該節點所指向的（單元圖陣列內的）單元圖索引位置。
     /// </summary>
-    public int CurrentUnigramIndex
-    {
+    public int CurrentUnigramIndex {
       get => _currentUnigramIndex;
-      set
-      {
+      set {
         int corrected = Math.Max(Math.Min(Unigrams.Count - 1, value), 0);
         _currentUnigramIndex = corrected;
       }
@@ -101,8 +96,7 @@ namespace Megrez
     /// <param name="keyArray">給定索引鍵陣列，不得為空。</param>
     /// <param name="spanLength">給定幅位長度，一般情況下與給定索引鍵陣列內的索引鍵數量一致。</param>
     /// <param name="unigrams">給定單元圖陣列，不得為空。</param>
-    public Node(List<string> keyArray, int spanLength, List<Unigram> unigrams)
-    {
+    public Node(List<string> keyArray, int spanLength, List<Unigram> unigrams) {
       _currentUnigramIndex = 0;
       KeyArray = keyArray;
       SpanLength = Math.Max(0, spanLength);
@@ -119,8 +113,7 @@ namespace Megrez
     /// 這在某些情況下會造成意料之外的混亂情況，所以需要引入一個拷貝用的建構子。
     /// </remarks>
     /// <param name="node"></param>
-    public Node(Node node)
-    {
+    public Node(Node node) {
       OverridingScore = node.OverridingScore;
       KeyArray = node.KeyArray.ToList();
       SpanLength = node.SpanLength;
@@ -145,8 +138,7 @@ namespace Megrez
     /// </summary>
     /// <param name="obj"></param>
     /// <returns></returns>
-    public override bool Equals(object obj)
-    {
+    public override bool Equals(object obj) {
       return obj is not Node node
                  ? false
                  : OverridingScore == node.OverridingScore && KeyArray.SequenceEqual(node.KeyArray) &&
@@ -158,10 +150,8 @@ namespace Megrez
     /// 做為預設雜湊函式。
     /// </summary>
     /// <returns>目前物件的雜湊碼。</returns>
-    public override int GetHashCode()
-    {
-      unchecked
-      {
+    public override int GetHashCode() {
+      unchecked {
         int hash = 17;
         hash = hash * 23 + OverridingScore.GetHashCode();
         hash = hash * 23 + KeyArray.GetHashCode();
@@ -193,13 +183,10 @@ namespace Megrez
     /// <summary>
     /// 給出目前的最高權重單元圖當中的權重值。該結果可能會受節點覆寫狀態所影響。
     /// </summary>
-    public double Score
-    {
-      get
-      {
+    public double Score {
+      get {
         return Unigrams.IsEmpty() ? 0
-                                  : CurrentOverrideType switch
-                                  {
+                                  : CurrentOverrideType switch {
                                     OverrideType.HighScore => OverridingScore,
                                     OverrideType.TopUnigramScore => Unigrams.First().Score,
                                     _ => CurrentUnigram.Score
@@ -228,8 +215,7 @@ namespace Megrez
     /// <summary>
     /// 重設該節點的覆寫狀態、及其內部的單元圖索引位置指向。
     /// </summary>
-    public void Reset()
-    {
+    public void Reset() {
       _currentUnigramIndex = 0;
       CurrentOverrideType = OverrideType.NoOverrides;
     }
@@ -239,8 +225,7 @@ namespace Megrez
     /// 如果此時影響到了 currentUnigramIndex 所指的內容的話，則將其重設為 0。
     /// </summary>
     /// <param name="source">新的單元圖陣列資料，必須不能為空（否則必定崩潰）。</param>
-    public void SyncingUnigramsFrom(List<Unigram> source)
-    {
+    public void SyncingUnigramsFrom(List<Unigram> source) {
       string oldCurrentValue = Unigrams[CurrentUnigramIndex].Value;
       Unigrams = source;
       CurrentUnigramIndex = _currentUnigramIndex;  // 自動觸發 didSet() 的糾錯過程。
@@ -254,11 +239,9 @@ namespace Megrez
     /// <param name="value">給定的單元圖資料值。</param>
     /// <param name="type">覆寫行為種類。</param>
     /// <returns>操作是否順利完成。</returns>
-    public bool SelectOverrideUnigram(string value, OverrideType type)
-    {
+    public bool SelectOverrideUnigram(string value, OverrideType type) {
       if (type == OverrideType.NoOverrides) return false;
-      foreach (EnumeratedItem<Unigram> pair in Unigrams.Enumerated())
-      {
+      foreach (EnumeratedItem<Unigram> pair in Unigrams.Enumerated()) {
         int i = pair.Offset;
         Unigram gram = pair.Value;
         if (value != gram.Value) continue;
@@ -275,8 +258,7 @@ namespace Megrez
   /// <summary>
   /// 針對節點陣列的功能擴充。
   /// </summary>
-  public static class NodeExtensions
-  {
+  public static class NodeExtensions {
     /// <summary>
     /// 從一個節點陣列當中取出目前的索引鍵陣列。
     /// </summary>
@@ -307,8 +289,7 @@ namespace Megrez
     /// <summary>
     /// (Result A, Result B) 辭典陣列。Result A 以索引查座標，Result B 以座標查索引。
     /// </summary>
-    public struct CursorMapPair
-    {
+    public struct CursorMapPair {
       /// <summary>
       /// 以索引查座標的辭典陣列。
       /// </summary>
@@ -322,8 +303,7 @@ namespace Megrez
       /// </summary>
       /// <param name="regionCursorMap">以索引查座標的辭典陣列。</param>
       /// <param name="cursorRegionMap">以座標查索引的辭典陣列。</param>
-      public CursorMapPair(Dictionary<int, int> regionCursorMap, Dictionary<int, int> cursorRegionMap)
-      {
+      public CursorMapPair(Dictionary<int, int> regionCursorMap, Dictionary<int, int> cursorRegionMap) {
         RegionCursorMap = regionCursorMap;
         CursorRegionMap = cursorRegionMap;
       }
@@ -335,18 +315,15 @@ namespace Megrez
     /// </summary>
     /// <param name="self">節點。</param>
     /// <returns> (Result A, Result B) 辭典陣列。Result A 以索引查座標，Result B 以座標查索引。</returns>
-    private static CursorMapPair NodeBorderPointDictPair(this List<Node> self)
-    {
+    private static CursorMapPair NodeBorderPointDictPair(this List<Node> self) {
       Dictionary<int, int> resultA = new();
       Dictionary<int, int> resultB = new() { [-1] = 0 };  // 防呆
       int cursorCounter = 0;
-      foreach (EnumeratedItem<Node> pair in self.Enumerated())
-      {
+      foreach (EnumeratedItem<Node> pair in self.Enumerated()) {
         int nodeCounter = pair.Offset;
         Node neta = pair.Value;
         resultA[nodeCounter] = cursorCounter;
-        foreach (string _ in neta.KeyArray)
-        {
+        foreach (string _ in neta.KeyArray) {
           resultB[cursorCounter] = nodeCounter;
           cursorCounter += 1;
         }
@@ -370,8 +347,7 @@ namespace Megrez
     /// <param name="self">節點。</param>
     /// <param name="givenCursor">給定的游標。</param>
     /// <returns>前後最近的邊界點。</returns>
-    public static BRange ContextRange(this List<Node> self, int givenCursor)
-    {
+    public static BRange ContextRange(this List<Node> self, int givenCursor) {
       if (self.IsEmpty()) return new(0, 0);
       int lastSpanLength = self.Last().KeyArray.Count;
       int totalKeyCount = self.TotalKeyCount();
@@ -393,8 +369,7 @@ namespace Megrez
     /// <param name="givenCursor">給定游標位置。</param>
     /// <param name="outCursorPastNode">找出的節點的前端位置。</param>
     /// <returns>查找結果。</returns>
-    public static Node? FindNodeAt(this List<Node> self, int givenCursor, ref int outCursorPastNode)
-    {
+    public static Node? FindNodeAt(this List<Node> self, int givenCursor, ref int outCursorPastNode) {
       if (self.IsEmpty()) return null;
       int cursor = Math.Max(0, Math.Min(givenCursor, self.TotalKeyCount() - 1));
       BRange range = self.ContextRange(givenCursor: cursor);
@@ -410,8 +385,7 @@ namespace Megrez
     /// <param name="self">節點。</param>
     /// <param name="givenCursor">給定游標位置。</param>
     /// <returns>查找結果。</returns>
-    public static Node? FindNodeAt(this List<Node> self, int givenCursor)
-    {
+    public static Node? FindNodeAt(this List<Node> self, int givenCursor) {
       int mudamuda = 0;  // muda = useless.
       return self.FindNodeAt(givenCursor, ref mudamuda);
     }
@@ -421,20 +395,16 @@ namespace Megrez
     /// </summary>
     /// <param name="self">節點。</param>
     /// <returns>一組逐字的字音配對陣列。</returns>
-    public static List<KeyValuePair<string, string>> SmashedPairs(this List<Node> self)
-    {
+    public static List<KeyValuePair<string, string>> SmashedPairs(this List<Node> self) {
       List<KeyValuePair<string, string>> arrData = new();
 
-      foreach (Node node in self)
-      {
-        if (node.IsReadingMismatched && !string.IsNullOrEmpty(node.KeyArray.Joined()))
-        {
+      foreach (Node node in self) {
+        if (node.IsReadingMismatched && !string.IsNullOrEmpty(node.KeyArray.Joined())) {
           arrData.Add(new(node.KeyArray.Joined("\t"), node.Value));
           continue;
         }
         List<string> arrValueChars = node.Value.LiteralCharComponents();
-        foreach (EnumeratedItem<string> pair in node.KeyArray.Enumerated())
-        {
+        foreach (EnumeratedItem<string> pair in node.KeyArray.Enumerated()) {
           arrData.Add(new(pair.Value, arrValueChars[pair.Offset]));
         }
       }

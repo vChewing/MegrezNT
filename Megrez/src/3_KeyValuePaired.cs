@@ -6,13 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Megrez
-{
+namespace Megrez {
   /// <summary>
   /// 鍵值配對，乃索引鍵陣列與讀音的配對單元。
   /// </summary>
-  public class KeyValuePaired
-  {
+  public class KeyValuePaired {
     /// <summary>
     /// 索引鍵陣列。一般情況下用來放置讀音等可以用來作為索引的內容。
     /// </summary>
@@ -33,8 +31,7 @@ namespace Megrez
     /// <param name="keyArray">索引鍵陣列。一般情況下用來放置讀音等可以用來作為索引的內容。</param>
     /// <param name="value">資料值。</param>
     /// <param name="score">權重（雙精度小數）。</param>
-    public KeyValuePaired(List<string> keyArray, string value, double score = 0)
-    {
+    public KeyValuePaired(List<string> keyArray, string value, double score = 0) {
       KeyArray = keyArray;
       Value = value;
       Score = score;
@@ -45,8 +42,7 @@ namespace Megrez
     /// <param name="key">索引鍵。一般情況下用來放置讀音等可以用來作為索引的內容。</param>
     /// <param name="value">資料值。</param>
     /// <param name="score">權重（雙精度小數）。</param>
-    public KeyValuePaired(string key, string value, double score = 0)
-    {
+    public KeyValuePaired(string key, string value, double score = 0) {
       KeyArray = key.Split(Compositor.TheSeparator.ToCharArray()).ToList();
       Value = value;
       Score = score;
@@ -70,8 +66,7 @@ namespace Megrez
     /// </summary>
     /// <param name="obj"></param>
     /// <returns></returns>
-    public override bool Equals(object obj)
-    {
+    public override bool Equals(object obj) {
       return obj is KeyValuePaired pair && JoinedKey().SequenceEqual(pair.JoinedKey()) && Value == pair.Value &&
              Math.Abs(Score - pair.Score) < -0.000000000000001;
     }
@@ -80,10 +75,8 @@ namespace Megrez
     /// 做為預設雜湊函式。
     /// </summary>
     /// <returns>目前物件的雜湊碼。</returns>
-    public override int GetHashCode()
-    {
-      unchecked
-      {
+    public override int GetHashCode() {
+      unchecked {
         int hash = 17;
         hash = hash * 23 + KeyArray.GetHashCode();
         hash = hash * 23 + Value.GetHashCode();
@@ -107,8 +100,7 @@ namespace Megrez
     /// <param name="lhs"></param>
     /// <param name="rhs"></param>
     /// <returns></returns>
-    public static bool operator ==(KeyValuePaired lhs, KeyValuePaired rhs)
-    {
+    public static bool operator ==(KeyValuePaired lhs, KeyValuePaired rhs) {
       return lhs.KeyArray.SequenceEqual(rhs.KeyArray) && lhs.Value == rhs.Value;
     }
     /// <summary>
@@ -117,8 +109,7 @@ namespace Megrez
     /// <param name="lhs"></param>
     /// <param name="rhs"></param>
     /// <returns></returns>
-    public static bool operator !=(KeyValuePaired lhs, KeyValuePaired rhs)
-    {
+    public static bool operator !=(KeyValuePaired lhs, KeyValuePaired rhs) {
       return lhs.KeyArray.Count != rhs.KeyArray.Count || lhs.Value != rhs.Value;
     }
 
@@ -128,8 +119,7 @@ namespace Megrez
     /// <param name="lhs"></param>
     /// <param name="rhs"></param>
     /// <returns></returns>
-    public static bool operator <(KeyValuePaired lhs, KeyValuePaired rhs)
-    {
+    public static bool operator <(KeyValuePaired lhs, KeyValuePaired rhs) {
       return lhs.KeyArray.Count < rhs.KeyArray.Count ||
              lhs.KeyArray.Count == rhs.KeyArray.Count &&
                  string.Compare(lhs.Value, rhs.Value, StringComparison.Ordinal) < 0;
@@ -141,8 +131,7 @@ namespace Megrez
     /// <param name="lhs"></param>
     /// <param name="rhs"></param>
     /// <returns></returns>
-    public static bool operator >(KeyValuePaired lhs, KeyValuePaired rhs)
-    {
+    public static bool operator >(KeyValuePaired lhs, KeyValuePaired rhs) {
       return lhs.KeyArray.Count > rhs.KeyArray.Count ||
              lhs.KeyArray.Count == rhs.KeyArray.Count &&
                  string.Compare(lhs.Value, rhs.Value, StringComparison.Ordinal) > 0;
@@ -154,8 +143,7 @@ namespace Megrez
     /// <param name="lhs"></param>
     /// <param name="rhs"></param>
     /// <returns></returns>
-    public static bool operator <=(KeyValuePaired lhs, KeyValuePaired rhs)
-    {
+    public static bool operator <=(KeyValuePaired lhs, KeyValuePaired rhs) {
       return lhs.KeyArray.Count <= rhs.KeyArray.Count ||
              lhs.KeyArray.Count == rhs.KeyArray.Count &&
                  string.Compare(lhs.Value, rhs.Value, StringComparison.Ordinal) <= 0;
@@ -167,20 +155,17 @@ namespace Megrez
     /// <param name="lhs"></param>
     /// <param name="rhs"></param>
     /// <returns></returns>
-    public static bool operator >=(KeyValuePaired lhs, KeyValuePaired rhs)
-    {
+    public static bool operator >=(KeyValuePaired lhs, KeyValuePaired rhs) {
       return lhs.KeyArray.Count >= rhs.KeyArray.Count ||
              lhs.KeyArray.Count == rhs.KeyArray.Count &&
                  string.Compare(lhs.Value, rhs.Value, StringComparison.Ordinal) >= 0;
     }
   }
-  public partial class Compositor
-  {
+  public partial class Compositor {
     /// <summary>
     /// 候選字陣列內容的獲取範圍類型。
     /// </summary>
-    public enum CandidateFetchFilter
-    {
+    public enum CandidateFetchFilter {
       /// <summary>
       /// 不只包含其它兩類結果，還允許游標穿插候選字。
       /// </summary>
@@ -204,13 +189,11 @@ namespace Megrez
     /// <param name="filter">候選字音配對陣列。</param>
     /// <returns></returns>
     public List<KeyValuePaired> FetchCandidatesAt(int? givenLocation = null,
-                                                  CandidateFetchFilter filter = CandidateFetchFilter.All)
-    {
+                                                  CandidateFetchFilter filter = CandidateFetchFilter.All) {
       List<KeyValuePaired> result = new();
       if (Keys.IsEmpty()) return result;
       int location = Math.Max(0, Math.Min(givenLocation ?? Cursor, Keys.Count));
-      if (filter == CandidateFetchFilter.EndAt)
-      {
+      if (filter == CandidateFetchFilter.EndAt) {
         if (location == Keys.Count) filter = CandidateFetchFilter.All;
         location -= 1;
       }
@@ -218,13 +201,10 @@ namespace Megrez
       // 按照讀音的長度（幅位長度）來給節點排序。
       List<NodeWithLocation> anchors = FetchOverlappingNodesAt(location);
       string keyAtCursor = Keys[location];
-      anchors.ForEach(theAnchor =>
-      {
+      anchors.ForEach(theAnchor => {
         Node theNode = theAnchor.Node;
-        foreach (Unigram gram in theNode.Unigrams)
-        {
-          switch (filter)
-          {
+        foreach (Unigram gram in theNode.Unigrams) {
+          switch (filter) {
             case CandidateFetchFilter.All:
               // 得加上這道篩選，所以會出現很多無效結果。
               if (!theNode.KeyArray.Contains(keyAtCursor)) continue;
@@ -276,8 +256,7 @@ namespace Megrez
     /// <param name="overrideType">指定覆寫行為。</param>
     /// <returns>該操作是否成功執行。</returns>
     internal bool OverrideCandidateAgainst(List<string>? keyArray, int location, string value,
-                                           Node.OverrideType overrideType)
-    {
+                                           Node.OverrideType overrideType) {
       location = Math.Max(Math.Min(location, Keys.Count), 0);  // 防呆。
       List<NodeWithLocation> arrOverlappedNodes = FetchOverlappingNodesAt(Math.Min(Keys.Count - 1, location));
       Node fakeNode = new(new() { "_NULL_" }, spanLength: 0, new());
@@ -285,25 +264,21 @@ namespace Megrez
       // 這裡必須用 SequenceEqual，因為 C# 只能用這種方法才能準確判定兩個字串陣列是否雷同。
       foreach (NodeWithLocation anchor in arrOverlappedNodes.Where(
                    anchor => (keyArray == null || anchor.Node.KeyArray.SequenceEqual(keyArray)) &&
-                             anchor.Node.SelectOverrideUnigram(value, overrideType)))
-      {
+                             anchor.Node.SelectOverrideUnigram(value, overrideType))) {
         overridden = anchor;
         break;
       }
       if (Equals(overridden.Node, fakeNode)) return false;  // 啥也不覆寫。
 
       int lengthUpperBound = Math.Min(Spans.Count, overridden.Location + overridden.Node.SpanLength);
-      foreach (int i in new BRange(overridden.Location, lengthUpperBound - 1))
-      {
+      foreach (int i in new BRange(overridden.Location, lengthUpperBound - 1)) {
         // 咱們還得弱化所有在相同的幅位座標的節點的複寫權重。舉例說之前爬軌的結果是「A BC」
         // 且 A 與 BC 都是被覆寫的結果，然後使用者現在在與 A 相同的幅位座標位置
         // 選了「DEF」，那麼 BC 的覆寫狀態就有必要重設（但 A 不用重設）。
         arrOverlappedNodes = FetchOverlappingNodesAt(i);
-        foreach (NodeWithLocation anchor in arrOverlappedNodes.Where(anchor => !Equals(anchor.Node, overridden.Node)))
-        {
+        foreach (NodeWithLocation anchor in arrOverlappedNodes.Where(anchor => !Equals(anchor.Node, overridden.Node))) {
           if (!overridden.Node.JoinedKey("\t").Contains(anchor.Node.JoinedKey("\t")) ||
-              !overridden.Node.Value.Contains(anchor.Node.Value))
-          {
+              !overridden.Node.Value.Contains(anchor.Node.Value)) {
             anchor.Node.Reset();
             continue;
           }

@@ -8,24 +8,19 @@ using System.Linq;
 using static System.String;
 // ReSharper disable InconsistentNaming
 
-namespace Megrez.Tests
-{
-  public class SimpleLM : LangModelProtocol
-  {
+namespace Megrez.Tests {
+  public class SimpleLM : LangModelProtocol {
     private Dictionary<string, List<Unigram>> _database = new();
     public string separator { get; set; }
-    public SimpleLM(string input, bool swapKeyValue = false, string separator = "-")
-    {
+    public SimpleLM(string input, bool swapKeyValue = false, string separator = "-") {
       this.separator = separator;
       this.ReConstruct(input, swapKeyValue, separator);
     }
 
-    public void ReConstruct(string input, bool swapKeyValue = false, string? separator = null)
-    {
+    public void ReConstruct(string input, bool swapKeyValue = false, string? separator = null) {
       this.separator = separator ?? this.separator;
       List<string> sStream = new(input.Split('\n'));
-      sStream.ForEach(line =>
-      {
+      sStream.ForEach(line => {
         if (IsNullOrEmpty(line) || line.FirstOrDefault().CompareTo('#') == 0)
           return;
         List<string> lineStream = new(line.Split(' '));
@@ -38,13 +33,10 @@ namespace Megrez.Tests
           col2 = number;
         string key;
         string value;
-        if (swapKeyValue)
-        {
+        if (swapKeyValue) {
           key = col1;
           value = col0;
-        }
-        else
-        {
+        } else {
           key = col0;
           value = col1;
         }
@@ -59,16 +51,14 @@ namespace Megrez.Tests
     public List<Unigram> UnigramsFor(List<string> keyArray) =>
         _database.ContainsKey(keyArray.Joined(separator: separator)) ? _database[keyArray.Joined(separator: separator)]
                                                                      : new();
-    public void Trim(string key, string value)
-    {
+    public void Trim(string key, string value) {
       if (!_database.TryGetValue(key, out List<Unigram>? arr))
         return;
 
       if (arr is not { } theArr)
         return;
       theArr = theArr.Where(x => x.Value != value).ToList();
-      if (theArr.IsEmpty())
-      {
+      if (theArr.IsEmpty()) {
         _database.Remove(key);
         return;
       }
@@ -76,8 +66,7 @@ namespace Megrez.Tests
     }
   }
 
-  public class MockLM : LangModelProtocol
-  {
+  public class MockLM : LangModelProtocol {
     public bool HasUnigramsFor(List<string> keyArray) => !IsNullOrEmpty(keyArray.Joined());
     public List<Unigram> UnigramsFor(List<string> keyArray) => new() { new(value: keyArray.Joined(), score: -1) };
   }

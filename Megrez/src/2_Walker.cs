@@ -6,10 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Megrez
-{
-  public partial class Compositor
-  {
+namespace Megrez {
+  public partial class Compositor {
     /// <summary>
     /// 爬軌函式，會以 Dijkstra 算法更新當前組字器的 walkedNodes。<para/>
     /// 該算法會在圖中尋找具有最高分數的路徑，即最可能的字詞組合。<para/>
@@ -17,8 +15,7 @@ namespace Megrez
     /// 使得該算法在 Sandy Bridge CPU 的電腦上比 DAG 算法擁有更優的效能。<para/>
     /// </summary>
     /// <returns>爬軌結果（已選字詞陣列）。</returns>
-    public List<Node> Walk()
-    {
+    public List<Node> Walk() {
       WalkedNodes.Clear();
       if (!Spans.Any()) return new();
 
@@ -38,18 +35,15 @@ namespace Megrez
       double bestFinalScore = double.MinValue;
 
       // 主要 Dijkstra 迴圈。
-      while (!openSet.IsEmpty)
-      {
+      while (!openSet.IsEmpty) {
         if (openSet.Dequeue() is not { } currentPState) break;
 
         // 如果已經造訪過具有更好分數的狀態，則跳過。
         if (!visited.Add(currentPState.State)) continue;
 
         // 檢查是否已到達終點。
-        if (currentPState.State.Position >= Keys.Count)
-        {
-          if (currentPState.State.Distance > bestFinalScore)
-          {
+        if (currentPState.State.Position >= Keys.Count) {
+          if (currentPState.State.Distance > bestFinalScore) {
             bestFinalScore = currentPState.State.Distance;
             bestFinalState = currentPState.State;
           }
@@ -58,8 +52,7 @@ namespace Megrez
 
         // 處理下一個可能的節點。
         SpanUnit currentSpan = Spans[currentPState.State.Position];
-        foreach (KeyValuePair<int, Node> spanNeta in currentSpan.Nodes)
-        {
+        foreach (KeyValuePair<int, Node> spanNeta in currentSpan.Nodes) {
           int length = spanNeta.Key;
           Node nextNode = spanNeta.Value;
           int nextPos = currentPState.State.Position + length;
@@ -83,11 +76,9 @@ namespace Megrez
       List<Node> pathNodes = new();
       SearchState? currentState = bestFinalState;
 
-      while (currentState != null)
-      {
+      while (currentState != null) {
         // 排除起始和結束的虛擬節點。
-        if (!ReferenceEquals(currentState.Node, leadingNode))
-        {
+        if (!ReferenceEquals(currentState.Node, leadingNode)) {
           pathNodes.Insert(0, currentState.Node);
         }
         currentState = currentState.Prev;
@@ -99,32 +90,27 @@ namespace Megrez
     }
 
     /// <summary>用於追蹤搜尋過程中的狀態。</summary>
-    private class SearchState : IEquatable<SearchState>
-    {
+    private class SearchState : IEquatable<SearchState> {
       public Node Node { get; }
       public int Position { get; }
       public SearchState? Prev { get; }
       public double Distance { get; }
 
-      public SearchState(Node node, int position, SearchState? prev, double distance)
-      {
+      public SearchState(Node node, int position, SearchState? prev, double distance) {
         Node = node;
         Position = position;
         Prev = prev;
         Distance = distance;
       }
 
-      public bool Equals(SearchState? other)
-      {
+      public bool Equals(SearchState? other) {
         return other != null && ReferenceEquals(Node, other.Node) && Position == other.Position;
       }
 
       public override bool Equals(object? obj) => Equals(obj as SearchState);
 
-      public override int GetHashCode()
-      {
-        unchecked
-        {
+      public override int GetHashCode() {
+        unchecked {
           int hash = 17;
           hash = hash * 23 + Node.GetHashCode();
           hash = hash * 23 + Position.GetHashCode();
@@ -133,14 +119,12 @@ namespace Megrez
       }
     }
 
-    private record PrioritizedState : IComparable<PrioritizedState>
-    {
+    private record PrioritizedState : IComparable<PrioritizedState> {
       public SearchState State { get; }
 
       public PrioritizedState(SearchState state) => State = state;
 
-      public int CompareTo(PrioritizedState? other)
-      {
+      public int CompareTo(PrioritizedState? other) {
         return other == null ? 1 : State.Distance.CompareTo(other.State.Distance);
       }
     }

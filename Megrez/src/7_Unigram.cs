@@ -5,13 +5,11 @@
 using System;
 using System.Collections.Generic;
 
-namespace Megrez
-{
+namespace Megrez {
   /// <summary>
   /// 單元圖。
   /// </summary>
-  public struct Unigram
-  {
+  public struct Unigram {
     /// <summary>
     /// 資料值，通常是詞語或單個字。
     /// </summary>
@@ -27,8 +25,7 @@ namespace Megrez
     /// </summary>
     /// <param name="value">資料值。</param>
     /// <param name="score">權重（雙精度小數）。</param>
-    public Unigram(string value = "", double score = 0)
-    {
+    public Unigram(string value = "", double score = 0) {
       Value = value;
       Score = score;
     }
@@ -43,10 +40,8 @@ namespace Megrez
     /// 做為預設雜湊函式。
     /// </summary>
     /// <returns>目前物件的雜湊碼。</returns>
-    public override int GetHashCode()
-    {
-      unchecked
-      {
+    public override int GetHashCode() {
+      unchecked {
         int hash = 17;
         hash = hash * 23 + Value.GetHashCode();
         hash = hash * 23 + Score.GetHashCode();

@@ -8,14 +8,11 @@ using System.Linq;
 
 using NUnit.Framework;
 
-namespace Megrez.Tests
-{
+namespace Megrez.Tests {
   [TestFixture]
-  public class MegrezTestsBasic
-  {
+  public class MegrezTestsBasic {
     [Test]
-    public void Test01_SpanOperations()
-    {
+    public void Test01_SpanOperations() {
       SimpleLM langModel = new(TestDataClass.StrLMSampleDataLitch);
       Compositor.SpanUnit span = new();
       Node n1 = new(
@@ -42,8 +39,7 @@ namespace Megrez.Tests
     }
 
     [Test]
-    public void Test02_Compositor_BasicSpanNodeGramInsertion()
-    {
+    public void Test02_Compositor_BasicSpanNodeGramInsertion() {
       Compositor compositor = new(new MockLM());
       Assert.That(compositor.Separator, Is.EqualTo(Compositor.TheSeparator));
       Assert.That(compositor.Cursor, Is.EqualTo(0));
@@ -62,8 +58,7 @@ namespace Megrez.Tests
     }
 
     [Test]
-    public void Test03_Compositor_DefendingInvalidOps()
-    {
+    public void Test03_Compositor_DefendingInvalidOps() {
       SimpleLM mockLM = new("ping2 ping2 -1");
       Compositor compositor = new(mockLM);
       compositor.Separator = ";";
@@ -85,8 +80,7 @@ namespace Megrez.Tests
     }
 
     [Test]
-    public void Test04_Compositor_SpansAcrossPositions()
-    {
+    public void Test04_Compositor_SpansAcrossPositions() {
       Compositor compositor = new(new MockLM());
       compositor.Separator = ";";
       compositor.InsertKey("h");
@@ -106,8 +100,7 @@ namespace Megrez.Tests
     }
 
     [Test]
-    public void Test05_Compositor_KeyAndSpanDeletionInAllDirections()
-    {
+    public void Test05_Compositor_KeyAndSpanDeletionInAllDirections() {
       Compositor compositor = new(new MockLM());
       compositor.InsertKey("a");
       compositor.Cursor = 0;
@@ -123,8 +116,7 @@ namespace Megrez.Tests
       Assert.That(compositor.Length, Is.EqualTo(0));
       Assert.That(compositor.Spans.Count, Is.EqualTo(0));
 
-      void ResetCompositorForTests()
-      {
+      void ResetCompositorForTests() {
         compositor.Clear();
         compositor.InsertKey("h");
         compositor.InsertKey("o");
@@ -192,8 +184,7 @@ namespace Megrez.Tests
     }
 
     [Test]
-    public void Test06_Compositor_SpanInsertion()
-    {
+    public void Test06_Compositor_SpanInsertion() {
       Compositor compositor = new(new MockLM());
       compositor.InsertKey("是");
       compositor.InsertKey("學");
@@ -219,11 +210,9 @@ namespace Megrez.Tests
     }
 
     [Test]
-    public void Test07_Compositor_LongGridDeletionAndInsertion()
-    {
+    public void Test07_Compositor_LongGridDeletionAndInsertion() {
       Compositor compositor = new(new MockLM());
-      foreach (char key in "無可奈何花作香幽蝶能留一縷芳")
-      {
+      foreach (char key in "無可奈何花作香幽蝶能留一縷芳") {
         compositor.InsertKey(key.ToString());
       }
       {
@@ -259,11 +248,9 @@ namespace Megrez.Tests
   }
 
   [TestFixture]
-  public class MegrezTestsAdvanced
-  {
+  public class MegrezTestsAdvanced {
     [Test]
-    public void Test08_WordSegmentation()
-    {
+    public void Test08_WordSegmentation() {
       string regexPattern = ".* 能留 .*\n";
       string rawData = System.Text.RegularExpressions.Regex.Replace(
         TestDataClass.StrLMSampleDataHutao,
@@ -276,8 +263,7 @@ namespace Megrez.Tests
         ""
       );
 
-      foreach (char c in "幽蝶能留一縷芳")
-      {
+      foreach (char c in "幽蝶能留一縷芳") {
         compositor.InsertKey(c.ToString());
       }
 
@@ -292,12 +278,10 @@ namespace Megrez.Tests
     }
 
     [Test]
-    public void Test09_Compositor_StressBench()
-    {
+    public void Test09_Compositor_StressBench() {
       Console.WriteLine("// Stress test preparation begins.");
       Compositor compositor = new(new SimpleLM(TestDataClass.StrLMStressData));
-      for (int i = 0; i < 1919; i++)
-      {
+      for (int i = 0; i < 1919; i++) {
         compositor.InsertKey("sheng1");
       }
       Console.WriteLine("// Stress test started.");
@@ -308,15 +292,13 @@ namespace Megrez.Tests
     }
 
     [Test]
-    public void Test10_Compositor_UpdateUnigramData()
-    {
+    public void Test10_Compositor_UpdateUnigramData() {
       string[] readings = "shu4 xin1 feng1".Split(' ');
       string newRawStringLM = TestDataClass.StrLMSampleDataEmoji + "\nshu4-xin1-feng1 樹新風 -9\n";
       System.Text.RegularExpressions.Regex regexToFilter = new(".*(樹|新|風) .*");
       SimpleLM lm = new(regexToFilter.Replace(newRawStringLM, ""));
       Compositor compositor = new(lm);
-      foreach (string key in readings)
-      {
+      foreach (string key in readings) {
         Assert.That(compositor.InsertKey(key), Is.True);
       }
       Console.WriteLine(string.Join(", ", compositor.Keys));
@@ -329,21 +311,18 @@ namespace Megrez.Tests
     }
 
     [Test]
-    public void Test11_Compositor_VerifyCandidateFetchResultsWithNewAPI()
-    {
+    public void Test11_Compositor_VerifyCandidateFetchResultsWithNewAPI() {
       SimpleLM theLM = new(TestDataClass.StrLMSampleDataTechGuarden + "\n" + TestDataClass.StrLMSampleDataLitch);
       string rawReadings = "da4 qian2 tian1 zai5 ke1 ji4 gong1 yuan2 chao1 shang1";
       Compositor compositor = new(theLM);
-      foreach (string key in rawReadings.Split(' '))
-      {
+      foreach (string key in rawReadings.Split(' ')) {
         compositor.InsertKey(key);
       }
       List<string> stack1A = new();
       List<string> stack1B = new();
       List<string> stack2A = new();
       List<string> stack2B = new();
-      for (int i = 0; i <= compositor.Keys.Count; i++)
-      {
+      for (int i = 0; i <= compositor.Keys.Count; i++) {
         stack1A.Add(string.Join("-", compositor.FetchCandidatesAt(i, Compositor.CandidateFetchFilter.BeginAt).Select(c => c.Value)));
         stack1B.Add(string.Join("-", compositor.FetchCandidatesAt(i, Compositor.CandidateFetchFilter.EndAt).Select(c => c.Value)));
         stack2A.Add(string.Join("-", compositor.FetchCandidatesDeprecatedAt(i, Compositor.CandidateFetchFilter.BeginAt).Select(c => c.Value)));
@@ -356,15 +335,13 @@ namespace Megrez.Tests
     }
 
     [Test]
-    public void Test12_Compositor_FilteringOutCandidatesAcrossingTheCursor()
-    {
+    public void Test12_Compositor_FilteringOutCandidatesAcrossingTheCursor() {
       // 一號測試。
       {
         string[] readings = "ke1 ji4 gong1 yuan2".Split(' ');
         SimpleLM mockLM = new(TestDataClass.StrLMSampleDataTechGuarden);
         Compositor compositor = new(mockLM);
-        foreach (string key in readings)
-        {
+        foreach (string key in readings) {
           compositor.InsertKey(key);
         }
         // 初始爬軌結果。
@@ -383,8 +360,7 @@ namespace Megrez.Tests
         string[] readings = "sheng1 sheng1".Split(' ');
         SimpleLM mockLM = new(TestDataClass.StrLMStressData + "\n" + TestDataClass.StrLMSampleDataHutao);
         Compositor compositor = new(mockLM);
-        foreach (string key in readings)
-        {
+        foreach (string key in readings) {
           compositor.InsertKey(key);
         }
         int a = compositor.FetchCandidatesAt(1, Compositor.CandidateFetchFilter.BeginAt).Select(c => c.KeyArray.Count).Max();
@@ -403,13 +379,11 @@ namespace Megrez.Tests
     }
 
     [Test]
-    public void Test13_Compositor_WalkAndOverrideWithUnigramAndCursorJump()
-    {
+    public void Test13_Compositor_WalkAndOverrideWithUnigramAndCursorJump() {
       string readings = "chao1 shang1 da4 qian2 tian1 wei2 zhi3 hai2 zai5 mai4 nai3 ji1";
       SimpleLM mockLM = new(TestDataClass.StrLMSampleDataLitch);
       Compositor compositor = new(mockLM);
-      foreach (string key in readings.Split(' '))
-      {
+      foreach (string key in readings.Split(' ')) {
         compositor.InsertKey(key);
       }
       Assert.That(compositor.Length, Is.EqualTo(12));
@@ -524,13 +498,11 @@ EOS;
     }
 
     [Test]
-    public void Test14_Compositor_WalkAndOverride_AnotherTest()
-    {
+    public void Test14_Compositor_WalkAndOverride_AnotherTest() {
       string[] readings = "you1 die2 neng2 liu2 yi4 lv3 fang1".Split(' ');
       SimpleLM lm = new(TestDataClass.StrLMSampleDataHutao);
       Compositor compositor = new(lm);
-      foreach (string key in readings)
-      {
+      foreach (string key in readings) {
         compositor.InsertKey(key);
       }
       // 初始爬軌結果。
@@ -596,13 +568,11 @@ EOS;
     }
 
     [Test]
-    public void Test15_Compositor_ResettingFullyOverlappedNodesOnOverride()
-    {
+    public void Test15_Compositor_ResettingFullyOverlappedNodesOnOverride() {
       string[] readings = "shui3 guo3 zhi1".Split(' ');
       SimpleLM lm = new(TestDataClass.StrLMSampleDataFruitJuice);
       Compositor compositor = new(lm);
-      foreach (string key in readings)
-      {
+      foreach (string key in readings) {
         compositor.InsertKey(key);
       }
       List<Node> result = compositor.Walk();
@@ -664,13 +634,11 @@ EOS;
     }
 
     [Test]
-    public void Test16_Compositor_ResettingPartiallyOverlappedNodesOnOverride()
-    {
+    public void Test16_Compositor_ResettingPartiallyOverlappedNodesOnOverride() {
       string[] readings = "ke1 ji4 gong1 yuan2".Split(' ');
       string rawData = TestDataClass.StrLMSampleDataTechGuarden + "\ngong1-yuan2 公猿 -9";
       Compositor compositor = new(new SimpleLM(rawData));
-      foreach (string key in readings)
-      {
+      foreach (string key in readings) {
         compositor.InsertKey(key);
       }
       List<Node> result = compositor.Walk();
@@ -696,14 +664,12 @@ EOS;
     }
 
     [Test]
-    public void Test17_Compositor_CandidateDisambiguation()
-    {
+    public void Test17_Compositor_CandidateDisambiguation() {
       string[] readings = "da4 shu4 xin1 de5 mi4 feng1".Split(' ');
       System.Text.RegularExpressions.Regex regexToFilter = new("\nshu4-xin1 .*");
       string rawData = regexToFilter.Replace(TestDataClass.StrLMSampleDataEmoji, "");
       Compositor compositor = new(new SimpleLM(rawData));
-      foreach (string key in readings)
-      {
+      foreach (string key in readings) {
         compositor.InsertKey(key);
       }
       List<Node> result = compositor.Walk();

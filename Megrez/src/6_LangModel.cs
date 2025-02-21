@@ -4,13 +4,11 @@
 
 using System.Collections.Generic;
 
-namespace Megrez
-{
+namespace Megrez {
   /// <summary>
   /// 語言模型協定。
   /// </summary>
-  public interface LangModelProtocol
-  {
+  public interface LangModelProtocol {
     /// <summary>
     /// 給定索引鍵陣列，讓語言模型找給一組單元圖陣列。
     /// </summary>
