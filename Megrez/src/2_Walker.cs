@@ -9,6 +9,42 @@ using System.Linq;
 namespace Megrez {
   public partial class Compositor {
     /// <summary>
+    /// 批次清理所有 SearchState 物件以防止記憶體洩漏
+    /// </summary>
+    /// <param name="visited">已訪問的狀態集合</param>
+    /// <param name="openSet">優先序列中剩餘的狀態</param>
+    /// <param name="leadingState">初始狀態</param>
+    private static void BatchCleanAllSearchStates(
+      HashSet<SearchState> visited,
+      HybridPriorityQueue<PrioritizedState> openSet,
+      SearchState leadingState
+    ) {
+      // 收集所有需要清理的 SearchState 物件
+      HashSet<SearchState> allStates = new();
+
+      // 1. 新增 visited set 中的所有狀態
+      foreach (SearchState state in visited) {
+        allStates.Add(state);
+      }
+
+      // 2. 新增 openSet 中剩餘的所有狀態
+      while (!openSet.IsEmpty) {
+        if (openSet.Dequeue() is { } prioritizedState) {
+          allStates.Add(prioritizedState.State);
+        }
+      }
+
+      // 3. 新增 leadingState（如果還沒被包含）
+      allStates.Add(leadingState);
+
+      // 4. 對所有狀態進行清理，使用任一狀態作為起點來清理整個網路
+      // 由於所有狀態都可能互相參照，我們選擇任一狀態作為起點進行全域清理
+      if (allStates.FirstOrDefault() is { } anyState) {
+        anyState.BatchCleanSearchStateTree(allStates);
+      }
+    }
+
+    /// <summary>
     /// 爬軌函式，會以 Dijkstra 算法更新當前組字器的 walkedNodes。<para/>
     /// 該算法會在圖中尋找具有最高分數的路徑，即最可能的字詞組合。<para/>
     /// 該算法所依賴的 HybridPriorityQueue 針對 Sandy Bridge 經過最佳化處理，
@@ -71,19 +107,27 @@ namespace Megrez {
       }
 
       // 從最佳終止狀態重建路徑。
-      if (bestFinalState == null) return new();
+      if (bestFinalState == null) {
+        // 即使沒有找到最佳狀態，也需要清理所有建立的 SearchState 物件
+        BatchCleanAllSearchStates(visited, openSet, start);
+        return new();
+      }
 
       List<Node> pathNodes = new();
       SearchState? currentState = bestFinalState;
 
       while (currentState != null) {
         // 排除起始和結束的虛擬節點。
-        if (!ReferenceEquals(currentState.Node, leadingNode)) {
+        if (currentState.Node != null && !ReferenceEquals(currentState.Node, leadingNode)) {
           pathNodes.Insert(0, currentState.Node);
         }
         currentState = currentState.Prev;
         // 備註：此處不需要手動 ASAN，因為沒有參據循環（Retain Cycle）。
       }
+
+      // 手動 ASAN：批次清理所有 SearchState 物件以防止記憶體洩漏
+      // 包括 visited set 中的所有狀態、openSet 中剩餘的狀態，以及 leadingState
+      BatchCleanAllSearchStates(visited, openSet, start);
 
       WalkedNodes = pathNodes.Select(n => n.Copy()).ToList();
       return WalkedNodes;
@@ -91,16 +135,52 @@ namespace Megrez {
 
     /// <summary>用於追蹤搜尋過程中的狀態。</summary>
     private class SearchState : IEquatable<SearchState> {
-      public Node Node { get; }
+      public Node? Node { get; set; }
       public int Position { get; }
-      public SearchState? Prev { get; }
+      public SearchState? Prev { get; set; }
       public double Distance { get; }
 
-      public SearchState(Node node, int position, SearchState? prev, double distance) {
+      public SearchState(Node? node, int position, SearchState? prev, double distance) {
         Node = node;
         Position = position;
         Prev = prev;
         Distance = distance;
+      }
+
+      /// <summary>
+      /// 手動位址清理：對整個 SearchState 樹進行批次清理
+      /// 使用頂點方法清理所有 Node 和 Prev 參據以防止記憶體洩漏
+      /// </summary>
+      /// <param name="allStates">所有需要清理的狀態集合，如果提供則直接清理這些狀態</param>
+      public void BatchCleanSearchStateTree(HashSet<SearchState>? allStates = null) {
+        if (allStates != null) {
+          // 清理所有提供的狀態
+          foreach (SearchState state in allStates) {
+            state.Node = null;
+            state.Prev = null;
+          }
+        } else {
+          // 原有的樹狀清理邏輯（向下相容）
+          HashSet<SearchState> visited = new();
+          Stack<SearchState> stack = new();
+          stack.Push(this);
+
+          while (stack.Count > 0) {
+            SearchState current = stack.Pop();
+
+            // 避免重複造訪同一個節點
+            if (!visited.Add(current)) continue;
+
+            // 將前一個狀態加入堆疊以進行清理
+            if (current.Prev != null) {
+              stack.Push(current.Prev);
+            }
+
+            // 清理當前狀態的參據
+            current.Node = null;
+            current.Prev = null;
+          }
+        }
       }
 
       public bool Equals(SearchState? other) {
@@ -112,7 +192,7 @@ namespace Megrez {
       public override int GetHashCode() {
         unchecked {
           int hash = 17;
-          hash = hash * 23 + Node.GetHashCode();
+          hash = hash * 23 + (Node?.GetHashCode() ?? 0);
           hash = hash * 23 + Position.GetHashCode();
           return hash;
         }
