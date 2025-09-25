@@ -53,8 +53,8 @@ namespace Megrez {
     /// </summary>
     /// <param name="separator">給定的分隔符，預設值為 <see cref="Compositor.TheSeparator"/>。</param>
     /// <returns>已經銜接完畢的字串。</returns>
-    public string JoinedKey(string? separator = null) => string.Join(separator ?? Compositor.TheSeparator,
-                                                                     KeyArray.ToArray());
+    public string JoinedKey(string? separator = null) =>
+        StringJoinCache.Shared.GetCachedJoin(KeyArray, separator ?? Compositor.TheSeparator);
 
     /// <summary>
     /// 判斷當前鍵值配對是否合規。如果鍵與值有任一為空，則結果為 false。
