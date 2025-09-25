@@ -7,43 +7,43 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-// 天權星NT引擎（MegrezNT Compositor）特色：
-// - 原生 C# 實作，支援 .NET 6+。
-// - API 以陣列的形式處理輸入的 key。而且，在獲取候選字詞內容的時候，也可以徹底篩除橫跨游標的詞。
-// - 爬軌算法（Walking Algorithm）採用 Dijkstra 的算法，且經過效能最佳化處理、擁有比 DAG-Relax 算法更優的效能。
+// 天權星NT引擎（MegrezNT Compositor）核心特色：
+// - 純 C# 原生實作，完整支援 .NET 6+ 平台環境。
+// - API 設計採用陣列導向的索引鍵處理機制，並且在詞彙候選產生階段能夠有效排除跨越游標位置的詞彙項目。
+// - 內建組句引擎採用經過效能調校的 Dijkstra 路徑搜尋演算法，相較於 DAG-Relax 演算法具備更優異的執行效率。
 
-// 術語：
+// 核心概念術語定義：
 
-// Grid: 節軌
-// Walk: 爬軌
-// Node: 節點
-// SpanLength: 節幅
-// Span: 幅位
+// Grid: 軌格系統
+// Assemble: 文字組句
+// Node: 資料節點
+// SegLength: 涵蓋範圍
+// Segment: 區段單元
 
 namespace Megrez {
   /// <summary>
-  /// 一個組字器用來在給定一系列的索引鍵的情況下（藉由一系列的觀測行為）返回一套資料值。<para/>
-  /// 用於輸入法的話，給定的索引鍵可以是注音、且返回的資料值都是漢語字詞組合。該組字器
-  /// 還可以用來對文章做分節處理：此時的索引鍵為漢字，返回的資料值則是漢語字詞分節組合。
+  /// 智慧組字引擎的核心處理器，專門負責將輸入的索引鍵序列轉換為對應的資料值集合。<para/>
+  /// 在輸入法應用場景中，此引擎接收注音符號序列作為索引鍵，並輸出相應的中文詞彙組合。
+  /// 同時也支援文章分析功能：以中文字符作為輸入索引鍵，產生語義分析後的詞彙分段結果。
   /// </summary>
   /// <remarks>
-  /// 雖然這裡用了隱性 Markov 模型（HMM）的術語，但實際上在爬軌時用到的則是更
-  /// 簡單的貝氏推論：因為底層的語言模組只會提供單元圖資料。一旦將所有可以組字的單元圖
-  /// 作為節點塞到組字器內，就可以用一個簡單的有向無環圖爬軌過程、來利用這些隱性資料值
-  /// 算出最大相似估算結果。
+  /// 儘管採用了隱馬可夫模型（HMM）的相關術語，但實際的組句過程運用的是更為直接的
+  /// 貝氏推論機制：這是因為底層語言模型僅提供一元語法資料。當所有可能的組字單元以節點
+  /// 形式載入引擎後，即可透過簡化的有向無環圖處理流程，運用這些隱含的資料值
+  /// 計算出最大似然估計的最終結果。
   /// </remarks>
   public partial class Compositor {
     // MARK: - Enums.
     /// <summary>
-    /// 就文字輸入方向而言的方向。
+    /// 基於文字書寫習慣的方向性定義。
     /// </summary>
     public enum TypingDirection {
       /// <summary>
-      /// 就文字輸入方向而言的前方。
+      /// 相對於文字書寫方向的前端位置。
       /// </summary>
       ToFront,
       /// <summary>
-      /// 就文字輸入方向而言的後方。
+      /// 相對於文字書寫方向的後端位置。
       /// </summary>
       ToRear
     }
@@ -69,11 +69,11 @@ namespace Megrez {
     /// </summary>
     public CompositorConfig Config;
     /// <summary>
-    /// 一個幅位單元內所能接受的最長的節點幅位長度。
+    /// 一個幅節單元內所能接受的最長的節點幅節長度。
     /// </summary>
-    public int MaxSpanLength {
-      get => Config.MaxSpanLength;
-      set => Config.MaxSpanLength = value;
+    public int MaxSegLength {
+      get => Config.MaxSegLength;
+      set => Config.MaxSegLength = value;
     }
 
     /// <summary>
@@ -116,21 +116,21 @@ namespace Megrez {
     /// 組字器內已經插入的單筆索引鍵的數量，也就是內建漢字讀音的數量（唯讀）。
     /// </summary>
     /// <remarks>
-    /// 理論上而言，spans.count 也是這個數。
+    /// 理論上而言，segments.count 也是這個數。
     /// 但是，為了防止萬一，就用了目前的方法來計算。
     /// </remarks>
     public int Length => Keys.Count;
     /// <summary>
-    /// 最近一次爬軌結果。
+    /// 最近一次組句結果。
     /// </summary>
-    public List<Node> WalkedNodes {
-      get => Config.WalkedNodes;
-      set => Config.WalkedNodes = value;
+    public List<Node> AssembledNodes {
+      get => Config.AssembledNodes;
+      set => Config.AssembledNodes = value;
     }
     /// <summary>
     /// 組字器是否為空。
     /// </summary>
-    public bool IsEmpty => Spans.IsEmpty() && Keys.IsEmpty();
+    public bool IsEmpty => Segments.IsEmpty() && Keys.IsEmpty();
 
     /// <summary>
     /// 該組字器已經插入的的索引鍵，以陣列的形式存放。
@@ -141,11 +141,11 @@ namespace Megrez {
     }
 
     /// <summary>
-    /// 該組字器的幅位單元陣列。
+    /// 該組字器的幅節單元陣列。
     /// </summary>
-    public List<SpanUnit> Spans {
-      get => Config.Spans;
-      set => Config.Spans = value;
+    public List<Segment> Segments {
+      get => Config.Segments;
+      set => Config.Segments = value;
     }
 
     private LangModelProtocol _theLangModel;
@@ -167,9 +167,9 @@ namespace Megrez {
     /// 還可以用來對文章做分節處理：此時的索引鍵為漢字，返回的資料值則是漢語字詞分節組合。
     /// </summary>
     /// <remarks>
-    /// 雖然這裡用了隱性 Markov 模型（HMM）的術語，但實際上在爬軌時用到的則是更
+    /// 雖然這裡用了隱性 Markov 模型（HMM）的術語，但實際上在組句時用到的則是更
     /// 簡單的貝氏推論：因為底層的語言模組只會提供單元圖資料。一旦將所有可以組字的單元圖
-    /// 作為節點塞到組字器內，就可以用一個簡單的有向無環圖爬軌過程、來利用這些隱性資料值
+    /// 作為節點塞到組字器內，就可以用一個簡單的有向無環圖組句過程、來利用這些隱性資料值
     /// 算出最大相似估算結果。
     /// </remarks>
     /// <param name="langModel">要對接的語言模組。</param>
@@ -207,8 +207,8 @@ namespace Megrez {
 
     /// <summary>
     /// 重置包括游標在內的各項參數，且清空各種由組字器生成的內部資料。<para/>
-    /// 且將已經被插入的索引鍵陣列與幅位單元陣列（包括其內的節點）全部清空。
-    /// 最近一次的爬軌結果陣列也會被清空。游標跳轉換算表也會被清空。
+    /// 且將已經被插入的索引鍵陣列與幅節單元陣列（包括其內的節點）全部清空。
+    /// 最近一次的組句結果陣列也會被清空。游標跳轉換算表也會被清空。
     /// </summary>
     public void Clear() { Config.Clear(); }
 
@@ -221,12 +221,12 @@ namespace Megrez {
       if (string.IsNullOrEmpty(key) || key == Separator) return false;
       if (!TheLangModel.HasUnigramsFor(new() { key })) return false;
       Keys.Insert(Cursor, key);
-      List<SpanUnit> gridBackup = Spans.Select(x => x.HardCopy()).ToList();
+      List<Segment> gridBackup = Segments.Select(x => x.HardCopy()).ToList();
       ResizeGridAt(Cursor, ResizeBehavior.Expand);
       int nodesInserted = Update();
-      // 用來在 langModel.HasUnigramsFor() 結果不準確的時候防呆、恢復被搞壞的 Spans。
+      // 用來在 langModel.HasUnigramsFor() 結果不準確的時候防呆、恢復被搞壞的 Segments。
       if (nodesInserted == 0) {
-        Spans = gridBackup;
+        Segments = gridBackup;
         return false;
       }
       Cursor += 1;  // 游標必須得在執行 update() 之後才可以變動。
@@ -253,7 +253,7 @@ namespace Megrez {
     }
 
     /// <summary>
-    /// 按幅位來前後移動游標。
+    /// 按幅節來前後移動游標。
     /// </summary>
     /// <remarks>
     /// 在威注音的術語體系當中，「與文字輸入方向相反的方向」為向後（Rear），反之則為向前（Front）。
@@ -268,7 +268,7 @@ namespace Megrez {
     /// 將標記游標交給敝引擎來管理。屆時，NSStringUtils 將徹底卸任。
     /// </param>
     /// <returns>該操作是否成功執行。</returns>
-    public bool JumpCursorBySpan(TypingDirection direction, bool isMarker = false) {
+    public bool JumpCursorBySegment(TypingDirection direction, bool isMarker = false) {
       int target = isMarker ? Marker : Cursor;
       switch (direction) {
         case TypingDirection.ToFront:
@@ -278,24 +278,24 @@ namespace Megrez {
           if (target == 0) return false;
           break;
       }
-      if (!WalkedNodes.CursorRegionMap().TryGetValue(key: target, out int currentRegion)) return false;
-      int guardedCurrentRegion = Math.Min(WalkedNodes.Count - 1, currentRegion);
+      if (!AssembledNodes.CursorRegionMap().TryGetValue(key: target, out int currentRegion)) return false;
+      int guardedCurrentRegion = Math.Min(AssembledNodes.Count - 1, currentRegion);
       int aRegionForward = Math.Max(currentRegion - 1, 0);
-      int currentRegionBorderRear = WalkedNodes.GetRange(0, currentRegion).Select(x => x.SpanLength).Sum();
+      int currentRegionBorderRear = AssembledNodes.GetRange(0, currentRegion).Select(x => x.SegLength).Sum();
 
       if (target == currentRegionBorderRear) {
         target = direction switch {
           TypingDirection.ToFront =>
-              currentRegion > WalkedNodes.Count
+              currentRegion > AssembledNodes.Count
                   ? Keys.Count
-                  : WalkedNodes.GetRange(0, guardedCurrentRegion + 1).Select(x => x.SpanLength).Sum(),
-          TypingDirection.ToRear => WalkedNodes.GetRange(0, aRegionForward).Select(x => x.SpanLength).Sum(),
+                  : AssembledNodes.GetRange(0, guardedCurrentRegion + 1).Select(x => x.SegLength).Sum(),
+          TypingDirection.ToRear => AssembledNodes.GetRange(0, aRegionForward).Select(x => x.SegLength).Sum(),
           _ => target
         };
       } else {
         target = direction switch {
           TypingDirection.ToFront =>
-                                        currentRegionBorderRear + WalkedNodes[guardedCurrentRegion].SpanLength,
+                                        currentRegionBorderRear + AssembledNodes[guardedCurrentRegion].SegLength,
           TypingDirection.ToRear => currentRegionBorderRear,
           _ => target
         };
@@ -319,20 +319,20 @@ namespace Megrez {
       // C# StringBuilder 與 Swift NSMutableString 能提供爆發性的效能。
       StringBuilder strOutput = new();
       strOutput.Append("digraph {\ngraph [ rankdir=LR ];\nBOS;\n");
-      for (int p = 0; p < Spans.Count; p++) {
-        SpanUnit span = Spans[p];
-        for (int ni = 0; ni <= span.MaxLength; ni++) {
-          if (span.NodeOf(ni) is not { } np) continue;
+      for (int p = 0; p < Segments.Count; p++) {
+        Segment segment = Segments[p];
+        for (int ni = 0; ni <= segment.MaxLength; ni++) {
+          if (segment.NodeOf(ni) is not { } np) continue;
           if (p == 0) strOutput.Append("BOS -> " + np.CurrentPair.Value + ";\n");
           strOutput.Append(np.CurrentPair.Value + ";\n");
-          if (p + ni < Spans.Count) {
-            SpanUnit destinationSpan = Spans[p + ni];
-            for (int q = 0; q <= destinationSpan.MaxLength; q++) {
-              if (destinationSpan.NodeOf(q) is not { } dn) continue;
+          if (p + ni < Segments.Count) {
+            Segment destinationSegment = Segments[p + ni];
+            for (int q = 0; q <= destinationSegment.MaxLength; q++) {
+              if (destinationSegment.NodeOf(q) is not { } dn) continue;
               strOutput.Append(np.CurrentPair.Value + " -> " + dn.CurrentPair.Value + ";\n");
             }
           }
-          if (p + ni == Spans.Count) strOutput.Append(np.CurrentPair.Value + " -> EOS;\n");
+          if (p + ni == Segments.Count) strOutput.Append(np.CurrentPair.Value + " -> EOS;\n");
         }
       }
       strOutput.Append("EOS;\n}\n");
@@ -342,20 +342,20 @@ namespace Megrez {
     // MARK: - Internal Methods (Maybe Public)
 
     /// <summary>
-    /// 在該軌格的指定幅位座標擴增或減少一個幅位單元。
+    /// 在該軌格的指定幅節座標擴增或減少一個幅節單元。
     /// </summary>
-    /// <param name="location">給定的幅位座標。</param>
-    /// <param name="action">指定是擴張還是縮減一個幅位。</param>
+    /// <param name="location">給定的幅節座標。</param>
+    /// <param name="action">指定是擴張還是縮減一個幅節。</param>
     internal void ResizeGridAt(int location, ResizeBehavior action) {
-      location = Math.Max(Math.Min(location, Spans.Count), 0);  // 防呆。
+      location = Math.Max(Math.Min(location, Segments.Count), 0);  // 防呆。
       switch (action) {
         case ResizeBehavior.Expand:
-          Spans.Insert(location, new());
-          if (location == 0 || location == Spans.Count) return;
+          Segments.Insert(location, new());
+          if (location == 0 || location == Segments.Count) return;
           break;
         case ResizeBehavior.Shrink:
-          if (Spans.Count == location) return;
-          Spans.RemoveAt(location);
+          if (Segments.Count == location) return;
+          Segments.RemoveAt(location);
           break;
       }
       DropWreckedNodesAt(location);
@@ -364,48 +364,48 @@ namespace Megrez {
     /// <summary>
     /// 扔掉所有被 ResizeGrid() 損毀的節點。
     ///
-    /// 拿新增幅位來打比方的話，在擴增幅位之前：
+    /// 拿新增幅節來打比方的話，在擴增幅節之前：
     /// <code>
-    /// Span Index 0   1   2   3
+    /// Segment Index 0   1   2   3
     ///                (---)
     ///                (-------)
     ///            (-----------)
     /// </code>
-    /// 在幅位座標 2 (SpanIndex = 2) 的位置擴增一個幅位之後:
+    /// 在幅節座標 2 (SegmentIndex = 2) 的位置擴增一個幅節之後:
     /// <code>
-    /// Span Index 0   1   2   3   4
+    /// Segment Index 0   1   2   3   4
     ///                (---)
     ///                (XXX?   ?XXX) ←被扯爛的節點
     ///            (XXXXXXX?   ?XXX) ←被扯爛的節點
     /// </code>
-    /// 拿縮減幅位來打比方的話，在縮減幅位之前：
+    /// 拿縮減幅節來打比方的話，在縮減幅節之前：
     /// <code>
-    /// Span Index 0   1   2   3
+    /// Segment Index 0   1   2   3
     ///                (---)
     ///                (-------)
     ///            (-----------)
     /// </code>
-    /// 在幅位座標 2 的位置就地砍掉一個幅位之後:
+    /// 在幅節座標 2 的位置就地砍掉一個幅節之後:
     /// <code>
-    /// Span Index 0   1   2   3   4
+    /// Segment Index 0   1   2   3   4
     ///                (---)
     ///                (XXX? ←被砍爛的節點
     ///            (XXXXXXX? ←被砍爛的節點
     /// </code>
     /// </summary>
-    /// <param name="location">給定的幅位座標。</param>
+    /// <param name="location">給定的幅節座標。</param>
     internal void DropWreckedNodesAt(int location) {
-      location = Math.Max(Math.Min(location, Spans.Count), 0);  // 防呆。
-      if (Spans.IsEmpty()) return;
-      int affectedLength = MaxSpanLength - 1;
+      location = Math.Max(Math.Min(location, Segments.Count), 0);  // 防呆。
+      if (Segments.IsEmpty()) return;
+      int affectedLength = MaxSegLength - 1;
       int begin = Math.Max(0, location - affectedLength);
       if (location < begin) return;
       foreach (int delta in new BRange(begin, location)) {
         int lowestLength = location - delta + 1;
-        if (lowestLength > MaxSpanLength) break;
-        foreach (int theLength in new BRange(lowestLength, MaxSpanLength)) {
-          if (delta >= 0 && delta < Spans.Count) {
-            Spans[delta].Nodes.Remove(theLength);
+        if (lowestLength > MaxSegLength) break;
+        foreach (int theLength in new BRange(lowestLength, MaxSegLength)) {
+          if (delta >= 0 && delta < Segments.Count) {
+            Segments[delta].Nodes.Remove(theLength);
           }
         }
       }
@@ -422,16 +422,16 @@ namespace Megrez {
             : new();
 
     /// <summary>
-    /// 在指定位置（以指定索引鍵陣列和指定幅位長度）拿取節點。
+    /// 在指定位置（以指定索引鍵陣列和指定幅節長度）拿取節點。
     /// </summary>
     /// <param name="location">指定游標位置。</param>
-    /// <param name="length">指定幅位長度。</param>
+    /// <param name="length">指定幅節長度。</param>
     /// <param name="keyArray">指定索引鍵陣列。</param>
     /// <returns>拿取的節點。拿不到的話就會是 null。</returns>
     private Node? GetNodeAt(int location, int length, List<string> keyArray) {
-      location = Math.Max(Math.Min(location, Spans.Count), 0);  // 防呆。
-      if (location < 0 || location >= Spans.Count) return null;
-      if (Spans[location].NodeOf(length) is not { } node) return null;
+      location = Math.Max(Math.Min(location, Segments.Count), 0);  // 防呆。
+      if (location < 0 || location >= Segments.Count) return null;
+      if (Segments[location].NodeOf(length) is not { } node) return null;
       return node.KeyArray.SequenceEqual(keyArray) ? node : null;
     }
 
@@ -444,14 +444,14 @@ namespace Megrez {
     /// </param>
     /// <returns>新增或影響了多少個節點。如果返回「0」則表示可能發生了錯誤。 </returns>
     public int Update(bool updateExisting = false) {
-      int lowerboundPos = updateExisting ? 0 : Math.Max(0, Cursor - MaxSpanLength);
-      int upperboundPos = updateExisting ? Spans.Count : Math.Min(Cursor + MaxSpanLength, Keys.Count);
+      int lowerboundPos = updateExisting ? 0 : Math.Max(0, Cursor - MaxSegLength);
+      int upperboundPos = updateExisting ? Segments.Count : Math.Min(Cursor + MaxSegLength, Keys.Count);
       BRange rangeOfPos = new(lowerboundPos, upperboundPos);
       int nodesChanged = 0;
       foreach (int position in rangeOfPos) {
-        foreach (int theLength in new BRange(1, Math.Min(MaxSpanLength, rangeOfPos.Upperbound - position))) {
+        foreach (int theLength in new BRange(1, Math.Min(MaxSegLength, rangeOfPos.Upperbound - position))) {
           List<string> joinedKeyArray = GetJoinedKeyArray(new(position, position + theLength));
-          BRange safeLocationRange = new(0, Spans.Count);
+          BRange safeLocationRange = new(0, Segments.Count);
           Node? theNode = safeLocationRange.Contains(position) ? GetNodeAt(position, theLength, joinedKeyArray) : null;
           if (theNode is { }) {
             if (!updateExisting) continue;
@@ -459,7 +459,7 @@ namespace Megrez {
             // 自動銷毀無效的節點。
             if (unigramsA.IsEmpty()) {
               if (theNode.KeyArray.Count == 1) continue;
-              Spans[position].Nodes.Remove(theNode.SpanLength);
+              Segments[position].Nodes.Remove(theNode.SegLength);
             } else {
               theNode.SyncingUnigramsFrom(unigramsA);
             }
@@ -468,8 +468,8 @@ namespace Megrez {
           }
           List<Unigram> unigramsB = GetUnigramsFor(joinedKeyArray);
           if (unigramsB.IsEmpty()) continue;
-          if (position < 0 || position >= Spans.Count) continue;
-          Spans[position].Nodes[theLength] = new(joinedKeyArray, theLength, unigramsB);
+          if (position < 0 || position >= Segments.Count) continue;
+          Segments[position].Nodes[theLength] = new(joinedKeyArray, theLength, unigramsB);
           nodesChanged += 1;
         }
       }
@@ -487,22 +487,22 @@ namespace Megrez {
     /// <summary>
     /// 初期化一套組字器組態設定。
     /// </summary>
-    public CompositorConfig(List<Node>? walkedNodes = null, List<string>? keys = null,
-                            List<Compositor.SpanUnit>? spans = null, int cursor = 0, int maxSpanLength = 10,
+    public CompositorConfig(List<Node>? assembledNodes = null, List<string>? keys = null,
+                            List<Compositor.Segment>? segments = null, int cursor = 0, int maxSegLength = 10,
                             int marker = 0, string? separator = null) {
-      WalkedNodes = walkedNodes ?? new List<Node>();
+      AssembledNodes = assembledNodes ?? new List<Node>();
       Keys = keys ?? new List<string>();
-      Spans = spans ?? new List<Compositor.SpanUnit>();
+      Segments = segments ?? new List<Compositor.Segment>();
       _cursor = cursor;
-      _maxSpanLength = Math.Max(6, maxSpanLength);
+      _maxSegLength = Math.Max(6, maxSegLength);
       _marker = marker;
       Separator = separator ?? "";
     }
 
     /// <summary>
-    /// 最近一次爬軌結果。
+    /// 最近一次組句結果。
     /// </summary>
-    public List<Node> WalkedNodes { get; set; }
+    public List<Node> AssembledNodes { get; set; }
 
     /// <summary>
     /// 該組字器已經插入的的索引鍵，以陣列的形式存放。
@@ -510,9 +510,9 @@ namespace Megrez {
     public List<string> Keys { get; set; }
 
     /// <summary>
-    /// 該組字器的幅位單元陣列。
+    /// 該組字器的幅節單元陣列。
     /// </summary>
-    public List<Compositor.SpanUnit> Spans { get; set; }
+    public List<Compositor.Segment> Segments { get; set; }
 
     private int _cursor = 0;
     /// <summary>
@@ -526,15 +526,15 @@ namespace Megrez {
       }
     }
 
-    private int _maxSpanLength = 10;
+    private int _maxSegLength = 10;
     /// <summary>
-    /// 一個幅位單元內所能接受的最長的節點幅位長度。
+    /// 一個幅節單元內所能接受的最長的節點幅節長度。
     /// </summary>
-    public int MaxSpanLength {
-      get => _maxSpanLength;
+    public int MaxSegLength {
+      get => _maxSegLength;
       set {
-        _maxSpanLength = Math.Max(6, value);
-        DropNodesBeyondMaxSpanLength();
+        _maxSegLength = Math.Max(6, value);
+        DropNodesBeyondMaxSegLength();
       }
     }
 
@@ -561,7 +561,7 @@ namespace Megrez {
     /// 組字器內已經插入的單筆索引鍵的數量，也就是內建漢字讀音的數量（唯讀）。
     /// </summary>
     /// <remarks>
-    /// 理論上而言，spans.count 也是這個數。
+    /// 理論上而言，segments.count 也是這個數。
     /// 但是，為了防止萬一，就用了目前的方法來計算。
     /// </remarks>
     public int Length => Keys.Count;
@@ -578,10 +578,10 @@ namespace Megrez {
     public CompositorConfig HardCopy() {
       CompositorConfig config = this;
       config.Keys = Keys.ToList();  // List 是 class，需要單獨複製。
-      config.Spans = Spans.Select(x => x.HardCopy()).ToList();
-      config.WalkedNodes = WalkedNodes.Select(x => x.Copy()).ToList();
+      config.Segments = Segments.Select(x => x.HardCopy()).ToList();
+      config.AssembledNodes = AssembledNodes.Select(x => x.Copy()).ToList();
       config.Separator = Separator;
-      config.MaxSpanLength = MaxSpanLength;
+      config.MaxSegLength = MaxSegLength;
       config.Cursor = Cursor;
       config.Marker = Marker;
       return config;
@@ -594,9 +594,9 @@ namespace Megrez {
     /// <returns></returns>
     public override bool Equals(object obj) {
       if (obj is not CompositorConfig other) return false;
-      return Cursor == other.Cursor && Marker == other.Marker && MaxSpanLength == other.MaxSpanLength &&
-             Separator == other.Separator && Keys.SequenceEqual(other.Keys) && Spans.SequenceEqual(other.Spans) &&
-             WalkedNodes.SequenceEqual(other.WalkedNodes);
+      return Cursor == other.Cursor && Marker == other.Marker && MaxSegLength == other.MaxSegLength &&
+             Separator == other.Separator && Keys.SequenceEqual(other.Keys) && Segments.SequenceEqual(other.Segments) &&
+             AssembledNodes.SequenceEqual(other.AssembledNodes);
     }
 
     /// <summary>
@@ -608,38 +608,38 @@ namespace Megrez {
         int hash = 17;  // 使用質數作為基礎值
         hash = hash * 23 + Cursor.GetHashCode();
         hash = hash * 23 + Marker.GetHashCode();
-        hash = hash * 23 + MaxSpanLength.GetHashCode();
+        hash = hash * 23 + MaxSegLength.GetHashCode();
         hash = hash * 23 + (Separator?.GetHashCode() ?? 0);
         hash = hash * 23 + Keys.GetHashCode();
-        hash = hash * 23 + Spans.GetHashCode();
-        hash = hash * 23 + WalkedNodes.GetHashCode();
+        hash = hash * 23 + Segments.GetHashCode();
+        hash = hash * 23 + AssembledNodes.GetHashCode();
         return hash;
       }
     }
 
     /// <summary>
     /// 重置包括游標在內的各項參數，且清空各種由組字器生成的內部資料。<para/>
-    /// 且將已經被插入的索引鍵陣列與幅位單元陣列（包括其內的節點）全部清空。
-    /// 最近一次的爬軌結果陣列也會被清空。游標跳轉換算表也會被清空。
+    /// 且將已經被插入的索引鍵陣列與幅節單元陣列（包括其內的節點）全部清空。
+    /// 最近一次的組句結果陣列也會被清空。游標跳轉換算表也會被清空。
     /// </summary>
     public void Clear() {
       Keys = new();
-      Spans = new();
-      WalkedNodes = new();
+      Segments = new();
+      AssembledNodes = new();
       Cursor = 0;
       Marker = 0;
     }
 
     /// <summary>
-    /// 清除所有幅長超過 MaxSpanLength 的節點。
+    /// 清除所有幅長超過 MaxSegLength 的節點。
     /// </summary>
-    public void DropNodesBeyondMaxSpanLength() {
-      if (Spans.IsEmpty()) return;
-      List<int> indicesOfPositions = new BRange(0, Spans.Count - 1).ToList();
+    public void DropNodesBeyondMaxSegLength() {
+      if (Segments.IsEmpty()) return;
+      List<int> indicesOfPositions = new BRange(0, Segments.Count - 1).ToList();
       foreach (int currentPos in indicesOfPositions) {
-        foreach (int currentSpanLength in Spans[currentPos].Nodes.Keys) {
-          if (currentSpanLength > MaxSpanLength) {
-            Spans[currentPos].Nodes.Remove(currentSpanLength);
+        foreach (int currentSegLength in Segments[currentPos].Nodes.Keys) {
+          if (currentSegLength > MaxSegLength) {
+            Segments[currentPos].Nodes.Remove(currentSegLength);
           }
         }
       }

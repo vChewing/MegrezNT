@@ -181,7 +181,7 @@ namespace Megrez {
     }
 
     /// <summary>
-    /// 返回在當前位置的所有候選字詞（以詞音配對的形式）。<para/>如果組字器內有幅位、且游標
+    /// 返回在當前位置的所有候選字詞（以詞音配對的形式）。<para/>如果組字器內有幅節、且游標
     /// 位於組字器的（文字輸入順序的）最前方（也就是游標位置的數值是最大合規數值）的
     /// 話，那麼這裡會對 location 的位置自動減去 1、以免去在呼叫該函式後再處理的麻煩。
     /// </summary>
@@ -198,7 +198,7 @@ namespace Megrez {
         location -= 1;
       }
       location = Math.Max(0, Math.Min(location, Keys.Count - 1));
-      // 按照讀音的長度（幅位長度）來給節點排序。
+      // 按照讀音的長度（幅節長度）來給節點排序。
       List<NodeWithLocation> anchors = FetchOverlappingNodesAt(location);
       string keyAtCursor = Keys[location];
       anchors.ForEach(theAnchor => {
@@ -214,7 +214,7 @@ namespace Megrez {
               break;
             case CandidateFetchFilter.EndAt:
               if (theNode.KeyArray.Last() != keyAtCursor) continue;
-              if (theNode.SpanLength >= 2 && theAnchor.Location + theAnchor.Node.SpanLength - 1 != location) continue;
+              if (theNode.SegLength >= 2 && theAnchor.Location + theAnchor.Node.SegLength - 1 != location) continue;
               break;
           }
           result.Add(new(theNode.KeyArray, gram.Value));
@@ -259,7 +259,7 @@ namespace Megrez {
                                            Node.OverrideType overrideType) {
       location = Math.Max(Math.Min(location, Keys.Count), 0);  // 防呆。
       List<NodeWithLocation> arrOverlappedNodes = FetchOverlappingNodesAt(Math.Min(Keys.Count - 1, location));
-      Node fakeNode = new(new() { "_NULL_" }, spanLength: 0, new());
+      Node fakeNode = new(new() { "_NULL_" }, segLength: 0, new());
       NodeWithLocation overridden = new(0, fakeNode);
       // 這裡必須用 SequenceEqual，因為 C# 只能用這種方法才能準確判定兩個字串陣列是否雷同。
       foreach (NodeWithLocation anchor in arrOverlappedNodes.Where(
@@ -270,10 +270,10 @@ namespace Megrez {
       }
       if (Equals(overridden.Node, fakeNode)) return false;  // 啥也不覆寫。
 
-      int lengthUpperBound = Math.Min(Spans.Count, overridden.Location + overridden.Node.SpanLength);
+      int lengthUpperBound = Math.Min(Segments.Count, overridden.Location + overridden.Node.SegLength);
       foreach (int i in new BRange(overridden.Location, lengthUpperBound - 1)) {
-        // 咱們還得弱化所有在相同的幅位座標的節點的複寫權重。舉例說之前爬軌的結果是「A BC」
-        // 且 A 與 BC 都是被覆寫的結果，然後使用者現在在與 A 相同的幅位座標位置
+        // 咱們還得弱化所有在相同的幅節座標的節點的複寫權重。舉例說之前組句的結果是「A BC」
+        // 且 A 與 BC 都是被覆寫的結果，然後使用者現在在與 A 相同的幅節座標位置
         // 選了「DEF」，那麼 BC 的覆寫狀態就有必要重設（但 A 不用重設）。
         arrOverlappedNodes = FetchOverlappingNodesAt(i);
         foreach (NodeWithLocation anchor in arrOverlappedNodes.Where(anchor => !Equals(anchor.Node, overridden.Node))) {

@@ -12,9 +12,9 @@ namespace Megrez.Tests {
   [TestFixture]
   public class MegrezTestsBasic {
     [Test]
-    public void Test01_SpanOperations() {
+    public void Test01_SegmentOperations() {
       SimpleLM langModel = new(TestDataClass.StrLMSampleDataLitch);
-      Compositor.SpanUnit span = new();
+      Compositor.Segment segment = new();
       Node n1 = new(
           new List<string> { "da4" }, 1, langModel.UnigramsFor(new List<string> { "da4" })
       );
@@ -23,23 +23,23 @@ namespace Megrez.Tests {
           langModel.UnigramsFor(new List<string> { "da4-qian2-tian1" })
       );
 
-      Assert.That(span.MaxLength, Is.EqualTo(0));
-      span.Nodes[n1.SpanLength] = n1;
-      Assert.That(span.MaxLength, Is.EqualTo(1));
-      span.Nodes[n3.SpanLength] = n3;
-      Assert.That(span.MaxLength, Is.EqualTo(3));
-      Assert.That(span.NodeOf(1), Is.EqualTo(n1));
-      Assert.That(span.NodeOf(2), Is.Null);
-      Assert.That(span.NodeOf(3), Is.EqualTo(n3));
-      span.Clear();
-      Assert.That(span.MaxLength, Is.EqualTo(0));
-      Assert.That(span.NodeOf(1), Is.Null);
-      Assert.That(span.NodeOf(2), Is.Null);
-      Assert.That(span.NodeOf(3), Is.Null);
+      Assert.That(segment.MaxLength, Is.EqualTo(0));
+      segment.Nodes[n1.SegLength] = n1;
+      Assert.That(segment.MaxLength, Is.EqualTo(1));
+      segment.Nodes[n3.SegLength] = n3;
+      Assert.That(segment.MaxLength, Is.EqualTo(3));
+      Assert.That(segment.NodeOf(1), Is.EqualTo(n1));
+      Assert.That(segment.NodeOf(2), Is.Null);
+      Assert.That(segment.NodeOf(3), Is.EqualTo(n3));
+      segment.Clear();
+      Assert.That(segment.MaxLength, Is.EqualTo(0));
+      Assert.That(segment.NodeOf(1), Is.Null);
+      Assert.That(segment.NodeOf(2), Is.Null);
+      Assert.That(segment.NodeOf(3), Is.Null);
     }
 
     [Test]
-    public void Test02_Compositor_BasicSpanNodeGramInsertion() {
+    public void Test02_Compositor_BasicSegmentNodeGramInsertion() {
       Compositor compositor = new(new MockLM());
       Assert.That(compositor.Separator, Is.EqualTo(Compositor.TheSeparator));
       Assert.That(compositor.Cursor, Is.EqualTo(0));
@@ -48,13 +48,13 @@ namespace Megrez.Tests {
       compositor.InsertKey("s");
       Assert.That(compositor.Cursor, Is.EqualTo(1));
       Assert.That(compositor.Length, Is.EqualTo(1));
-      Assert.That(compositor.Spans.Count, Is.EqualTo(1));
-      Assert.That(compositor.Spans[0].MaxLength, Is.EqualTo(1));
-      Assert.That(compositor.Spans[0].Nodes[1].KeyArray, Is.EqualTo(new[] { "s" }));
+      Assert.That(compositor.Segments.Count, Is.EqualTo(1));
+      Assert.That(compositor.Segments[0].MaxLength, Is.EqualTo(1));
+      Assert.That(compositor.Segments[0].Nodes[1].KeyArray, Is.EqualTo(new[] { "s" }));
       compositor.DropKey(Compositor.TypingDirection.ToRear);
       Assert.That(compositor.Cursor, Is.EqualTo(0));
       Assert.That(compositor.Length, Is.EqualTo(0));
-      Assert.That(compositor.Spans.Count, Is.EqualTo(0));
+      Assert.That(compositor.Segments.Count, Is.EqualTo(0));
     }
 
     [Test]
@@ -80,41 +80,41 @@ namespace Megrez.Tests {
     }
 
     [Test]
-    public void Test04_Compositor_SpansAcrossPositions() {
+    public void Test04_Compositor_SegmentsAcrossPositions() {
       Compositor compositor = new(new MockLM());
       compositor.Separator = ";";
       compositor.InsertKey("h");
       compositor.InsertKey("o");
       compositor.InsertKey("g");
       Assert.That((compositor.Cursor, compositor.Length), Is.EqualTo((3, 3)));
-      Assert.That((compositor.Spans.Count), Is.EqualTo(3));
-      Assert.That(compositor.Spans[0].MaxLength, Is.EqualTo(3));
-      Assert.That(compositor.Spans[0].Nodes[1].KeyArray.SequenceEqual(new[] { "h" }), Is.True);
-      Assert.That(compositor.Spans[0].Nodes[2].KeyArray.SequenceEqual(new[] { "h", "o" }), Is.True);
-      Assert.That(compositor.Spans[0].Nodes[3].KeyArray.SequenceEqual(new[] { "h", "o", "g" }), Is.True);
-      Assert.That(compositor.Spans[1].MaxLength, Is.EqualTo(2));
-      Assert.That(compositor.Spans[1].Nodes[1].KeyArray.SequenceEqual(new[] { "o" }), Is.True);
-      Assert.That(compositor.Spans[1].Nodes[2].KeyArray.SequenceEqual(new[] { "o", "g" }), Is.True);
-      Assert.That(compositor.Spans[2].MaxLength, Is.EqualTo(1));
-      Assert.That(compositor.Spans[2].Nodes[1].KeyArray.SequenceEqual(new[] { "g" }), Is.True);
+      Assert.That((compositor.Segments.Count), Is.EqualTo(3));
+      Assert.That(compositor.Segments[0].MaxLength, Is.EqualTo(3));
+      Assert.That(compositor.Segments[0].Nodes[1].KeyArray.SequenceEqual(new[] { "h" }), Is.True);
+      Assert.That(compositor.Segments[0].Nodes[2].KeyArray.SequenceEqual(new[] { "h", "o" }), Is.True);
+      Assert.That(compositor.Segments[0].Nodes[3].KeyArray.SequenceEqual(new[] { "h", "o", "g" }), Is.True);
+      Assert.That(compositor.Segments[1].MaxLength, Is.EqualTo(2));
+      Assert.That(compositor.Segments[1].Nodes[1].KeyArray.SequenceEqual(new[] { "o" }), Is.True);
+      Assert.That(compositor.Segments[1].Nodes[2].KeyArray.SequenceEqual(new[] { "o", "g" }), Is.True);
+      Assert.That(compositor.Segments[2].MaxLength, Is.EqualTo(1));
+      Assert.That(compositor.Segments[2].Nodes[1].KeyArray.SequenceEqual(new[] { "g" }), Is.True);
     }
 
     [Test]
-    public void Test05_Compositor_KeyAndSpanDeletionInAllDirections() {
+    public void Test05_Compositor_KeyAndSegmentDeletionInAllDirections() {
       Compositor compositor = new(new MockLM());
       compositor.InsertKey("a");
       compositor.Cursor = 0;
       Assert.That(compositor.Cursor, Is.EqualTo(0));
       Assert.That(compositor.Length, Is.EqualTo(1));
-      Assert.That(compositor.Spans.Count, Is.EqualTo(1));
+      Assert.That(compositor.Segments.Count, Is.EqualTo(1));
       Assert.That(compositor.DropKey(Compositor.TypingDirection.ToRear), Is.False);
       Assert.That(compositor.Cursor, Is.EqualTo(0));
       Assert.That(compositor.Length, Is.EqualTo(1));
-      Assert.That(compositor.Spans.Count, Is.EqualTo(1));
+      Assert.That(compositor.Segments.Count, Is.EqualTo(1));
       Assert.That(compositor.DropKey(Compositor.TypingDirection.ToFront), Is.True);
       Assert.That(compositor.Cursor, Is.EqualTo(0));
       Assert.That(compositor.Length, Is.EqualTo(0));
-      Assert.That(compositor.Spans.Count, Is.EqualTo(0));
+      Assert.That(compositor.Segments.Count, Is.EqualTo(0));
 
       void ResetCompositorForTests() {
         compositor.Clear();
@@ -123,68 +123,68 @@ namespace Megrez.Tests {
         compositor.InsertKey("g");
       }
 
-      // 測試對幅位的刪除行為所產生的影響（從最前端開始往後方刪除）。
+      // 測試對幅節的刪除行為所產生的影響（從最前端開始往後方刪除）。
       {
         ResetCompositorForTests();
         Assert.That(compositor.DropKey(Compositor.TypingDirection.ToFront), Is.False);
         Assert.That(compositor.DropKey(Compositor.TypingDirection.ToRear), Is.True);
         Assert.That((compositor.Cursor, compositor.Length), Is.EqualTo((2, 2)));
-        Assert.That((compositor.Spans.Count), Is.EqualTo(2));
-        Assert.That(compositor.Spans[0].MaxLength, Is.EqualTo(2));
-        Assert.That(compositor.Spans[0].Nodes[1].KeyArray.SequenceEqual(new[] { "h" }), Is.True);
-        Assert.That(compositor.Spans[0].Nodes[2].KeyArray.SequenceEqual(new[] { "h", "o" }), Is.True);
-        Assert.That(compositor.Spans[1].MaxLength, Is.EqualTo(1));
-        Assert.That(compositor.Spans[1].Nodes[1].KeyArray.SequenceEqual(new[] { "o" }), Is.True);
+        Assert.That((compositor.Segments.Count), Is.EqualTo(2));
+        Assert.That(compositor.Segments[0].MaxLength, Is.EqualTo(2));
+        Assert.That(compositor.Segments[0].Nodes[1].KeyArray.SequenceEqual(new[] { "h" }), Is.True);
+        Assert.That(compositor.Segments[0].Nodes[2].KeyArray.SequenceEqual(new[] { "h", "o" }), Is.True);
+        Assert.That(compositor.Segments[1].MaxLength, Is.EqualTo(1));
+        Assert.That(compositor.Segments[1].Nodes[1].KeyArray.SequenceEqual(new[] { "o" }), Is.True);
       }
 
-      // 測試對幅位的刪除行為所產生的影響（從最後端開始往前方刪除）。
+      // 測試對幅節的刪除行為所產生的影響（從最後端開始往前方刪除）。
       {
         ResetCompositorForTests();
         compositor.Cursor = 0;
         Assert.That(compositor.DropKey(Compositor.TypingDirection.ToRear), Is.False);
         Assert.That(compositor.DropKey(Compositor.TypingDirection.ToFront), Is.True);
         Assert.That((compositor.Cursor, compositor.Length), Is.EqualTo((0, 2)));
-        Assert.That((compositor.Spans.Count), Is.EqualTo(2));
-        Assert.That(compositor.Spans[0].MaxLength, Is.EqualTo(2));
-        Assert.That(compositor.Spans[0].Nodes[1].KeyArray.SequenceEqual(new[] { "o" }), Is.True);
-        Assert.That(compositor.Spans[0].Nodes[2].KeyArray.SequenceEqual(new[] { "o", "g" }), Is.True);
-        Assert.That(compositor.Spans[1].MaxLength, Is.EqualTo(1));
-        Assert.That(compositor.Spans[1].Nodes[1].KeyArray.SequenceEqual(new[] { "g" }), Is.True);
+        Assert.That((compositor.Segments.Count), Is.EqualTo(2));
+        Assert.That(compositor.Segments[0].MaxLength, Is.EqualTo(2));
+        Assert.That(compositor.Segments[0].Nodes[1].KeyArray.SequenceEqual(new[] { "o" }), Is.True);
+        Assert.That(compositor.Segments[0].Nodes[2].KeyArray.SequenceEqual(new[] { "o", "g" }), Is.True);
+        Assert.That(compositor.Segments[1].MaxLength, Is.EqualTo(1));
+        Assert.That(compositor.Segments[1].Nodes[1].KeyArray.SequenceEqual(new[] { "g" }), Is.True);
       }
 
-      // 測試對幅位的刪除行為所產生的影響（從中間開始往後方刪除）。
+      // 測試對幅節的刪除行為所產生的影響（從中間開始往後方刪除）。
       {
         ResetCompositorForTests();
         compositor.Cursor = 2;
         Assert.That(compositor.DropKey(Compositor.TypingDirection.ToRear), Is.True);
         Assert.That((compositor.Cursor, compositor.Length), Is.EqualTo((1, 2)));
-        Assert.That((compositor.Spans.Count), Is.EqualTo(2));
-        Assert.That(compositor.Spans[0].MaxLength, Is.EqualTo(2));
-        Assert.That(compositor.Spans[0].Nodes[1].KeyArray.SequenceEqual(new[] { "h" }), Is.True);
-        Assert.That(compositor.Spans[0].Nodes[2].KeyArray.SequenceEqual(new[] { "h", "g" }), Is.True);
-        Assert.That(compositor.Spans[1].MaxLength, Is.EqualTo(1));
-        Assert.That(compositor.Spans[1].Nodes[1].KeyArray.SequenceEqual(new[] { "g" }), Is.True);
+        Assert.That((compositor.Segments.Count), Is.EqualTo(2));
+        Assert.That(compositor.Segments[0].MaxLength, Is.EqualTo(2));
+        Assert.That(compositor.Segments[0].Nodes[1].KeyArray.SequenceEqual(new[] { "h" }), Is.True);
+        Assert.That(compositor.Segments[0].Nodes[2].KeyArray.SequenceEqual(new[] { "h", "g" }), Is.True);
+        Assert.That(compositor.Segments[1].MaxLength, Is.EqualTo(1));
+        Assert.That(compositor.Segments[1].Nodes[1].KeyArray.SequenceEqual(new[] { "g" }), Is.True);
       }
 
-      // 測試對幅位的刪除行為所產生的影響（從中間開始往前方刪除）。
+      // 測試對幅節的刪除行為所產生的影響（從中間開始往前方刪除）。
       {
         CompositorConfig snapshot = compositor.Config;
         ResetCompositorForTests();
         compositor.Cursor = 1;
         Assert.That(compositor.DropKey(Compositor.TypingDirection.ToFront), Is.True);
         Assert.That((compositor.Cursor, compositor.Length), Is.EqualTo((1, 2)));
-        Assert.That((compositor.Spans.Count), Is.EqualTo(2));
-        Assert.That(compositor.Spans[0].MaxLength, Is.EqualTo(2));
-        Assert.That(compositor.Spans[0].Nodes[1].KeyArray.SequenceEqual(new[] { "h" }), Is.True);
-        Assert.That(compositor.Spans[0].Nodes[2].KeyArray.SequenceEqual(new[] { "h", "g" }), Is.True);
-        Assert.That(compositor.Spans[1].MaxLength, Is.EqualTo(1));
-        Assert.That(compositor.Spans[1].Nodes[1].KeyArray.SequenceEqual(new[] { "g" }), Is.True);
+        Assert.That((compositor.Segments.Count), Is.EqualTo(2));
+        Assert.That(compositor.Segments[0].MaxLength, Is.EqualTo(2));
+        Assert.That(compositor.Segments[0].Nodes[1].KeyArray.SequenceEqual(new[] { "h" }), Is.True);
+        Assert.That(compositor.Segments[0].Nodes[2].KeyArray.SequenceEqual(new[] { "h", "g" }), Is.True);
+        Assert.That(compositor.Segments[1].MaxLength, Is.EqualTo(1));
+        Assert.That(compositor.Segments[1].Nodes[1].KeyArray.SequenceEqual(new[] { "g" }), Is.True);
         Assert.That(snapshot, Is.EqualTo(compositor.Config));
       }
     }
 
     [Test]
-    public void Test06_Compositor_SpanInsertion() {
+    public void Test06_Compositor_SegmentInsertion() {
       Compositor compositor = new(new MockLM());
       compositor.InsertKey("是");
       compositor.InsertKey("學");
@@ -192,21 +192,21 @@ namespace Megrez.Tests {
       compositor.Cursor = 1;
       compositor.InsertKey("大");
       Assert.That((compositor.Cursor, compositor.Length), Is.EqualTo((2, 4)));
-      Assert.That(compositor.Spans.Count, Is.EqualTo(4));
-      Assert.That(compositor.Spans[0].MaxLength, Is.EqualTo(4));
-      Assert.That(compositor.Spans[0].Nodes[1].KeyArray.SequenceEqual(new[] { "是" }), Is.True);
-      Assert.That(compositor.Spans[0].Nodes[2].KeyArray.SequenceEqual(new[] { "是", "大" }), Is.True);
-      Assert.That(compositor.Spans[0].Nodes[3].KeyArray.SequenceEqual(new[] { "是", "大", "學" }), Is.True);
-      Assert.That(compositor.Spans[0].Nodes[4].KeyArray.SequenceEqual(new[] { "是", "大", "學", "生" }), Is.True);
-      Assert.That(compositor.Spans[1].MaxLength, Is.EqualTo(3));
-      Assert.That(compositor.Spans[1].Nodes[1].KeyArray.SequenceEqual(new[] { "大" }), Is.True);
-      Assert.That(compositor.Spans[1].Nodes[2].KeyArray.SequenceEqual(new[] { "大", "學" }), Is.True);
-      Assert.That(compositor.Spans[1].Nodes[3].KeyArray.SequenceEqual(new[] { "大", "學", "生" }), Is.True);
-      Assert.That(compositor.Spans[2].MaxLength, Is.EqualTo(2));
-      Assert.That(compositor.Spans[2].Nodes[1].KeyArray.SequenceEqual(new[] { "學" }), Is.True);
-      Assert.That(compositor.Spans[2].Nodes[2].KeyArray.SequenceEqual(new[] { "學", "生" }), Is.True);
-      Assert.That(compositor.Spans[3].MaxLength, Is.EqualTo(1));
-      Assert.That(compositor.Spans[3].Nodes[1].KeyArray.SequenceEqual(new[] { "生" }), Is.True);
+      Assert.That(compositor.Segments.Count, Is.EqualTo(4));
+      Assert.That(compositor.Segments[0].MaxLength, Is.EqualTo(4));
+      Assert.That(compositor.Segments[0].Nodes[1].KeyArray.SequenceEqual(new[] { "是" }), Is.True);
+      Assert.That(compositor.Segments[0].Nodes[2].KeyArray.SequenceEqual(new[] { "是", "大" }), Is.True);
+      Assert.That(compositor.Segments[0].Nodes[3].KeyArray.SequenceEqual(new[] { "是", "大", "學" }), Is.True);
+      Assert.That(compositor.Segments[0].Nodes[4].KeyArray.SequenceEqual(new[] { "是", "大", "學", "生" }), Is.True);
+      Assert.That(compositor.Segments[1].MaxLength, Is.EqualTo(3));
+      Assert.That(compositor.Segments[1].Nodes[1].KeyArray.SequenceEqual(new[] { "大" }), Is.True);
+      Assert.That(compositor.Segments[1].Nodes[2].KeyArray.SequenceEqual(new[] { "大", "學" }), Is.True);
+      Assert.That(compositor.Segments[1].Nodes[3].KeyArray.SequenceEqual(new[] { "大", "學", "生" }), Is.True);
+      Assert.That(compositor.Segments[2].MaxLength, Is.EqualTo(2));
+      Assert.That(compositor.Segments[2].Nodes[1].KeyArray.SequenceEqual(new[] { "學" }), Is.True);
+      Assert.That(compositor.Segments[2].Nodes[2].KeyArray.SequenceEqual(new[] { "學", "生" }), Is.True);
+      Assert.That(compositor.Segments[3].MaxLength, Is.EqualTo(1));
+      Assert.That(compositor.Segments[3].Nodes[1].KeyArray.SequenceEqual(new[] { "生" }), Is.True);
     }
 
     [Test]
@@ -219,30 +219,30 @@ namespace Megrez.Tests {
         compositor.Cursor = 8;
         Assert.That(compositor.DropKey(Compositor.TypingDirection.ToRear), Is.True);
         Assert.That((compositor.Cursor, compositor.Length), Is.EqualTo((7, 13)));
-        Assert.That(compositor.Spans.Count, Is.EqualTo(13));
-        Assert.That(compositor.Spans[0].Nodes[5].KeyArray.SequenceEqual(new[] { "無", "可", "奈", "何", "花" }), Is.True);
-        Assert.That(compositor.Spans[1].Nodes[5].KeyArray.SequenceEqual(new[] { "可", "奈", "何", "花", "作" }), Is.True);
-        Assert.That(compositor.Spans[2].Nodes[5].KeyArray.SequenceEqual(new[] { "奈", "何", "花", "作", "香" }), Is.True);
-        Assert.That(compositor.Spans[3].Nodes[5].KeyArray.SequenceEqual(new[] { "何", "花", "作", "香", "蝶" }), Is.True);
-        Assert.That(compositor.Spans[4].Nodes[5].KeyArray.SequenceEqual(new[] { "花", "作", "香", "蝶", "能" }), Is.True);
-        Assert.That(compositor.Spans[5].Nodes[5].KeyArray.SequenceEqual(new[] { "作", "香", "蝶", "能", "留" }), Is.True);
-        Assert.That(compositor.Spans[6].Nodes[5].KeyArray.SequenceEqual(new[] { "香", "蝶", "能", "留", "一" }), Is.True);
-        Assert.That(compositor.Spans[7].Nodes[5].KeyArray.SequenceEqual(new[] { "蝶", "能", "留", "一", "縷" }), Is.True);
-        Assert.That(compositor.Spans[8].Nodes[5].KeyArray.SequenceEqual(new[] { "能", "留", "一", "縷", "芳" }), Is.True);
+        Assert.That(compositor.Segments.Count, Is.EqualTo(13));
+        Assert.That(compositor.Segments[0].Nodes[5].KeyArray.SequenceEqual(new[] { "無", "可", "奈", "何", "花" }), Is.True);
+        Assert.That(compositor.Segments[1].Nodes[5].KeyArray.SequenceEqual(new[] { "可", "奈", "何", "花", "作" }), Is.True);
+        Assert.That(compositor.Segments[2].Nodes[5].KeyArray.SequenceEqual(new[] { "奈", "何", "花", "作", "香" }), Is.True);
+        Assert.That(compositor.Segments[3].Nodes[5].KeyArray.SequenceEqual(new[] { "何", "花", "作", "香", "蝶" }), Is.True);
+        Assert.That(compositor.Segments[4].Nodes[5].KeyArray.SequenceEqual(new[] { "花", "作", "香", "蝶", "能" }), Is.True);
+        Assert.That(compositor.Segments[5].Nodes[5].KeyArray.SequenceEqual(new[] { "作", "香", "蝶", "能", "留" }), Is.True);
+        Assert.That(compositor.Segments[6].Nodes[5].KeyArray.SequenceEqual(new[] { "香", "蝶", "能", "留", "一" }), Is.True);
+        Assert.That(compositor.Segments[7].Nodes[5].KeyArray.SequenceEqual(new[] { "蝶", "能", "留", "一", "縷" }), Is.True);
+        Assert.That(compositor.Segments[8].Nodes[5].KeyArray.SequenceEqual(new[] { "能", "留", "一", "縷", "芳" }), Is.True);
       }
       {
         Assert.That(compositor.InsertKey("幽"), Is.True);
         Assert.That((compositor.Cursor, compositor.Length), Is.EqualTo((8, 14)));
-        Assert.That(compositor.Spans.Count, Is.EqualTo(14));
-        Assert.That(compositor.Spans[0].Nodes[6].KeyArray.SequenceEqual(new[] { "無", "可", "奈", "何", "花", "作" }), Is.True);
-        Assert.That(compositor.Spans[1].Nodes[6].KeyArray.SequenceEqual(new[] { "可", "奈", "何", "花", "作", "香" }), Is.True);
-        Assert.That(compositor.Spans[2].Nodes[6].KeyArray.SequenceEqual(new[] { "奈", "何", "花", "作", "香", "幽" }), Is.True);
-        Assert.That(compositor.Spans[3].Nodes[6].KeyArray.SequenceEqual(new[] { "何", "花", "作", "香", "幽", "蝶" }), Is.True);
-        Assert.That(compositor.Spans[4].Nodes[6].KeyArray.SequenceEqual(new[] { "花", "作", "香", "幽", "蝶", "能" }), Is.True);
-        Assert.That(compositor.Spans[5].Nodes[6].KeyArray.SequenceEqual(new[] { "作", "香", "幽", "蝶", "能", "留" }), Is.True);
-        Assert.That(compositor.Spans[6].Nodes[6].KeyArray.SequenceEqual(new[] { "香", "幽", "蝶", "能", "留", "一" }), Is.True);
-        Assert.That(compositor.Spans[7].Nodes[6].KeyArray.SequenceEqual(new[] { "幽", "蝶", "能", "留", "一", "縷" }), Is.True);
-        Assert.That(compositor.Spans[8].Nodes[6].KeyArray.SequenceEqual(new[] { "蝶", "能", "留", "一", "縷", "芳" }), Is.True);
+        Assert.That(compositor.Segments.Count, Is.EqualTo(14));
+        Assert.That(compositor.Segments[0].Nodes[6].KeyArray.SequenceEqual(new[] { "無", "可", "奈", "何", "花", "作" }), Is.True);
+        Assert.That(compositor.Segments[1].Nodes[6].KeyArray.SequenceEqual(new[] { "可", "奈", "何", "花", "作", "香" }), Is.True);
+        Assert.That(compositor.Segments[2].Nodes[6].KeyArray.SequenceEqual(new[] { "奈", "何", "花", "作", "香", "幽" }), Is.True);
+        Assert.That(compositor.Segments[3].Nodes[6].KeyArray.SequenceEqual(new[] { "何", "花", "作", "香", "幽", "蝶" }), Is.True);
+        Assert.That(compositor.Segments[4].Nodes[6].KeyArray.SequenceEqual(new[] { "花", "作", "香", "幽", "蝶", "能" }), Is.True);
+        Assert.That(compositor.Segments[5].Nodes[6].KeyArray.SequenceEqual(new[] { "作", "香", "幽", "蝶", "能", "留" }), Is.True);
+        Assert.That(compositor.Segments[6].Nodes[6].KeyArray.SequenceEqual(new[] { "香", "幽", "蝶", "能", "留", "一" }), Is.True);
+        Assert.That(compositor.Segments[7].Nodes[6].KeyArray.SequenceEqual(new[] { "幽", "蝶", "能", "留", "一", "縷" }), Is.True);
+        Assert.That(compositor.Segments[8].Nodes[6].KeyArray.SequenceEqual(new[] { "蝶", "能", "留", "一", "縷", "芳" }), Is.True);
       }
     }
   }
@@ -267,7 +267,7 @@ namespace Megrez.Tests {
         compositor.InsertKey(c.ToString());
       }
 
-      List<Node> result = compositor.Walk();
+      List<Node> result = compositor.Assemble();
 
       Assert.That(result.JoinedKeys(separator: "").SequenceEqual(
         new[] { "幽蝶", "能", "留", "一縷", "芳" }), Is.True
@@ -286,7 +286,7 @@ namespace Megrez.Tests {
       }
       Console.WriteLine("// Stress test started.");
       DateTime startTime = DateTime.Now;
-      compositor.Walk();
+      compositor.Assemble();
       TimeSpan timeElapsed = DateTime.Now - startTime;
       Console.WriteLine($"// Stress test elapsed: {timeElapsed.TotalSeconds}s.");
     }
@@ -302,11 +302,11 @@ namespace Megrez.Tests {
         Assert.That(compositor.InsertKey(key), Is.True);
       }
       Console.WriteLine(string.Join(", ", compositor.Keys));
-      List<string> oldResult = compositor.Walk().Values();
+      List<string> oldResult = compositor.Assemble().Values();
       CollectionAssert.AreEqual(new[] { "樹心", "封" }, oldResult);
       lm.ReConstruct(newRawStringLM);
       compositor.Update(true);
-      List<string> newResult = compositor.Walk().Values();
+      List<string> newResult = compositor.Assemble().Values();
       CollectionAssert.AreEqual(new[] { "樹新風" }, newResult);
     }
 
@@ -344,8 +344,8 @@ namespace Megrez.Tests {
         foreach (string key in readings) {
           compositor.InsertKey(key);
         }
-        // 初始爬軌結果。
-        List<string> assembledSentence = compositor.Walk().Values().ToList();
+        // 初始組句結果。
+        List<string> assembledSentence = compositor.Assemble().Values().ToList();
         CollectionAssert.AreEqual(new[] { "科技", "公園" }, assembledSentence);
         // 測試候選字詞過濾。
         List<string> gotBeginAt = compositor.FetchCandidatesAt(2, Compositor.CandidateFetchFilter.BeginAt).Select(c => c.Value).ToList();
@@ -379,7 +379,7 @@ namespace Megrez.Tests {
     }
 
     [Test]
-    public void Test13_Compositor_WalkAndOverrideWithUnigramAndCursorJump() {
+    public void Test13_Compositor_AssembleAndOverrideWithUnigramAndCursorJump() {
       string readings = "chao1 shang1 da4 qian2 tian1 wei2 zhi3 hai2 zai5 mai4 nai3 ji1";
       SimpleLM mockLM = new(TestDataClass.StrLMSampleDataLitch);
       Compositor compositor = new(mockLM);
@@ -388,8 +388,8 @@ namespace Megrez.Tests {
       }
       Assert.That(compositor.Length, Is.EqualTo(12));
       Assert.That(compositor.Length, Is.EqualTo(compositor.Cursor));
-      // 初始爬軌結果。
-      List<string> assembledSentence = compositor.Walk().Values().ToList();
+      // 初始組句結果。
+      List<string> assembledSentence = compositor.Assemble().Values().ToList();
       CollectionAssert.AreEqual(new[] { "超商", "大前天", "為止", "還", "在", "賣", "荔枝" }, assembledSentence);
       // 測試 DumpDOT。
       string expectedDumpDOT = @"
@@ -454,59 +454,59 @@ EOS;
         Assert.That(
             compositorCopy1.OverrideCandidate(new(new List<string> { "ji1" }, "雞"), 11), Is.True
         );
-        assembledSentence = compositorCopy1.Walk().Values().ToList();
+        assembledSentence = compositorCopy1.Assemble().Values().ToList();
         CollectionAssert.AreEqual(new[] { "超商", "大前天", "為止", "還", "在", "賣", "乃", "雞" }, assembledSentence);
       }
       // 回到先前的測試，測試對整個詞的覆寫。
       Assert.That(
           compositor.OverrideCandidate(new(new List<string> { "nai3", "ji1" }, "奶雞"), 10), Is.True
       );
-      assembledSentence = compositor.Walk().Values().ToList();
+      assembledSentence = compositor.Assemble().Values().ToList();
       CollectionAssert.AreEqual(new[] { "超商", "大前天", "為止", "還", "在", "賣", "奶雞" }, assembledSentence);
       // 測試游標跳轉。
       compositor.Cursor = 10; // 向後
-      Assert.That(compositor.JumpCursorBySpan(Compositor.TypingDirection.ToRear), Is.True);
+      Assert.That(compositor.JumpCursorBySegment(Compositor.TypingDirection.ToRear), Is.True);
       Assert.That(compositor.Cursor, Is.EqualTo(9));
-      Assert.That(compositor.JumpCursorBySpan(Compositor.TypingDirection.ToRear), Is.True);
+      Assert.That(compositor.JumpCursorBySegment(Compositor.TypingDirection.ToRear), Is.True);
       Assert.That(compositor.Cursor, Is.EqualTo(8));
-      Assert.That(compositor.JumpCursorBySpan(Compositor.TypingDirection.ToRear), Is.True);
+      Assert.That(compositor.JumpCursorBySegment(Compositor.TypingDirection.ToRear), Is.True);
       Assert.That(compositor.Cursor, Is.EqualTo(7));
-      Assert.That(compositor.JumpCursorBySpan(Compositor.TypingDirection.ToRear), Is.True);
+      Assert.That(compositor.JumpCursorBySegment(Compositor.TypingDirection.ToRear), Is.True);
       Assert.That(compositor.Cursor, Is.EqualTo(5));
-      Assert.That(compositor.JumpCursorBySpan(Compositor.TypingDirection.ToRear), Is.True);
+      Assert.That(compositor.JumpCursorBySegment(Compositor.TypingDirection.ToRear), Is.True);
       Assert.That(compositor.Cursor, Is.EqualTo(2));
-      Assert.That(compositor.JumpCursorBySpan(Compositor.TypingDirection.ToRear), Is.True);
+      Assert.That(compositor.JumpCursorBySegment(Compositor.TypingDirection.ToRear), Is.True);
       Assert.That(compositor.Cursor, Is.EqualTo(0));
-      Assert.That(compositor.JumpCursorBySpan(Compositor.TypingDirection.ToRear), Is.False);
+      Assert.That(compositor.JumpCursorBySegment(Compositor.TypingDirection.ToRear), Is.False);
       Assert.That(compositor.Cursor, Is.EqualTo(0)); // 接下來準備向前
-      Assert.That(compositor.JumpCursorBySpan(Compositor.TypingDirection.ToFront), Is.True);
+      Assert.That(compositor.JumpCursorBySegment(Compositor.TypingDirection.ToFront), Is.True);
       Assert.That(compositor.Cursor, Is.EqualTo(2));
-      Assert.That(compositor.JumpCursorBySpan(Compositor.TypingDirection.ToFront), Is.True);
+      Assert.That(compositor.JumpCursorBySegment(Compositor.TypingDirection.ToFront), Is.True);
       Assert.That(compositor.Cursor, Is.EqualTo(5));
-      Assert.That(compositor.JumpCursorBySpan(Compositor.TypingDirection.ToFront), Is.True);
+      Assert.That(compositor.JumpCursorBySegment(Compositor.TypingDirection.ToFront), Is.True);
       Assert.That(compositor.Cursor, Is.EqualTo(7));
-      Assert.That(compositor.JumpCursorBySpan(Compositor.TypingDirection.ToFront), Is.True);
+      Assert.That(compositor.JumpCursorBySegment(Compositor.TypingDirection.ToFront), Is.True);
       Assert.That(compositor.Cursor, Is.EqualTo(8));
-      Assert.That(compositor.JumpCursorBySpan(Compositor.TypingDirection.ToFront), Is.True);
+      Assert.That(compositor.JumpCursorBySegment(Compositor.TypingDirection.ToFront), Is.True);
       Assert.That(compositor.Cursor, Is.EqualTo(9));
-      Assert.That(compositor.JumpCursorBySpan(Compositor.TypingDirection.ToFront), Is.True);
+      Assert.That(compositor.JumpCursorBySegment(Compositor.TypingDirection.ToFront), Is.True);
       Assert.That(compositor.Cursor, Is.EqualTo(10));
-      Assert.That(compositor.JumpCursorBySpan(Compositor.TypingDirection.ToFront), Is.True);
+      Assert.That(compositor.JumpCursorBySegment(Compositor.TypingDirection.ToFront), Is.True);
       Assert.That(compositor.Cursor, Is.EqualTo(12));
-      Assert.That(compositor.JumpCursorBySpan(Compositor.TypingDirection.ToFront), Is.False);
+      Assert.That(compositor.JumpCursorBySegment(Compositor.TypingDirection.ToFront), Is.False);
       Assert.That(compositor.Cursor, Is.EqualTo(12));
     }
 
     [Test]
-    public void Test14_Compositor_WalkAndOverride_AnotherTest() {
+    public void Test14_Compositor_AssembleAndOverride_AnotherTest() {
       string[] readings = "you1 die2 neng2 liu2 yi4 lv3 fang1".Split(' ');
       SimpleLM lm = new(TestDataClass.StrLMSampleDataHutao);
       Compositor compositor = new(lm);
       foreach (string key in readings) {
         compositor.InsertKey(key);
       }
-      // 初始爬軌結果。
-      List<string> assembledSentence = compositor.Walk().Values().ToList();
+      // 初始組句結果。
+      List<string> assembledSentence = compositor.Assemble().Values().ToList();
       CollectionAssert.AreEqual(new[] { "幽蝶", "能", "留意", "呂方" }, assembledSentence);
       // 測試覆寫「留」以試圖打斷「留意」。
       compositor.OverrideCandidate(
@@ -516,13 +516,13 @@ EOS;
       compositor.OverrideCandidate(
           new KeyValuePaired(new List<string> { "yi4", "lv3" }, "一縷"), 4, Megrez.Node.OverrideType.HighScore
       );
-      assembledSentence = compositor.Walk().Values().ToList();
+      assembledSentence = compositor.Assemble().Values().ToList();
       CollectionAssert.AreEqual(new[] { "幽蝶", "能", "留", "一縷", "方" }, assembledSentence);
       // 對位置 7 這個最前方的座標位置使用節點覆寫。會在此過程中自動糾正成對位置 6 的覆寫。
       compositor.OverrideCandidate(
           new KeyValuePaired(new List<string> { "fang1" }, "芳"), 7, Megrez.Node.OverrideType.HighScore
       );
-      assembledSentence = compositor.Walk().Values().ToList();
+      assembledSentence = compositor.Assemble().Values().ToList();
       CollectionAssert.AreEqual(new[] { "幽蝶", "能", "留", "一縷", "芳" }, assembledSentence);
       string expectedDOT = @"
 digraph {
@@ -575,7 +575,7 @@ EOS;
       foreach (string key in readings) {
         compositor.InsertKey(key);
       }
-      List<Node> result = compositor.Walk();
+      List<Node> result = compositor.Assemble();
       List<string> assembledSentence = result.Values().ToList();
       CollectionAssert.AreEqual(new[] { "水果汁" }, result.Values());
       // 測試針對第一個漢字的位置的操作。
@@ -584,7 +584,7 @@ EOS;
           Assert.That(
               compositor.OverrideCandidate(new KeyValuePaired(new List<string> { "shui3" }, "💦"), 0), Is.True
           );
-          assembledSentence = compositor.Walk().Values().ToList();
+          assembledSentence = compositor.Assemble().Values().ToList();
           CollectionAssert.AreEqual(new[] { "💦", "果汁" }, assembledSentence);
         }
         {
@@ -592,7 +592,7 @@ EOS;
               compositor.OverrideCandidate(
                   new KeyValuePaired(new List<string> { "shui3", "guo3", "zhi1" }, "水果汁"), 1), Is.True
           );
-          assembledSentence = compositor.Walk().Values().ToList();
+          assembledSentence = compositor.Assemble().Values().ToList();
           CollectionAssert.AreEqual(new[] { "水果汁" }, assembledSentence);
         }
         {
@@ -600,7 +600,7 @@ EOS;
               // 再覆寫回來。
               compositor.OverrideCandidate(new KeyValuePaired(new List<string> { "shui3" }, "💦"), 0), Is.True
           );
-          assembledSentence = compositor.Walk().Values().ToList();
+          assembledSentence = compositor.Assemble().Values().ToList();
           CollectionAssert.AreEqual(new[] { "💦", "果汁" }, assembledSentence);
         }
       }
@@ -611,14 +611,14 @@ EOS;
           Assert.That(
               compositor.OverrideCandidate(new KeyValuePaired(new List<string> { "guo3" }, "裹"), 1), Is.True
           );
-          assembledSentence = compositor.Walk().Values().ToList();
+          assembledSentence = compositor.Assemble().Values().ToList();
           CollectionAssert.AreEqual(new[] { "💦", "裹", "之" }, assembledSentence);
         }
         {
           Assert.That(
               compositor.OverrideCandidate(new KeyValuePaired(new List<string> { "zhi1" }, "知"), 2), Is.True
           );
-          assembledSentence = compositor.Walk().Values().ToList();
+          assembledSentence = compositor.Assemble().Values().ToList();
           CollectionAssert.AreEqual(new[] { "💦", "裹", "知" }, assembledSentence);
         }
         {
@@ -627,7 +627,7 @@ EOS;
               compositor.OverrideCandidate(
                   new KeyValuePaired(new List<string> { "shui3", "guo3", "zhi1" }, "水果汁"), 3), Is.True
           );
-          assembledSentence = compositor.Walk().Values().ToList();
+          assembledSentence = compositor.Assemble().Values().ToList();
           CollectionAssert.AreEqual(new[] { "水果汁" }, assembledSentence);
         }
       }
@@ -641,25 +641,25 @@ EOS;
       foreach (string key in readings) {
         compositor.InsertKey(key);
       }
-      List<Node> result = compositor.Walk();
+      List<Node> result = compositor.Assemble();
       CollectionAssert.AreEqual(new[] { "科技", "公園" }, result.Values());
 
       Assert.That(compositor.OverrideCandidate(
           new KeyValuePaired(new List<string> { "ji4", "gong1" }, "濟公"), 1), Is.True
       );
-      result = compositor.Walk();
+      result = compositor.Assemble();
       CollectionAssert.AreEqual(new[] { "顆", "濟公", "元" }, result.Values());
 
       Assert.That(compositor.OverrideCandidate(
           new KeyValuePaired(new List<string> { "gong1", "yuan2" }, "公猿"), 2), Is.True
       );
-      result = compositor.Walk();
+      result = compositor.Assemble();
       CollectionAssert.AreEqual(new[] { "科技", "公猿" }, result.Values());
 
       Assert.That(compositor.OverrideCandidate(
           new KeyValuePaired(new List<string> { "ke1", "ji4" }, "科際"), 0), Is.True
       );
-      result = compositor.Walk();
+      result = compositor.Assemble();
       CollectionAssert.AreEqual(new[] { "科際", "公猿" }, result.Values());
     }
 
@@ -672,18 +672,18 @@ EOS;
       foreach (string key in readings) {
         compositor.InsertKey(key);
       }
-      List<Node> result = compositor.Walk();
+      List<Node> result = compositor.Assemble();
       CollectionAssert.AreEqual(new[] { "大樹", "新的", "蜜蜂" }, result.Values());
       int pos = 2;
 
       Assert.That(compositor.OverrideCandidate(new KeyValuePaired(new List<string> { "xin1" }, "🆕"), pos), Is.True);
-      result = compositor.Walk();
+      result = compositor.Assemble();
       CollectionAssert.AreEqual(new[] { "大樹", "🆕", "的", "蜜蜂" }, result.Values());
 
       Assert.That(
           compositor.OverrideCandidate(new KeyValuePaired(new List<string> { "xin1", "de5" }, "🆕"), pos), Is.True
       );
-      result = compositor.Walk();
+      result = compositor.Assemble();
       CollectionAssert.AreEqual(new[] { "大樹", "🆕", "蜜蜂" }, result.Values());
     }
   }

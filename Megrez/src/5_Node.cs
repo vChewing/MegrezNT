@@ -8,35 +8,35 @@ using System.Linq;
 
 namespace Megrez {
   /// <summary>
-  /// 字詞節點。<para/>
-  /// 一個節點由這些內容組成：幅位長度、索引鍵、以及一組單元圖。幅位長度就是指這個
-  /// 節點在組字器內橫跨了多少個字長。組字器負責構築自身的節點。對於由多個漢字組成
-  /// 的詞，組字器會將多個讀音索引鍵合併為一個讀音索引鍵、據此向語言模組請求對應的
-  /// 單元圖結果陣列。舉例說，如果一個詞有兩個漢字組成的話，那麼讀音也是有兩個、其
-  /// 索引鍵也是由兩個讀音組成的，那麼這個節點的幅位長度就是 2。
+  /// 組字引擎中的基礎單位節點物件。<para/>
+  /// 節點封裝了讀音索引鍵陣列、涵蓋範圍長度、以及對應的單元圖資料。節點的涵蓋長度
+  /// 表示該節點在整個讀音序列中佔據的位置數量。組字引擎會根據輸入的讀音序列自動建立
+  /// 節點結構。對於多字詞彙，引擎會將相應的多個讀音組合並生成單一的複合索引鍵，
+  /// 然後從語言模型中獲取匹配的單元圖集合。例如，一個包含兩個漢字的詞彙對應兩個讀音，
+  /// 其組合後的節點涵蓋長度即為 2。
   /// </summary>
   public partial class Node {
     // MARK: - Enums
 
     /// <summary>
-    /// 三種不同的針對一個節點的覆寫行為。
+    /// 節點資料覆寫模式的定義。
     /// </summary>
     public enum OverrideType {
       /// <summary>
-      /// 無覆寫行為。
+      /// 預設模式，無任何覆寫操作。
       /// </summary>
       NoOverrides = 0,
       /// <summary>
-      /// 使用指定的單元圖資料值來覆寫該節點，但卻使用
-      /// 當前狀態下權重最高的單元圖的權重數值。打比方說，如果該節點內的單元圖陣列是
-      ///  [("a", -114), ("b", -514), ("c", -1919)] 的話，指定該覆寫行為則會導致該節
-      ///  點返回的結果為 ("c", -114)。該覆寫行為多用於諸如使用者半衰記憶模組的建議
-      ///  行為。被覆寫的這個節點的狀態可能不會再被爬軌行為擅自改回。該覆寫行為無法
-      ///  防止其它節點被爬軌函式所支配。這種情況下就需要用到 <see cref="OverridingScore"/>。
+      /// 採用指定的單元圖詞彙內容進行覆寫，但保留最高權重單元圖的分數值。
+      /// 例如，若節點包含單元圖序列 [("甲", -114), ("乙", -514), ("丙", -1919)]，
+      /// 選擇覆寫為「丙」時，實際返回結果為 ("丙", -114)。此模式主要應用於
+      /// 使用者記憶模組的輔助建議功能。經過覆寫的節點狀態將維持穩定，不會被
+      /// 組句演算法自動還原。然而，此模式無法完全阻止其他節點在組句過程中
+      /// 產生的影響。如需完全控制，應配合使用 <see cref="OverridingScore"/> 屬性。
       /// </summary>
       TopUnigramScore = 1,
       /// <summary>
-      /// 將該節點權重覆寫為 <see cref="OverridingScore"/>，使其被爬軌函式所青睞。
+      /// 將節點的權重強制設定為 <see cref="OverridingScore"/> 數值，確保組句演算法優先選擇該節點。
       /// </summary>
       HighScore = 2
     }
@@ -44,36 +44,36 @@ namespace Megrez {
     // MARK: - Variables
 
     /// <summary>
-    /// 一個用以覆寫權重的數值。該數值之高足以改變爬軌函式對該節點的讀取結果。這裡用
-    /// 「0」可能看似足夠了，但仍會使得該節點的覆寫狀態有被爬軌函式忽視的可能。比方說
-    /// 要針對索引鍵「a b c」複寫的資料值為「A B C」，使用大寫資料值來覆寫節點。這時，
-    /// 如果這個獨立的 c 有一個可以拮抗權重的詞「bc」的話，可能就會導致爬軌函式的算法
-    /// 找出「A->bc」的爬軌途徑（尤其是當 A 和 B 使用「0」作為複寫數值的情況下）。這樣
-    /// 一來，「A-B」就不一定始終會是爬軌函式的青睞結果了。所以，這裡一定要用大於 0 的
-    /// 數（比如野獸常數），以讓「c」更容易單獨被選中。
+    /// 專門用於權重覆寫的高數值常數。此數值的設定足以影響組句演算法的路徑選擇結果。
+    /// 雖然理論上使用「0」似乎已經足夠，但實際上可能導致覆寫狀態被組句演算法忽略。
+    /// 舉例說明：假設要對讀音序列「a b c」覆寫為「甲 乙 丙」，其中甲乙丙為大寫形式的
+    /// 覆寫內容。如果單獨的「c」存在可競爭的詞彙「bc」，可能導致組句演算法計算出
+    /// 「甲->bc」的路徑（特別是當甲和乙使用「0」作為覆寫分數時）。在這種情況下，
+    /// 「甲-乙」的路徑不一定能獲得演算法的青睞。因此，此處必須使用大於 0 的正數
+    /// （例如此處的特殊常數），以確保「丙」能夠單獨被優先選中。
     /// </summary>
     public double OverridingScore = 114514;
 
     /// <summary>
-    /// 索引鍵陣列。
+    /// 讀音索引鍵序列。
     /// </summary>
     public List<string> KeyArray { get; }
     /// <summary>
-    /// 幅位長度。
+    /// 節點的涵蓋範圍長度。
     /// </summary>
-    public int SpanLength { get; }
+    public int SegLength { get; }
     /// <summary>
-    /// 單元圖陣列。
+    /// 節點包含的單元圖資料集合。
     /// </summary>
     public List<Unigram> Unigrams { get; private set; }
     /// <summary>
-    /// 該節點目前的覆寫狀態種類。
+    /// 目前應用於該節點的覆寫模式類型。
     /// </summary>
     public OverrideType CurrentOverrideType { get; private set; }
 
     private int _currentUnigramIndex;
     /// <summary>
-    /// 當前該節點所指向的（單元圖陣列內的）單元圖索引位置。
+    /// 指向單元圖集合中當前選定項目的索引值。
     /// </summary>
     public int CurrentUnigramIndex {
       get => _currentUnigramIndex;
@@ -86,37 +86,37 @@ namespace Megrez {
     // MARK: - Constructor and Other Fundamentals
 
     /// <summary>
-    /// 生成一個字詞節點。<para/>
-    /// 一個節點由這些內容組成：幅位長度、索引鍵、以及一組單元圖。幅位長度就是指這個
-    /// 節點在組字器內橫跨了多少個字長。組字器負責構築自身的節點。對於由多個漢字組成
-    /// 的詞，組字器會將多個讀音索引鍵合併為一個讀音索引鍵、據此向語言模組請求對應的
-    /// 單元圖結果陣列。舉例說，如果一個詞有兩個漢字組成的話，那麼讀音也是有兩個、其
-    /// 索引鍵也是由兩個讀音組成的，那麼這個節點的幅位長度就是 2。
+    /// 建立新的節點實例。<para/>
+    /// 節點物件整合了讀音索引鍵序列、涵蓋範圍長度、以及相關的單元圖資料。範圍長度
+    /// 表示此節點在輸入序列中所佔的位置數量。組字引擎負責根據語言模型資料動態建構
+    /// 節點物件。對於包含多個字符的詞條，引擎會整合對應的多個讀音形成複合索引鍵，
+    /// 並據此從語言模型中查詢匹配的單元圖集合。舉例而言，雙字詞對應雙讀音，
+    /// 其節點的涵蓋範圍長度為 2。
     /// </summary>
-    /// <param name="keyArray">給定索引鍵陣列，不得為空。</param>
-    /// <param name="spanLength">給定幅位長度，一般情況下與給定索引鍵陣列內的索引鍵數量一致。</param>
-    /// <param name="unigrams">給定單元圖陣列，不得為空。</param>
-    public Node(List<string> keyArray, int spanLength, List<Unigram> unigrams) {
+    /// <param name="keyArray">輸入的索引鍵序列，不可為空集合。</param>
+    /// <param name="segLength">節點涵蓋範圍長度，通常與索引鍵序列元素數量相等。</param>
+    /// <param name="unigrams">關聯的單元圖資料集合，不可為空集合。</param>
+    public Node(List<string> keyArray, int segLength, List<Unigram> unigrams) {
       _currentUnigramIndex = 0;
       KeyArray = keyArray;
-      SpanLength = Math.Max(0, spanLength);
+      SegLength = Math.Max(0, segLength);
       Unigrams = unigrams;
       CurrentOverrideType = OverrideType.NoOverrides;
     }
 
     /// <summary>
-    /// 以指定字詞節點生成拷貝。
+    /// 通過複製現有節點來建立新實例。
     /// </summary>
     /// <remarks>
-    /// 因為 Node 不是 Struct，所以會在 Compositor 被拷貝的時候無法被真實複製。
-    /// 這樣一來，Compositor 複製品當中的 Node 的變化會被反應到原先的 Compositor 身上。
-    /// 這在某些情況下會造成意料之外的混亂情況，所以需要引入一個拷貝用的建構子。
+    /// 由於 Node 採用參考型別設計，在組字器複製過程中無法自動執行深層複製。
+    /// 這可能導致複製後的組字器中的節點變更影響到原始組字器實例。
+    /// 為避免此類非預期的交互影響，特別提供此複製建構函數。
     /// </remarks>
-    /// <param name="node"></param>
+    /// <param name="node">要複製的來源節點實例。</param>
     public Node(Node node) {
       OverridingScore = node.OverridingScore;
       KeyArray = node.KeyArray.ToList();
-      SpanLength = node.SpanLength;
+      SegLength = node.SegLength;
       Unigrams = node.Unigrams.ToList();
       CurrentOverrideType = node.CurrentOverrideType;
       CurrentUnigramIndex = node.CurrentUnigramIndex;
@@ -142,7 +142,7 @@ namespace Megrez {
       return obj is not Node node
                  ? false
                  : OverridingScore == node.OverridingScore && KeyArray.SequenceEqual(node.KeyArray) &&
-                       SpanLength == node.SpanLength && Unigrams.SequenceEqual(node.Unigrams) &&
+                       SegLength == node.SegLength && Unigrams.SequenceEqual(node.Unigrams) &&
                        CurrentOverrideType == node.CurrentOverrideType && CurrentUnigramIndex == node.CurrentUnigramIndex;
     }
 
@@ -155,7 +155,7 @@ namespace Megrez {
         int hash = 17;
         hash = hash * 23 + OverridingScore.GetHashCode();
         hash = hash * 23 + KeyArray.GetHashCode();
-        hash = hash * 23 + SpanLength.GetHashCode();
+        hash = hash * 23 + SegLength.GetHashCode();
         hash = hash * 23 + Unigrams.GetHashCode();
         hash = hash * 23 + CurrentUnigramIndex.GetHashCode();
         hash = hash * 23 + CurrentOverrideType.GetHashCode();
@@ -280,29 +280,29 @@ namespace Megrez {
     public static List<string> JoinedKeys(this List<Node> self, string? separator) =>
         self.Select(x => x.KeyArray.Joined(separator ?? Compositor.TheSeparator)).ToList();
     /// <summary>
-    /// 總讀音單元數量。在絕大多數情況下，可視為總幅位長度。
+    /// 總讀音單元數量。在絕大多數情況下，可視為總幅節長度。
     /// </summary>
     /// <param name="self">節點。</param>
     /// <returns>總讀音單元數量。</returns>
     public static int TotalKeyCount(this List<Node> self) => self.Select(x => x.KeyArray.Count).Sum();
 
     /// <summary>
-    /// (Result A, Result B) 辭典陣列。Result A 以索引查座標，Result B 以座標查索引。
+    /// (Result A, Result B) 字典陣列。Result A 以索引查座標，Result B 以座標查索引。
     /// </summary>
     public struct CursorMapPair {
       /// <summary>
-      /// 以索引查座標的辭典陣列。
+      /// 以索引查座標的字典陣列。
       /// </summary>
       public Dictionary<int, int> RegionCursorMap { get; private set; }
       /// <summary>
-      /// 以座標查索引的辭典陣列。
+      /// 以座標查索引的字典陣列。
       /// </summary>
       public Dictionary<int, int> CursorRegionMap { get; private set; }
       /// <summary>
-      /// (Result A, Result B) 辭典陣列。Result A 以索引查座標，Result B 以座標查索引。
+      /// (Result A, Result B) 字典陣列。Result A 以索引查座標，Result B 以座標查索引。
       /// </summary>
-      /// <param name="regionCursorMap">以索引查座標的辭典陣列。</param>
-      /// <param name="cursorRegionMap">以座標查索引的辭典陣列。</param>
+      /// <param name="regionCursorMap">以索引查座標的字典陣列。</param>
+      /// <param name="cursorRegionMap">以座標查索引的字典陣列。</param>
       public CursorMapPair(Dictionary<int, int> regionCursorMap, Dictionary<int, int> cursorRegionMap) {
         RegionCursorMap = regionCursorMap;
         CursorRegionMap = cursorRegionMap;
@@ -310,11 +310,11 @@ namespace Megrez {
     }
 
     /// <summary>
-    /// 返回一連串的節點起點。結果為 (Result A, Result B) 辭典陣列。
+    /// 返回一連串的節點起點。結果為 (Result A, Result B) 字典陣列。
     /// Result A 以索引查座標，Result B 以座標查索引。
     /// </summary>
     /// <param name="self">節點。</param>
-    /// <returns> (Result A, Result B) 辭典陣列。Result A 以索引查座標，Result B 以座標查索引。</returns>
+    /// <returns> (Result A, Result B) 字典陣列。Result A 以索引查座標，Result B 以座標查索引。</returns>
     private static CursorMapPair NodeBorderPointDictPair(this List<Node> self) {
       Dictionary<int, int> resultA = new();
       Dictionary<int, int> resultB = new() { [-1] = 0 };  // 防呆
@@ -334,10 +334,10 @@ namespace Megrez {
     }
 
     /// <summary>
-    /// 返回一個辭典，以座標查索引。允許以游標位置查詢其屬於第幾個幅位座標（從 0 開始算）。
+    /// 返回一個字典，以座標查索引。允許以游標位置查詢其屬於第幾個幅節座標（從 0 開始算）。
     /// </summary>
     /// <param name="self">節點。</param>
-    /// <returns>一個辭典，以座標查索引。允許以游標位置查詢其屬於第幾個幅位座標（從 0 開始算）。</returns>
+    /// <returns>一個字典，以座標查索引。允許以游標位置查詢其屬於第幾個幅節座標（從 0 開始算）。</returns>
     public static Dictionary<int, int> CursorRegionMap(this List<Node> self) =>
         self.NodeBorderPointDictPair().CursorRegionMap;
 
@@ -349,9 +349,9 @@ namespace Megrez {
     /// <returns>前後最近的邊界點。</returns>
     public static BRange ContextRange(this List<Node> self, int givenCursor) {
       if (self.IsEmpty()) return new(0, 0);
-      int lastSpanLength = self.Last().KeyArray.Count;
+      int lastSegLength = self.Last().KeyArray.Count;
       int totalKeyCount = self.TotalKeyCount();
-      BRange nilReturn = new(totalKeyCount - lastSpanLength, totalKeyCount);
+      BRange nilReturn = new(totalKeyCount - lastSegLength, totalKeyCount);
       if (givenCursor >= totalKeyCount) return nilReturn;
       int cursor = Math.Max(0, givenCursor);  // 防呆。
       nilReturn = new(cursor, cursor);

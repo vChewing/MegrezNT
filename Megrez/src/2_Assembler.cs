@@ -45,15 +45,15 @@ namespace Megrez {
     }
 
     /// <summary>
-    /// 爬軌函式，會以 Dijkstra 算法更新當前組字器的 walkedNodes。<para/>
-    /// 該算法會在圖中尋找具有最高分數的路徑，即最可能的字詞組合。<para/>
-    /// 該算法所依賴的 HybridPriorityQueue 針對 Sandy Bridge 經過最佳化處理，
+    /// 文字組句處理函式，採用 Dijkstra 路徑搜尋演算法更新當前組字器的 assembledNodes 結果。<para/>
+    /// 此演算法在有向圖結構中搜尋具有最優評分的路徑，從而確定最合適的詞彙組合。<para/>
+    /// 演算法所依賴的 HybridPriorityQueue 資料結構經過針對 Sandy Bridge 架構的特殊最佳化處理，
     /// 使得該算法在 Sandy Bridge CPU 的電腦上比 DAG 算法擁有更優的效能。<para/>
     /// </summary>
-    /// <returns>爬軌結果（已選字詞陣列）。</returns>
-    public List<Node> Walk() {
-      WalkedNodes.Clear();
-      if (!Spans.Any()) return new();
+    /// <returns>組句結果（已選字詞陣列）。</returns>
+    public List<Node> Assemble() {
+      AssembledNodes.Clear();
+      if (!Segments.Any()) return new();
 
       // 初期化資料結構。
       HybridPriorityQueue<PrioritizedState> openSet = new(reversed: true);
@@ -61,7 +61,7 @@ namespace Megrez {
       Dictionary<int, double> bestScore = new();
 
       // 初期化起始狀態。
-      Node leadingNode = new(new() { "$LEADING" }, spanLength: 0, unigrams: new());
+      Node leadingNode = new(new() { "$LEADING" }, segLength: 0, unigrams: new());
       SearchState start = new(node: leadingNode, position: 0, prev: null, distance: 0);
       openSet.Enqueue(new(state: start));
       bestScore[0] = 0;
@@ -87,10 +87,10 @@ namespace Megrez {
         }
 
         // 處理下一個可能的節點。
-        SpanUnit currentSpan = Spans[currentPState.State.Position];
-        foreach (KeyValuePair<int, Node> spanNeta in currentSpan.Nodes) {
-          int length = spanNeta.Key;
-          Node nextNode = spanNeta.Value;
+        Segment currentSegment = Segments[currentPState.State.Position];
+        foreach (KeyValuePair<int, Node> segmentNeta in currentSegment.Nodes) {
+          int length = segmentNeta.Key;
+          Node nextNode = segmentNeta.Value;
           int nextPos = currentPState.State.Position + length;
 
           // 計算新的權重分數。
@@ -129,8 +129,8 @@ namespace Megrez {
       // 包括 visited set 中的所有狀態、openSet 中剩餘的狀態，以及 leadingState
       BatchCleanAllSearchStates(visited, openSet, start);
 
-      WalkedNodes = pathNodes.Select(n => n.Copy()).ToList();
-      return WalkedNodes;
+      AssembledNodes = pathNodes.Select(n => n.Copy()).ToList();
+      return AssembledNodes;
     }
 
     /// <summary>用於追蹤搜尋過程中的狀態。</summary>

@@ -7,24 +7,24 @@ using System.Collections.Generic;
 
 namespace Megrez {
   /// <summary>
-  /// 單元圖。
+  /// 語言模型的基礎資料單位。
   /// </summary>
   public struct Unigram {
     /// <summary>
-    /// 資料值，通常是詞語或單個字。
+    /// 詞彙內容，可以是單字或詞組。
     /// </summary>
-    /// <value>資料值。</value>
+    /// <value>詞彙內容。</value>
     public string Value { get; }
     /// <summary>
-    /// 權重（雙精度小數）。
+    /// 統計權重（雙精度浮點數）。
     /// </summary>
-    /// <value>權重。</value>
+    /// <value>統計權重。</value>
     public double Score { get; }
     /// <summary>
-    /// 初期化一筆「單元圖」。一筆單元圖由一筆資料值與一筆權重數值組成。
+    /// 建立語言模型基礎資料單位實例。單元圖由詞彙內容和對應的統計權重組成。
     /// </summary>
-    /// <param name="value">資料值。</param>
-    /// <param name="score">權重（雙精度小數）。</param>
+    /// <param name="value">詞彙內容。</param>
+    /// <param name="score">統計權重（雙精度浮點數）。</param>
     public Unigram(string value = "", double score = 0) {
       Value = value;
       Score = score;
