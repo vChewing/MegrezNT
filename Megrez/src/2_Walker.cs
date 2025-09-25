@@ -140,11 +140,27 @@ namespace Megrez {
       public SearchState? Prev { get; set; }
       public double Distance { get; }
 
+      // 用於穩定 hash 計算的不可變參據
+      private readonly Node? originalNodeRef; // 原始節點參據（不可變）
+      private readonly int stableHashCode; // 預計算的穩定 hash 值
+
       public SearchState(Node? node, int position, SearchState? prev, double distance) {
         Node = node;
         Position = position;
         Prev = prev;
         Distance = distance;
+        // 保存原始參據用於穩定的 hash 計算
+        originalNodeRef = node;
+        stableHashCode = ComputeStableHashCode(node, position);
+      }
+
+      private static int ComputeStableHashCode(Node? node, int position) {
+        unchecked {
+          int hash = 17;
+          hash = hash * 23 + (node?.GetHashCode() ?? 0);
+          hash = hash * 23 + position.GetHashCode();
+          return hash;
+        }
       }
 
       /// <summary>
@@ -184,18 +200,13 @@ namespace Megrez {
       }
 
       public bool Equals(SearchState? other) {
-        return other != null && ReferenceEquals(Node, other.Node) && Position == other.Position;
+        return other != null && ReferenceEquals(originalNodeRef, other.originalNodeRef) && Position == other.Position;
       }
 
       public override bool Equals(object? obj) => Equals(obj as SearchState);
 
       public override int GetHashCode() {
-        unchecked {
-          int hash = 17;
-          hash = hash * 23 + (Node?.GetHashCode() ?? 0);
-          hash = hash * 23 + Position.GetHashCode();
-          return hash;
-        }
+        return stableHashCode;
       }
     }
 
