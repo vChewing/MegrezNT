@@ -7,9 +7,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-// 著作權聲明：
-// 除了 Megrez 專有的修改與實作以外，該套件所有程式邏輯來自於 Gramambular、算法歸 Lukhnos Liu 所有。
-// 天權星引擎（Megrez Compositor）僅僅是將 Gramambular 用 Swift 重寫之後繼續開發的結果而已。
+// 天權星NT引擎（MegrezNT Compositor）特色：
+// - 原生 C# 實作，支援 .NET 6+。
+// - API 以陣列的形式處理輸入的 key。而且，在獲取候選字詞內容的時候，也可以徹底篩除橫跨游標的詞。
+// - 爬軌算法（Walking Algorithm）採用 Dijkstra 的算法，且經過效能最佳化處理、擁有比 DAG-Relax 算法更優的效能。
 
 // 術語：
 
