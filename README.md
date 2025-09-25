@@ -12,7 +12,7 @@ Megrez Engine is a module made for processing lingual data of an input method.
 - 原生 C# 實作，擁有完備的 .NET 6 支援、也可以用作任何新版 .NET 專案的相依套件（需使用者自行處理對跨執行緒安全性的需求）。
 - 以陣列的形式處理輸入的 key。
 - 在獲取候選字詞內容的時候，不會出現橫跨游標的詞。
-- 使用經過效能最佳化處理的 Dijkstra 的算法，擁有比 DAG-Relax 算法更優的效能。
+- 使用 DAG-DP 算法，擁有比 DAG-Relax Topology 算法更優的效能。
 
 ## 使用說明
 
