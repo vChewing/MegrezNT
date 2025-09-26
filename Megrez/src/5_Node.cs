@@ -211,7 +211,7 @@ namespace Megrez {
     /// <param name="separator">給定的分隔符，預設值為 <see cref="Compositor.TheSeparator"/>。</param>
     /// <returns>已經銜接完畢的字串。</returns>
     public string JoinedKey(string? separator = null) =>
-        StringJoinCache.Shared.GetCachedJoin(KeyArray, separator ?? Compositor.TheSeparator);
+        string.Join(separator ?? Compositor.TheSeparator, KeyArray);
 
     /// <summary>
     /// 重設該節點的覆寫狀態、及其內部的單元圖索引位置指向。
