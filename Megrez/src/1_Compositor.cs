@@ -123,9 +123,9 @@ namespace Megrez {
     /// <summary>
     /// 最近一次組句結果。
     /// </summary>
-    public List<Node> AssembledNodes {
-      get => Config.AssembledNodes;
-      set => Config.AssembledNodes = value;
+    public List<GramInPath> AssembledSentence {
+      get => Config.AssembledSentence;
+      set => Config.AssembledSentence = value;
     }
     /// <summary>
     /// 組字器是否為空。
@@ -278,24 +278,24 @@ namespace Megrez {
           if (target == 0) return false;
           break;
       }
-      if (!AssembledNodes.CursorRegionMap().TryGetValue(key: target, out int currentRegion)) return false;
-      int guardedCurrentRegion = Math.Min(AssembledNodes.Count - 1, currentRegion);
+      if (!AssembledSentence.CursorRegionMap().TryGetValue(key: target, out int currentRegion)) return false;
+      int guardedCurrentRegion = Math.Min(AssembledSentence.Count - 1, currentRegion);
       int aRegionForward = Math.Max(currentRegion - 1, 0);
-      int currentRegionBorderRear = AssembledNodes.GetRange(0, currentRegion).Select(x => x.SegLength).Sum();
+      int currentRegionBorderRear = AssembledSentence.GetRange(0, currentRegion).Select(x => x.SegLength).Sum();
 
       if (target == currentRegionBorderRear) {
         target = direction switch {
           TypingDirection.ToFront =>
-              currentRegion > AssembledNodes.Count
+              currentRegion > AssembledSentence.Count
                   ? Keys.Count
-                  : AssembledNodes.GetRange(0, guardedCurrentRegion + 1).Select(x => x.SegLength).Sum(),
-          TypingDirection.ToRear => AssembledNodes.GetRange(0, aRegionForward).Select(x => x.SegLength).Sum(),
+                  : AssembledSentence.GetRange(0, guardedCurrentRegion + 1).Select(x => x.SegLength).Sum(),
+          TypingDirection.ToRear => AssembledSentence.GetRange(0, aRegionForward).Select(x => x.SegLength).Sum(),
           _ => target
         };
       } else {
         target = direction switch {
-          TypingDirection.ToFront =>
-                                        currentRegionBorderRear + AssembledNodes[guardedCurrentRegion].SegLength,
+          TypingDirection.ToFront => currentRegionBorderRear
+              + AssembledSentence[guardedCurrentRegion].SegLength,
           TypingDirection.ToRear => currentRegionBorderRear,
           _ => target
         };
@@ -487,10 +487,16 @@ namespace Megrez {
     /// <summary>
     /// 初期化一套組字器組態設定。
     /// </summary>
-    public CompositorConfig(List<Node>? assembledNodes = null, List<string>? keys = null,
-                            List<Compositor.Segment>? segments = null, int cursor = 0, int maxSegLength = 10,
-                            int marker = 0, string? separator = null) {
-      AssembledNodes = assembledNodes ?? new List<Node>();
+    public CompositorConfig(
+      List<GramInPath>? assembledSentence = null,
+      List<string>? keys = null,
+      List<Compositor.Segment>? segments = null,
+      int cursor = 0,
+      int maxSegLength = 10,
+      int marker = 0,
+      string? separator = null
+    ) {
+      AssembledSentence = assembledSentence ?? new List<GramInPath>();
       Keys = keys ?? new List<string>();
       Segments = segments ?? new List<Compositor.Segment>();
       _cursor = cursor;
@@ -502,7 +508,7 @@ namespace Megrez {
     /// <summary>
     /// 最近一次組句結果。
     /// </summary>
-    public List<Node> AssembledNodes { get; set; }
+    public List<GramInPath> AssembledSentence { get; set; }
 
     /// <summary>
     /// 該組字器已經插入的的索引鍵，以陣列的形式存放。
@@ -579,7 +585,7 @@ namespace Megrez {
       CompositorConfig config = this;
       config.Keys = Keys.ToList();  // List 是 class，需要單獨複製。
       config.Segments = Segments.Select(x => x.HardCopy()).ToList();
-      config.AssembledNodes = AssembledNodes.Select(x => x.Copy()).ToList();
+      config.AssembledSentence = AssembledSentence.ToList();
       config.Separator = Separator;
       config.MaxSegLength = MaxSegLength;
       config.Cursor = Cursor;
@@ -596,7 +602,7 @@ namespace Megrez {
       if (obj is not CompositorConfig other) return false;
       return Cursor == other.Cursor && Marker == other.Marker && MaxSegLength == other.MaxSegLength &&
              Separator == other.Separator && Keys.SequenceEqual(other.Keys) && Segments.SequenceEqual(other.Segments) &&
-             AssembledNodes.SequenceEqual(other.AssembledNodes);
+             AssembledSentence.SequenceEqual(other.AssembledSentence);
     }
 
     /// <summary>
@@ -612,7 +618,7 @@ namespace Megrez {
         hash = hash * 23 + (Separator?.GetHashCode() ?? 0);
         hash = hash * 23 + Keys.GetHashCode();
         hash = hash * 23 + Segments.GetHashCode();
-        hash = hash * 23 + AssembledNodes.GetHashCode();
+        hash = hash * 23 + AssembledSentence.GetHashCode();
         return hash;
       }
     }
@@ -625,7 +631,7 @@ namespace Megrez {
     public void Clear() {
       Keys = new();
       Segments = new();
-      AssembledNodes = new();
+      AssembledSentence = new();
       Cursor = 0;
       Marker = 0;
     }

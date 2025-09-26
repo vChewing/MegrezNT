@@ -86,7 +86,7 @@ namespace Megrez {
     // MARK: - Constructor and Other Fundamentals
 
     /// <summary>
-    /// 建立新的節點實例。<para/>
+    /// 建立新的節點副本。<para/>
     /// 節點物件整合了讀音索引鍵序列、涵蓋範圍長度、以及相關的單元圖資料。範圍長度
     /// 表示此節點在輸入序列中所佔的位置數量。組字引擎負責根據語言模型資料動態建構
     /// 節點物件。對於包含多個字符的詞條，引擎會整合對應的多個讀音形成複合索引鍵，
@@ -105,14 +105,14 @@ namespace Megrez {
     }
 
     /// <summary>
-    /// 通過複製現有節點來建立新實例。
+    /// 通過複製現有節點來建立新副本。
     /// </summary>
     /// <remarks>
     /// 由於 Node 採用參考型別設計，在組字器複製過程中無法自動執行深層複製。
-    /// 這可能導致複製後的組字器中的節點變更影響到原始組字器實例。
+    /// 這可能導致複製後的組字器中的節點變更影響到原始組字器副本。
     /// 為避免此類非預期的交互影響，特別提供此複製建構函數。
     /// </remarks>
-    /// <param name="node">要複製的來源節點實例。</param>
+    /// <param name="node">要複製的來源節點副本。</param>
     public Node(Node node) {
       OverridingScore = node.OverridingScore;
       KeyArray = node.KeyArray.ToList();
@@ -254,162 +254,5 @@ namespace Megrez {
     }
   }
 
-  // MARK: - [Node] Implementations.
 
-  /// <summary>
-  /// 針對節點陣列的功能擴充。
-  /// </summary>
-  public static class NodeExtensions {
-    /// <summary>
-    /// 從一個節點陣列當中取出目前的索引鍵陣列。
-    /// </summary>
-    /// <param name="self">節點。</param>
-    /// <returns>目前的索引鍵陣列。</returns>
-    public static List<List<string>> KeyArray(this List<Node> self) => self.Select(x => x.KeyArray).ToList();
-    /// <summary>
-    /// 從一個節點陣列當中取出目前的選字字串陣列。
-    /// </summary>
-    /// <param name="self">節點。</param>
-    /// <returns>目前的自動選字字串陣列。</returns>
-    public static List<string> Values(this List<Node> self) => self.Select(x => x.Value).ToList();
-    /// <summary>
-    /// 從一個節點陣列當中取出目前的索引鍵陣列。
-    /// </summary>
-    /// <param name="self">節點。</param>
-    /// <param name="separator"></param>
-    /// <returns>取出目前的索引鍵陣列。</returns>
-    public static List<string> JoinedKeys(this List<Node> self, string? separator) =>
-        self.Select(x => x.KeyArray.Joined(separator ?? Compositor.TheSeparator)).ToList();
-    /// <summary>
-    /// 總讀音單元數量。在絕大多數情況下，可視為總幅節長度。
-    /// </summary>
-    /// <param name="self">節點。</param>
-    /// <returns>總讀音單元數量。</returns>
-    public static int TotalKeyCount(this List<Node> self) => self.Select(x => x.KeyArray.Count).Sum();
-
-    /// <summary>
-    /// (Result A, Result B) 字典陣列。Result A 以索引查座標，Result B 以座標查索引。
-    /// </summary>
-    public struct CursorMapPair {
-      /// <summary>
-      /// 以索引查座標的字典陣列。
-      /// </summary>
-      public Dictionary<int, int> RegionCursorMap { get; private set; }
-      /// <summary>
-      /// 以座標查索引的字典陣列。
-      /// </summary>
-      public Dictionary<int, int> CursorRegionMap { get; private set; }
-      /// <summary>
-      /// (Result A, Result B) 字典陣列。Result A 以索引查座標，Result B 以座標查索引。
-      /// </summary>
-      /// <param name="regionCursorMap">以索引查座標的字典陣列。</param>
-      /// <param name="cursorRegionMap">以座標查索引的字典陣列。</param>
-      public CursorMapPair(Dictionary<int, int> regionCursorMap, Dictionary<int, int> cursorRegionMap) {
-        RegionCursorMap = regionCursorMap;
-        CursorRegionMap = cursorRegionMap;
-      }
-    }
-
-    /// <summary>
-    /// 返回一連串的節點起點。結果為 (Result A, Result B) 字典陣列。
-    /// Result A 以索引查座標，Result B 以座標查索引。
-    /// </summary>
-    /// <param name="self">節點。</param>
-    /// <returns> (Result A, Result B) 字典陣列。Result A 以索引查座標，Result B 以座標查索引。</returns>
-    private static CursorMapPair NodeBorderPointDictPair(this List<Node> self) {
-      Dictionary<int, int> resultA = new();
-      Dictionary<int, int> resultB = new() { [-1] = 0 };  // 防呆
-      int cursorCounter = 0;
-      foreach (EnumeratedItem<Node> pair in self.Enumerated()) {
-        int nodeCounter = pair.Offset;
-        Node neta = pair.Value;
-        resultA[nodeCounter] = cursorCounter;
-        foreach (string _ in neta.KeyArray) {
-          resultB[cursorCounter] = nodeCounter;
-          cursorCounter += 1;
-        }
-      }
-      resultA[self.Count] = cursorCounter;
-      resultB[cursorCounter] = self.Count;
-      return new(resultA, resultB);
-    }
-
-    /// <summary>
-    /// 返回一個字典，以座標查索引。允許以游標位置查詢其屬於第幾個幅節座標（從 0 開始算）。
-    /// </summary>
-    /// <param name="self">節點。</param>
-    /// <returns>一個字典，以座標查索引。允許以游標位置查詢其屬於第幾個幅節座標（從 0 開始算）。</returns>
-    public static Dictionary<int, int> CursorRegionMap(this List<Node> self) =>
-        self.NodeBorderPointDictPair().CursorRegionMap;
-
-    /// <summary>
-    /// 根據給定的游標，返回其前後最近的節點邊界。
-    /// </summary>
-    /// <param name="self">節點。</param>
-    /// <param name="givenCursor">給定的游標。</param>
-    /// <returns>前後最近的邊界點。</returns>
-    public static BRange ContextRange(this List<Node> self, int givenCursor) {
-      if (self.IsEmpty()) return new(0, 0);
-      int lastSegLength = self.Last().KeyArray.Count;
-      int totalKeyCount = self.TotalKeyCount();
-      BRange nilReturn = new(totalKeyCount - lastSegLength, totalKeyCount);
-      if (givenCursor >= totalKeyCount) return nilReturn;
-      int cursor = Math.Max(0, givenCursor);  // 防呆。
-      nilReturn = new(cursor, cursor);
-      CursorMapPair dictPair = self.NodeBorderPointDictPair();
-      // 下文按道理來講不應該會出現 nilReturn。
-      if (!dictPair.CursorRegionMap.TryGetValue(cursor, out int rearNodeID)) return nilReturn;
-      if (!dictPair.RegionCursorMap.TryGetValue(rearNodeID, out int rearIndex)) return nilReturn;
-      return !dictPair.RegionCursorMap.TryGetValue(rearNodeID + 1, out int frontIndex) ? nilReturn
-                                                                                       : new(rearIndex, frontIndex);
-    }
-    /// <summary>
-    /// 在陣列內以給定游標位置找出對應的節點。
-    /// </summary>
-    /// <param name="self">節點。</param>
-    /// <param name="givenCursor">給定游標位置。</param>
-    /// <param name="outCursorPastNode">找出的節點的前端位置。</param>
-    /// <returns>查找結果。</returns>
-    public static Node? FindNodeAt(this List<Node> self, int givenCursor, ref int outCursorPastNode) {
-      if (self.IsEmpty()) return null;
-      int cursor = Math.Max(0, Math.Min(givenCursor, self.TotalKeyCount() - 1));
-      BRange range = self.ContextRange(givenCursor: cursor);
-      outCursorPastNode = range.Upperbound;
-      CursorMapPair dictPair = self.NodeBorderPointDictPair();
-      return !dictPair.CursorRegionMap.TryGetValue(cursor + 1, out int rearNodeID) ? null
-             : self.Count - 1 >= rearNodeID ? self[rearNodeID]
-                                                                                   : null;
-    }
-    /// <summary>
-    /// 在陣列內以給定游標位置找出對應的節點。
-    /// </summary>
-    /// <param name="self">節點。</param>
-    /// <param name="givenCursor">給定游標位置。</param>
-    /// <returns>查找結果。</returns>
-    public static Node? FindNodeAt(this List<Node> self, int givenCursor) {
-      int mudamuda = 0;  // muda = useless.
-      return self.FindNodeAt(givenCursor, ref mudamuda);
-    }
-
-    /// <summary>
-    /// 提供一組逐字的字音配對陣列（不使用 Megrez 的 KeyValuePaired 類型），但字音不匹配的節點除外。
-    /// </summary>
-    /// <param name="self">節點。</param>
-    /// <returns>一組逐字的字音配對陣列。</returns>
-    public static List<KeyValuePair<string, string>> SmashedPairs(this List<Node> self) {
-      List<KeyValuePair<string, string>> arrData = new();
-
-      foreach (Node node in self) {
-        if (node.IsReadingMismatched && !string.IsNullOrEmpty(node.KeyArray.Joined())) {
-          arrData.Add(new(node.KeyArray.Joined("\t"), node.Value));
-          continue;
-        }
-        List<string> arrValueChars = node.Value.LiteralCharComponents();
-        foreach (EnumeratedItem<string> pair in node.KeyArray.Enumerated()) {
-          arrData.Add(new(pair.Value, arrValueChars[pair.Offset]));
-        }
-      }
-      return arrData;
-    }
-  }
 }  // namespace Megrez

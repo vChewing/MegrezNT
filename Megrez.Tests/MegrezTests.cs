@@ -267,9 +267,9 @@ namespace Megrez.Tests {
         compositor.InsertKey(c.ToString());
       }
 
-      List<Node> result = compositor.Assemble();
+      List<GramInPath> result = compositor.Assemble();
 
-      Assert.That(result.JoinedKeys(separator: "").SequenceEqual(
+      Assert.That(result.JoinedKeys("").SequenceEqual(
         new[] { "幽蝶", "能", "留", "一縷", "芳" }), Is.True
       );
 
@@ -575,7 +575,7 @@ EOS;
       foreach (string key in readings) {
         compositor.InsertKey(key);
       }
-      List<Node> result = compositor.Assemble();
+      List<GramInPath> result = compositor.Assemble();
       List<string> assembledSentence = result.Values().ToList();
       CollectionAssert.AreEqual(new[] { "水果汁" }, result.Values());
       // 測試針對第一個漢字的位置的操作。
@@ -641,7 +641,7 @@ EOS;
       foreach (string key in readings) {
         compositor.InsertKey(key);
       }
-      List<Node> result = compositor.Assemble();
+      List<GramInPath> result = compositor.Assemble();
       CollectionAssert.AreEqual(new[] { "科技", "公園" }, result.Values());
 
       Assert.That(compositor.OverrideCandidate(
@@ -672,7 +672,7 @@ EOS;
       foreach (string key in readings) {
         compositor.InsertKey(key);
       }
-      List<Node> result = compositor.Assemble();
+      List<GramInPath> result = compositor.Assemble();
       CollectionAssert.AreEqual(new[] { "大樹", "新的", "蜜蜂" }, result.Values());
       int pos = 2;
 

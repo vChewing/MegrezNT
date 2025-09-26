@@ -9,16 +9,16 @@ using System.Linq;
 namespace Megrez {
   public partial class Compositor {
     /// <summary>
-    /// 文字組句處理函式，採用 DAG (Directed Acyclic Graph) 動態規劃演算法更新當前組字器的 assembledNodes 結果。<para/>
+    /// 文字組句處理函式，採用 DAG (Directed Acyclic Graph) 動態規劃演算法更新當前組字器的 assembledSentence 結果。<para/>
     /// 此演算法使用動態規劃在有向無環圖中尋找具有最優評分的路徑，從而確定最合適的詞彙組合。<para/>
     /// DAG 演算法相對於 Dijkstra 演算法更簡潔，記憶體使用量更少。<para/>
     /// </summary>
     /// <returns>組句結果（已選字詞陣列）。</returns>
-    public List<Node> Assemble() {
-      var assembledNodes = AssembledNodes;
-      new PathFinder(Config, ref assembledNodes);
-      AssembledNodes = assembledNodes;
-      return AssembledNodes;
+    public List<GramInPath> Assemble() {
+      var assembledSentence = AssembledSentence;
+      new PathFinder(Config, ref assembledSentence);
+      AssembledSentence = assembledSentence;
+      return AssembledSentence;
     }
   }
 }
@@ -26,7 +26,7 @@ namespace Megrez {
 namespace Megrez {
   public partial class Compositor {
     /// <summary>
-    /// 組句工具，會以 DAG 動態規劃演算法更新當前組字器的 assembledNodes。
+    /// 組句工具，會以 DAG 動態規劃演算法更新當前組字器的 assembledSentence。
     /// 該演算法使用動態規劃在有向無環圖中尋找具有最高分數的路徑，即最可能的字詞組合。
     /// DAG 演算法相對簡潔，記憶體使用量較少。
     /// </summary>
@@ -35,11 +35,10 @@ namespace Megrez {
       /// 建立 PathFinder 執行個體並執行 DAG 動態規劃演算法。
       /// </summary>
       /// <param name="config">組字器組態設定。</param>
-      /// <param name="assembledNodes">要更新的組合節點清單。</param>
-      public PathFinder(CompositorConfig config, ref List<Node> assembledNodes) {
-        List<Node> newAssembledNodes = new();
+      /// <param name="assembledSentence">要更新的組合語句清單。</param>
+      public PathFinder(CompositorConfig config, ref List<GramInPath> assembledSentence) {
+        List<GramInPath> newAssembledSentence = new();
         try {
-          assembledNodes = newAssembledNodes;
           if (!config.Segments.Any()) return;
 
           int keyCount = config.Keys.Count;
@@ -49,7 +48,7 @@ namespace Megrez {
           // 回溯陣列：parent[i] 記錄到達位置 i 的最佳前驅節點
           Node?[] parent = new Node?[keyCount + 1];
 
-          // 初始化
+          // 初期化
           for (int i = 0; i < dp.Length; i++) {
             dp[i] = double.MinValue;
           }
@@ -83,7 +82,7 @@ namespace Megrez {
           }
 
           // 回溯構建最佳路徑
-          List<Node> result = new();
+          newAssembledSentence = new();
           int currentPos = keyCount;
 
           // 從終點開始回溯
@@ -91,17 +90,18 @@ namespace Megrez {
             Node? node = parent[currentPos];
             if (node == null) break;
 
-            result.Insert(0, node.Copy());
+            GramInPath insertable = new GramInPath(
+              node.KeyArray,
+              node.CurrentUnigram,
+              node.IsOverridden
+            );
+            newAssembledSentence.Insert(0, insertable);
             currentPos -= node.KeyArray.Count;
           }
-
-          newAssembledNodes = result;
         } finally {
-          assembledNodes = newAssembledNodes;
+          assembledSentence = newAssembledSentence;
         }
       }
-
-
     }
   }
 }

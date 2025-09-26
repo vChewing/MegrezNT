@@ -21,7 +21,7 @@ namespace Megrez {
     /// <value>統計權重。</value>
     public double Score { get; }
     /// <summary>
-    /// 建立語言模型基礎資料單位實例。單元圖由詞彙內容和對應的統計權重組成。
+    /// 建立語言模型基礎資料單位副本。單元圖由詞彙內容和對應的統計權重組成。
     /// </summary>
     /// <param name="value">詞彙內容。</param>
     /// <param name="score">統計權重（雙精度浮點數）。</param>
