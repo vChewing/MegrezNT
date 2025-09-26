@@ -10,7 +10,7 @@ using System.Text;
 // 天權星NT引擎（MegrezNT Compositor）核心特色：
 // - 純 C# 原生實作，完整支援 .NET 6+ 平台環境。
 // - API 設計採用陣列導向的索引鍵處理機制，並且在詞彙候選產生階段能夠有效排除跨越游標位置的詞彙項目。
-// - 內建組句引擎採用經過效能調校的 Dijkstra 路徑搜尋演算法，相較於 DAG-Relax 演算法具備更優異的執行效率。
+// - 組句算法（Assembling Algorithm）採用 DAG-DP 動態規劃算法，且經過效能最佳化處理、擁有比 DAG-Relax 算法更優的效能。
 
 // 核心概念術語定義：
 
