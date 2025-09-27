@@ -206,6 +206,20 @@ namespace Megrez {
     public Compositor Copy() => new(compositor: this);
 
     /// <summary>
+    /// 創建所有節點的覆寫狀態鏡照。
+    /// </summary>
+    /// <returns>包含所有節點 ID 到覆寫狀態映射的字典。</returns>
+    public Dictionary<Guid, NodeOverrideStatus> CreateNodeOverrideStatusMirror() =>
+      Config.CreateNodeOverrideStatusMirror();
+
+    /// <summary>
+    /// 從節點覆寫狀態鏡照恢復所有節點的覆寫狀態。
+    /// </summary>
+    /// <param name="mirror">包含節點 ID 到覆寫狀態映射的字典。</param>
+    public void RestoreFromNodeOverrideStatusMirror(Dictionary<Guid, NodeOverrideStatus> mirror) =>
+      Config.RestoreFromNodeOverrideStatusMirror(mirror);
+
+    /// <summary>
     /// 重置包括游標在內的各項參數，且清空各種由組字器生成的內部資料。<para/>
     /// 且將已經被插入的索引鍵陣列與幅節單元陣列（包括其內的節點）全部清空。
     /// 最近一次的組句結果陣列也會被清空。游標跳轉換算表也會被清空。
@@ -646,6 +660,34 @@ namespace Megrez {
         foreach (int currentSegLength in Segments[currentPos].Nodes.Keys) {
           if (currentSegLength > MaxSegLength) {
             Segments[currentPos].Nodes.Remove(currentSegLength);
+          }
+        }
+      }
+    }
+
+    /// <summary>
+    /// 創建所有節點的覆寫狀態鏡照。
+    /// </summary>
+    /// <returns>包含所有節點 ID 到覆寫狀態映射的字典。</returns>
+    public Dictionary<Guid, NodeOverrideStatus> CreateNodeOverrideStatusMirror() {
+      var mirror = new Dictionary<Guid, NodeOverrideStatus>();
+      foreach (var segment in Segments) {
+        foreach (var node in segment.Nodes.Values) {
+          mirror[node.Id] = node.OverrideStatus;
+        }
+      }
+      return mirror;
+    }
+
+    /// <summary>
+    /// 從節點覆寫狀態鏡照恢復所有節點的覆寫狀態。
+    /// </summary>
+    /// <param name="mirror">包含節點 ID 到覆寫狀態映射的字典。</param>
+    public void RestoreFromNodeOverrideStatusMirror(Dictionary<Guid, NodeOverrideStatus> mirror) {
+      foreach (var segment in Segments) {
+        foreach (var node in segment.Nodes.Values) {
+          if (mirror.TryGetValue(node.Id, out var status)) {
+            node.OverrideStatus = status;
           }
         }
       }

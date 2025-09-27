@@ -44,6 +44,11 @@ namespace Megrez {
     // MARK: - Variables
 
     /// <summary>
+    /// 節點的唯一識別符。
+    /// </summary>
+    public Guid Id { get; }
+
+    /// <summary>
     /// 專門用於權重覆寫的高數值常數。此數值的設定足以影響組句演算法的路徑選擇結果。
     /// 雖然理論上使用「0」似乎已經足夠，但實際上可能導致覆寫狀態被組句演算法忽略。
     /// 舉例說明：假設要對讀音序列「a b c」覆寫為「甲 乙 丙」，其中甲乙丙為大寫形式的
@@ -97,6 +102,7 @@ namespace Megrez {
     /// <param name="segLength">節點涵蓋範圍長度，通常與索引鍵序列元素數量相等。</param>
     /// <param name="unigrams">關聯的單元圖資料集合，不可為空集合。</param>
     public Node(List<string> keyArray, int segLength, List<Unigram> unigrams) {
+      Id = Guid.NewGuid();
       _currentUnigramIndex = 0;
       KeyArray = keyArray;
       SegLength = Math.Max(0, segLength);
@@ -114,6 +120,7 @@ namespace Megrez {
     /// </remarks>
     /// <param name="node">要複製的來源節點副本。</param>
     public Node(Node node) {
+      Id = Guid.NewGuid();
       OverridingScore = node.OverridingScore;
       KeyArray = node.KeyArray.ToList();
       SegLength = node.SegLength;
@@ -134,7 +141,7 @@ namespace Megrez {
     public Node Copy() => new(node: this);
 
     /// <summary>
-    ///
+    /// 基於功能內容的等價性比較，排除 ID 字段
     /// </summary>
     /// <param name="obj"></param>
     /// <returns></returns>
@@ -153,6 +160,7 @@ namespace Megrez {
     public override int GetHashCode() {
       unchecked {
         int hash = 17;
+        hash = hash * 23 + Id.GetHashCode();
         hash = hash * 23 + OverridingScore.GetHashCode();
         hash = hash * 23 + KeyArray.GetHashCode();
         hash = hash * 23 + SegLength.GetHashCode();
@@ -202,6 +210,23 @@ namespace Megrez {
     /// 該節點是否處於被覆寫的狀態。
     /// </summary>
     public bool IsOverridden => CurrentOverrideType != OverrideType.NoOverrides;
+
+    /// <summary>
+    /// 節點覆寫狀態的動態屬性，允許直接讀取和設定覆寫狀態。
+    /// </summary>
+    public NodeOverrideStatus OverrideStatus {
+      get => new(OverridingScore, CurrentOverrideType, CurrentUnigramIndex);
+      set {
+        OverridingScore = value.OverridingScore;
+        // 防範 UnigramIndex 溢出，如果溢出則重設覆寫狀態
+        if (value.CurrentUnigramIndex >= 0 && value.CurrentUnigramIndex < Unigrams.Count) {
+          CurrentOverrideType = value.CurrentOverrideType;
+          CurrentUnigramIndex = value.CurrentUnigramIndex;
+        } else {
+          Reset();
+        }
+      }
+    }
 
     // MARK: - Methods and Functions
 
@@ -254,5 +279,90 @@ namespace Megrez {
     }
   }
 
+  /// <summary>
+  /// 節點覆寫狀態封裝結構，用於記錄 Node 的覆寫相關狀態。
+  /// 這個結構體允許輕量級地複製和恢復節點狀態，避免完整複製整個 Compositor。
+  /// </summary>
+  public struct NodeOverrideStatus : IEquatable<NodeOverrideStatus> {
+    /// <summary>
+    /// 覆寫權重數值
+    /// </summary>
+    public double OverridingScore { get; set; }
 
+    /// <summary>
+    /// 當前覆寫狀態種類
+    /// </summary>
+    public Node.OverrideType CurrentOverrideType { get; set; }
+
+    /// <summary>
+    /// 當前單元圖索引位置
+    /// </summary>
+    public int CurrentUnigramIndex { get; set; }
+
+    /// <summary>
+    /// 初始化一個節點覆寫狀態
+    /// </summary>
+    /// <param name="overridingScore">覆寫權重數值</param>
+    /// <param name="currentOverrideType">當前覆寫狀態種類</param>
+    /// <param name="currentUnigramIndex">當前單元圖索引位置</param>
+    public NodeOverrideStatus(
+      double overridingScore = 114514,
+      Node.OverrideType currentOverrideType = Node.OverrideType.NoOverrides,
+      int currentUnigramIndex = 0
+    ) {
+      OverridingScore = overridingScore;
+      CurrentOverrideType = currentOverrideType;
+      CurrentUnigramIndex = currentUnigramIndex;
+    }
+
+    /// <summary>
+    /// Determines whether the specified NodeOverrideStatus is equal to the current NodeOverrideStatus.
+    /// </summary>
+    /// <param name="other">The NodeOverrideStatus to compare with the current NodeOverrideStatus.</param>
+    /// <returns>true if the specified NodeOverrideStatus is equal to the current NodeOverrideStatus; otherwise, false.</returns>
+    public bool Equals(NodeOverrideStatus other) {
+      return OverridingScore.Equals(other.OverridingScore) &&
+             CurrentOverrideType == other.CurrentOverrideType &&
+             CurrentUnigramIndex == other.CurrentUnigramIndex;
+    }
+
+    /// <summary>
+    /// Determines whether the specified object is equal to the current NodeOverrideStatus.
+    /// </summary>
+    /// <param name="obj">The object to compare with the current NodeOverrideStatus.</param>
+    /// <returns>true if the specified object is equal to the current NodeOverrideStatus; otherwise, false.</returns>
+    public override bool Equals(object obj) {
+      return obj is NodeOverrideStatus other && Equals(other);
+    }
+
+    /// <summary>
+    /// Returns the hash code for this NodeOverrideStatus.
+    /// </summary>
+    /// <returns>A 32-bit signed integer hash code.</returns>
+    public override int GetHashCode() {
+      unchecked {
+        int hash = 17;
+        hash = hash * 23 + OverridingScore.GetHashCode();
+        hash = hash * 23 + CurrentOverrideType.GetHashCode();
+        hash = hash * 23 + CurrentUnigramIndex.GetHashCode();
+        return hash;
+      }
+    }
+
+    /// <summary>
+    /// Determines whether two NodeOverrideStatus instances are equal.
+    /// </summary>
+    /// <param name="left">The first NodeOverrideStatus to compare.</param>
+    /// <param name="right">The second NodeOverrideStatus to compare.</param>
+    /// <returns>true if the NodeOverrideStatus instances are equal; otherwise, false.</returns>
+    public static bool operator ==(NodeOverrideStatus left, NodeOverrideStatus right) => left.Equals(right);
+
+    /// <summary>
+    /// Determines whether two NodeOverrideStatus instances are not equal.
+    /// </summary>
+    /// <param name="left">The first NodeOverrideStatus to compare.</param>
+    /// <param name="right">The second NodeOverrideStatus to compare.</param>
+    /// <returns>true if the NodeOverrideStatus instances are not equal; otherwise, false.</returns>
+    public static bool operator !=(NodeOverrideStatus left, NodeOverrideStatus right) => !left.Equals(right);
+  }
 }  // namespace Megrez
