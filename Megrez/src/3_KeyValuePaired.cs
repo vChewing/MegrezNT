@@ -10,7 +10,9 @@ namespace Megrez {
   /// <summary>
   /// 鍵值配對，乃索引鍵陣列與讀音的配對單元。
   /// </summary>
-  public class KeyValuePaired {
+  public class KeyValuePaired : IEquatable<KeyValuePaired>, IComparable<KeyValuePaired> {
+    private const double ScoreTolerance = 1e-12;
+
     /// <summary>
     /// 索引鍵陣列。一般情況下用來放置讀音等可以用來作為索引的內容。
     /// </summary>
@@ -18,35 +20,73 @@ namespace Megrez {
     /// <summary>
     /// 資料值，通常是詞語或單個字。
     /// </summary>
-    /// <value>資料值。</value>
     public string Value { get; }
     /// <summary>
     /// 權重（雙精度小數）。
     /// </summary>
-    /// <value>權重。</value>
     public double Score { get; }
+
     /// <summary>
     /// 初期化一組鍵值配對。
     /// </summary>
     /// <param name="keyArray">索引鍵陣列。一般情況下用來放置讀音等可以用來作為索引的內容。</param>
     /// <param name="value">資料值。</param>
     /// <param name="score">權重（雙精度小數）。</param>
-    public KeyValuePaired(List<string> keyArray, string value, double score = 0) {
-      KeyArray = keyArray;
-      Value = value;
+    public KeyValuePaired(List<string>? keyArray = null, string value = "N/A", double score = 0) {
+      List<string> sanitizedKeyArray = (keyArray ?? new List<string>()).ToList();
+      if (sanitizedKeyArray.Count == 0) {
+        sanitizedKeyArray = new List<string> { "N/A" };
+      }
+      KeyArray = sanitizedKeyArray;
+      Value = string.IsNullOrEmpty(value) ? "N/A" : value;
       Score = score;
     }
+
+    /// <summary>
+    /// 初期化一組鍵值配對。
+    /// </summary>
+    /// <param name="tripletExpression">傳入的通用陣列表達形式。</param>
+    public KeyValuePaired(Tuple<List<string>, string, double> tripletExpression)
+      : this(
+          tripletExpression?.Item1?.ToList() ?? new List<string>(),
+          tripletExpression?.Item2 ?? "N/A",
+          tripletExpression?.Item3 ?? 0
+        ) { }
+
+    /// <summary>
+    /// 初期化一組鍵值配對。
+    /// </summary>
+    /// <param name="tupletExpression">傳入的通用陣列表達形式。</param>
+    public KeyValuePaired(Tuple<List<string>, string> tupletExpression)
+      : this(
+          tupletExpression?.Item1?.ToList() ?? new List<string>(),
+          tupletExpression?.Item2 ?? "N/A",
+          0
+        ) { }
+
     /// <summary>
     /// 初期化一組鍵值配對。
     /// </summary>
     /// <param name="key">索引鍵。一般情況下用來放置讀音等可以用來作為索引的內容。</param>
     /// <param name="value">資料值。</param>
     /// <param name="score">權重（雙精度小數）。</param>
-    public KeyValuePaired(string key, string value, double score = 0) {
-      KeyArray = key.Split(Compositor.TheSeparator.ToCharArray()).ToList();
-      Value = value;
-      Score = score;
-    }
+    public KeyValuePaired(string key = "N/A", string value = "N/A", double score = 0)
+      : this(SliceKey(key), value, score) { }
+
+    /// <summary>
+    /// 通用陣列表達形式。
+    /// </summary>
+    public Tuple<List<string>, string> KeyValueTuplet => Tuple.Create(KeyArray.ToList(), Value);
+
+    /// <summary>
+    /// 通用陣列表達形式。
+    /// </summary>
+    public Tuple<List<string>, string, double> Triplet => Tuple.Create(KeyArray.ToList(), Value, Score);
+
+    /// <summary>
+    /// 生成該鍵值配對的拷貝。
+    /// </summary>
+    public KeyValuePaired HardCopy => new(KeyArray.ToList(), Value, Score);
 
     /// <summary>
     /// 將索引鍵按照給定的分隔符銜接成一個字串。
@@ -59,106 +99,94 @@ namespace Megrez {
     /// <summary>
     /// 判斷當前鍵值配對是否合規。如果鍵與值有任一為空，則結果為 false。
     /// </summary>
-    public bool IsValid => !string.IsNullOrEmpty(JoinedKey()) && !string.IsNullOrEmpty(Value);
+    public bool IsValid => !string.IsNullOrEmpty(KeyArray.Joined()) && !string.IsNullOrEmpty(Value);
 
-    /// <summary>
-    ///
-    /// </summary>
-    /// <param name="obj"></param>
-    /// <returns></returns>
-    public override bool Equals(object obj) {
-      return obj is KeyValuePaired pair && JoinedKey().SequenceEqual(pair.JoinedKey()) && Value == pair.Value &&
-             Math.Abs(Score - pair.Score) < -0.000000000000001;
+    /// <inheritdoc />
+    public override string ToString() => $"({DescribeKeyArray(KeyArray)},{Value},{Score})";
+
+    /// <inheritdoc />
+    public bool Equals(KeyValuePaired? other) {
+      if (other is null) return false;
+      return KeyArray.SequenceEqual(other.KeyArray)
+             && string.Equals(Value, other.Value, StringComparison.Ordinal)
+             && Math.Abs(Score - other.Score) < ScoreTolerance;
     }
 
-    /// <summary>
-    /// 做為預設雜湊函式。
-    /// </summary>
-    /// <returns>目前物件的雜湊碼。</returns>
+    /// <inheritdoc />
+    public override bool Equals(object? obj) => Equals(obj as KeyValuePaired);
+
+    /// <inheritdoc />
     public override int GetHashCode() {
       unchecked {
         int hash = 17;
-        hash = hash * 23 + KeyArray.GetHashCode();
+        foreach (string key in KeyArray) {
+          hash = hash * 23 + key.GetHashCode();
+        }
         hash = hash * 23 + Value.GetHashCode();
         hash = hash * 23 + Score.GetHashCode();
         return hash;
       }
     }
-    /// <summary>
-    /// 傳回代表目前物件的字串。
-    /// </summary>
-    /// <returns>表示目前物件的字串。</returns>
-    public override string ToString() => $"({JoinedKey()},{Value},{Score})";
 
     /// <summary>
     /// 會在某些特殊場合用到的字串表達方法。
     /// </summary>
     public string ToNGramKey => IsValid ? $"({JoinedKey()},{Value})" : "()";
+
     /// <summary>
-    ///
+    /// 生成用於排序的比較結果。
     /// </summary>
-    /// <param name="lhs"></param>
-    /// <param name="rhs"></param>
-    /// <returns></returns>
-    public static bool operator ==(KeyValuePaired lhs, KeyValuePaired rhs) {
-      return lhs.KeyArray.SequenceEqual(rhs.KeyArray) && lhs.Value == rhs.Value;
-    }
-    /// <summary>
-    ///
-    /// </summary>
-    /// <param name="lhs"></param>
-    /// <param name="rhs"></param>
-    /// <returns></returns>
-    public static bool operator !=(KeyValuePaired lhs, KeyValuePaired rhs) {
-      return lhs.KeyArray.Count != rhs.KeyArray.Count || lhs.Value != rhs.Value;
+    public int CompareTo(KeyValuePaired? other) {
+      if (other is null) return 1;
+      int countComparison = KeyArray.Count.CompareTo(other.KeyArray.Count);
+      if (countComparison != 0) return countComparison;
+      return string.Compare(Value, other.Value, StringComparison.Ordinal);
     }
 
     /// <summary>
-    ///
+    /// 判斷兩個鍵值配對是否相等。
     /// </summary>
-    /// <param name="lhs"></param>
-    /// <param name="rhs"></param>
-    /// <returns></returns>
-    public static bool operator <(KeyValuePaired lhs, KeyValuePaired rhs) {
-      return lhs.KeyArray.Count < rhs.KeyArray.Count ||
-             lhs.KeyArray.Count == rhs.KeyArray.Count &&
-                 string.Compare(lhs.Value, rhs.Value, StringComparison.Ordinal) < 0;
-    }
+    public static bool operator ==(KeyValuePaired? lhs, KeyValuePaired? rhs) =>
+      lhs?.Equals(rhs) ?? rhs is null;
 
     /// <summary>
-    ///
+    /// 判斷兩個鍵值配對是否不相等。
     /// </summary>
-    /// <param name="lhs"></param>
-    /// <param name="rhs"></param>
-    /// <returns></returns>
-    public static bool operator >(KeyValuePaired lhs, KeyValuePaired rhs) {
-      return lhs.KeyArray.Count > rhs.KeyArray.Count ||
-             lhs.KeyArray.Count == rhs.KeyArray.Count &&
-                 string.Compare(lhs.Value, rhs.Value, StringComparison.Ordinal) > 0;
-    }
+    public static bool operator !=(KeyValuePaired? lhs, KeyValuePaired? rhs) => !(lhs == rhs);
 
     /// <summary>
-    ///
+    /// 判斷一個鍵值配對是否小於另一個鍵值配對。
     /// </summary>
-    /// <param name="lhs"></param>
-    /// <param name="rhs"></param>
-    /// <returns></returns>
-    public static bool operator <=(KeyValuePaired lhs, KeyValuePaired rhs) {
-      return lhs.KeyArray.Count <= rhs.KeyArray.Count ||
-             lhs.KeyArray.Count == rhs.KeyArray.Count &&
-                 string.Compare(lhs.Value, rhs.Value, StringComparison.Ordinal) <= 0;
-    }
+    public static bool operator <(KeyValuePaired lhs, KeyValuePaired rhs) => lhs.CompareTo(rhs) < 0;
 
     /// <summary>
-    ///
+    /// 判斷一個鍵值配對是否大於另一個鍵值配對。
     /// </summary>
-    /// <param name="lhs"></param>
-    /// <param name="rhs"></param>
-    /// <returns></returns>
-    public static bool operator >=(KeyValuePaired lhs, KeyValuePaired rhs) {
-      return lhs.KeyArray.Count >= rhs.KeyArray.Count ||
-             lhs.KeyArray.Count == rhs.KeyArray.Count &&
-                 string.Compare(lhs.Value, rhs.Value, StringComparison.Ordinal) >= 0;
+    public static bool operator >(KeyValuePaired lhs, KeyValuePaired rhs) => lhs.CompareTo(rhs) > 0;
+
+    /// <summary>
+    /// 判斷一個鍵值配對是否小於或等於另一個鍵值配對。
+    /// </summary>
+    public static bool operator <=(KeyValuePaired lhs, KeyValuePaired rhs) => lhs.CompareTo(rhs) <= 0;
+
+    /// <summary>
+    /// 判斷一個鍵值配對是否大於或等於另一個鍵值配對。
+    /// </summary>
+    public static bool operator >=(KeyValuePaired lhs, KeyValuePaired rhs) => lhs.CompareTo(rhs) >= 0;
+
+    private static List<string> SliceKey(string key) {
+      if (string.IsNullOrEmpty(key)) {
+        return new List<string>();
+      }
+      if (string.IsNullOrEmpty(Compositor.TheSeparator)) {
+        return key.LiteralCharComponents();
+      }
+      return key.Split(new[] { Compositor.TheSeparator }, StringSplitOptions.None).ToList();
+    }
+
+    private static string DescribeKeyArray(IReadOnlyList<string> keyArray) {
+      string content = string.Join(", ", keyArray.Select(static key => $"\"{key}\""));
+      return $"[{content}]";
     }
   }
   public partial class Compositor {
@@ -230,10 +258,12 @@ namespace Megrez {
     /// <param name="candidate">指定用來覆寫為的候選字（詞音鍵值配對）。</param>
     /// <param name="location">游標位置。</param>
     /// <param name="overrideType">指定覆寫行為。</param>
+    /// <param name="perceptionKeyHandler">覆寫成功後用於回傳漸退記憶感知資料的回呼。</param>
     /// <returns>該操作是否成功執行。</returns>
     public bool OverrideCandidate(KeyValuePaired candidate, int location,
-                                  Node.OverrideType overrideType = Node.OverrideType.HighScore) =>
-        OverrideCandidateAgainst(candidate.KeyArray, location, candidate.Value, overrideType);
+                    Node.OverrideType overrideType = Node.OverrideType.HighScore,
+                    Action<List<GramInPath>>? perceptionKeyHandler = null) =>
+      OverrideCandidateAgainst(candidate.KeyArray, location, candidate.Value, overrideType, perceptionKeyHandler);
 
     /// <summary>
     /// 使用給定的候選字詞字串，將給定位置的節點的候選字詞改為與之一致的候選字詞。<para/>
@@ -242,10 +272,12 @@ namespace Megrez {
     /// <param name="candidate">指定用來覆寫為的候選字（字串）。</param>
     /// <param name="location">游標位置。</param>
     /// <param name="overrideType">指定覆寫行為。</param>
+    /// <param name="perceptionKeyHandler">覆寫成功後用於回傳漸退記憶感知資料的回呼。</param>
     /// <returns>該操作是否成功執行。</returns>
     public bool OverrideCandidateLiteral(string candidate, int location,
-                                         Node.OverrideType overrideType = Node.OverrideType.HighScore) =>
-        OverrideCandidateAgainst(null, location, candidate, overrideType);
+                       Node.OverrideType overrideType = Node.OverrideType.HighScore,
+                       Action<List<GramInPath>>? perceptionKeyHandler = null) =>
+      OverrideCandidateAgainst(null, location, candidate, overrideType, perceptionKeyHandler);
 
     /// <summary>
     /// 使用給定的候選字（詞音配對）、或給定的候選字詞字串，將給定位置的節點的候選字詞改為與之一致的候選字詞。
@@ -254,38 +286,81 @@ namespace Megrez {
     /// <param name="location">游標位置。</param>
     /// <param name="value">資料值。</param>
     /// <param name="overrideType">指定覆寫行為。</param>
+    /// <param name="perceptionKeyHandler">覆寫成功後用於回傳漸退記憶感知資料的回呼。</param>
     /// <returns>該操作是否成功執行。</returns>
     internal bool OverrideCandidateAgainst(List<string>? keyArray, int location, string value,
-                                           Node.OverrideType overrideType) {
+                                           Node.OverrideType overrideType,
+                                           Action<List<GramInPath>>? perceptionKeyHandler = null) {
+      if (Keys.IsEmpty()) return false;
       location = Math.Max(Math.Min(location, Keys.Count), 0);  // 防呆。
-      List<NodeWithLocation> arrOverlappedNodes = FetchOverlappingNodesAt(Math.Min(Keys.Count - 1, location));
-      Node fakeNode = new(new() { "_NULL_" }, segLength: 0, new());
-      NodeWithLocation overridden = new(0, fakeNode);
-      // 這裡必須用 SequenceEqual，因為 C# 只能用這種方法才能準確判定兩個字串陣列是否雷同。
-      foreach (NodeWithLocation anchor in arrOverlappedNodes.Where(
-                   anchor => (keyArray == null || anchor.Node.KeyArray.SequenceEqual(keyArray)) &&
-                             anchor.Node.SelectOverrideUnigram(value, overrideType))) {
-        overridden = anchor;
+      int effectiveLocation = Math.Min(Keys.Count - 1, location);
+      List<NodeWithLocation> arrOverlappedNodes = FetchOverlappingNodesAt(effectiveLocation);
+      if (arrOverlappedNodes.IsEmpty()) return false;
+
+      NodeWithLocation? overriddenAnchor = null;
+      Unigram? overriddenGram = null;
+      bool errorHappened = false;
+
+      foreach (NodeWithLocation anchor in arrOverlappedNodes) {
+        if (keyArray is { } filter && !anchor.Node.KeyArray.SequenceEqual(filter)) continue;
+
+        bool selectionSucceeded = anchor.Node.SelectOverrideUnigram(value, overrideType);
+        overriddenGram = anchor.Node.CurrentUnigram;
+        if (!selectionSucceeded) {
+          errorHappened = true;
+          break;
+        }
+        overriddenAnchor = anchor;
         break;
       }
-      if (Equals(overridden.Node, fakeNode)) return false;  // 啥也不覆寫。
 
-      int lengthUpperBound = Math.Min(Segments.Count, overridden.Location + overridden.Node.SegLength);
-      foreach (int i in new ClosedRange(overridden.Location, lengthUpperBound - 1)) {
-        // 咱們還得弱化所有在相同的幅節座標的節點的複寫權重。舉例說之前組句的結果是「A BC」
-        // 且 A 與 BC 都是被覆寫的結果，然後使用者現在在與 A 相同的幅節座標位置
-        // 選了「DEF」，那麼 BC 的覆寫狀態就有必要重設（但 A 不用重設）。
-        arrOverlappedNodes = FetchOverlappingNodesAt(i);
-        foreach (NodeWithLocation anchor in arrOverlappedNodes.Where(anchor => !Equals(anchor.Node, overridden.Node))) {
-          if (!overridden.Node.JoinedKey("\t").Contains(anchor.Node.JoinedKey("\t")) ||
-              !overridden.Node.Value.Contains(anchor.Node.Value)) {
-            anchor.Node.Reset();
-            continue;
+      if (errorHappened || overriddenAnchor is null || overriddenGram is null) {
+        return false;
+      }
+
+      NodeWithLocation overridden = overriddenAnchor.Value;
+      try {
+        int lengthUpperBound = Math.Min(Segments.Count, overridden.Location + overridden.Node.SegLength);
+        foreach (int i in new ClosedRange(overridden.Location, lengthUpperBound - 1)) {
+          List<NodeWithLocation> overlappingNodes = FetchOverlappingNodesAt(i);
+          foreach (NodeWithLocation anchor in overlappingNodes) {
+            if (ReferenceEquals(anchor.Node, overridden.Node)) continue;
+
+            if (ShouldResetNode(anchor.Node, overridden.Node)) {
+              anchor.Node.Reset();
+            } else {
+              anchor.Node.OverridingScore /= 4;
+            }
           }
-          anchor.Node.OverridingScore /= 4;
+        }
+      } finally {
+        if (perceptionKeyHandler is { } handler) {
+          List<GramInPath> assembledSentence = Assemble().ToList();
+          while (assembledSentence.Count > 0 &&
+                 !ReferenceEquals(assembledSentence[assembledSentence.Count - 1].Gram, overriddenGram)) {
+            assembledSentence.RemoveAt(assembledSentence.Count - 1);
+          }
+          if (assembledSentence.Count > 0) {
+            int count = Math.Min(3, assembledSentence.Count);
+            handler(assembledSentence.GetRange(assembledSentence.Count - count, count));
+          }
         }
       }
       return true;
+    }
+
+    /// <summary>
+    /// 判斷一個節點是否需要被重設。
+    /// </summary>
+    private static bool ShouldResetNode(Node anchor, Node overriddenNode) {
+      string anchorNodeKeyJoined = anchor.JoinedKey("\t");
+      string overriddenNodeKeyJoined = overriddenNode.JoinedKey("\t");
+
+      bool shouldReset = overriddenNodeKeyJoined.IndexOf(anchorNodeKeyJoined, StringComparison.Ordinal) < 0;
+      if (overriddenNode.Value.IndexOf(anchor.Value, StringComparison.Ordinal) < 0) {
+        shouldReset = true;
+      }
+      return shouldReset;
     }
   }
 }  // namespace Megrez
