@@ -2,6 +2,7 @@
 // ====================
 // This code is released under the SPDX-License-Identifier: `LGPL-3.0-or-later`.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -40,7 +41,8 @@ namespace Megrez.Tests {
           key = col0;
           value = col1;
         }
-        Unigram u = new(value, col2);
+        List<string> keyArray = SplitKey(key);
+        Unigram u = new(keyArray, value, col2);
         if (!_database.ContainsKey(key))
           _database.Add(key, new());
         _database[key].Add(u);
@@ -64,10 +66,18 @@ namespace Megrez.Tests {
       }
       _database[key] = theArr;
     }
+
+    private List<string> SplitKey(string key) {
+      if (string.IsNullOrEmpty(separator)) {
+        return key.Select(c => c.ToString()).ToList();
+      }
+      return key.Split(separator, StringSplitOptions.RemoveEmptyEntries).ToList();
+    }
   }
 
   public class MockLM : LangModelProtocol {
     public bool HasUnigramsFor(List<string> keyArray) => !IsNullOrEmpty(keyArray.Joined());
-    public List<Unigram> UnigramsFor(List<string> keyArray) => new() { new(value: keyArray.Joined(), score: -1) };
+    public List<Unigram> UnigramsFor(List<string> keyArray) =>
+        new() { new(keyArray, value: keyArray.Joined(), score: -1) };
   }
 }

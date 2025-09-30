@@ -91,7 +91,6 @@ namespace Megrez {
             if (node == null) break;
 
             GramInPath insertable = new GramInPath(
-              node.KeyArray,
               node.CurrentUnigram,
               node.IsOverridden
             );

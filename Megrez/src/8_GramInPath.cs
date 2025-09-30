@@ -19,14 +19,11 @@ namespace Megrez {
     /// <summary>
     /// 初期化一個新的 GramInPath 副本。
     /// </summary>
-    /// <param name="keyArray">索引鍵陣列。</param>
     /// <param name="gram">單元圖。</param>
     /// <param name="isOverridden">是否被覆寫。</param>
-    public GramInPath(List<string> keyArray, Unigram gram, bool isOverridden) {
-      KeyArray = keyArray;
+    public GramInPath(Unigram gram, bool isOverridden) {
       Gram = gram;
       IsOverridden = isOverridden;
-      IsReadingMismatched = keyArray.Count != gram.Value.Length;
     }
 
     // MARK: - Properties
@@ -42,11 +39,11 @@ namespace Megrez {
     /// <summary>
     /// 索引鍵陣列。
     /// </summary>
-    public readonly List<string> KeyArray;
+    public List<string> KeyArray => Gram.KeyArray;
     /// <summary>
     /// 讀音是否不匹配。
     /// </summary>
-    public readonly bool IsReadingMismatched;
+    public bool IsReadingMismatched => Gram.IsReadingMismatched;
 
     /// <summary>
     /// 單元圖的值。
@@ -59,7 +56,7 @@ namespace Megrez {
     /// <summary>
     /// 區段長度（索引鍵陣列的數量）。
     /// </summary>
-    public int SegLength => KeyArray.Count;
+    public int SegLength => Gram.SegLength;
 
     /// <summary>
     /// 該節點當前狀態所展示的鍵值配對。
@@ -79,8 +76,7 @@ namespace Megrez {
     /// <param name="other">要比較的另一個 GramInPath 物件。</param>
     /// <returns>如果相等則返回 true，否則返回 false。</returns>
     public bool Equals(GramInPath other) {
-      return Gram.Equals(other.Gram) && IsOverridden == other.IsOverridden &&
-             KeyArray.SequenceEqual(other.KeyArray) && IsReadingMismatched == other.IsReadingMismatched;
+      return Equals(Gram, other.Gram) && IsOverridden == other.IsOverridden;
     }
 
     /// <summary>
@@ -99,8 +95,6 @@ namespace Megrez {
         int hash = 17;
         hash = hash * 23 + Gram.GetHashCode();
         hash = hash * 23 + IsOverridden.GetHashCode();
-        hash = hash * 23 + KeyArray.GetHashCode();
-        hash = hash * 23 + IsReadingMismatched.GetHashCode();
         return hash;
       }
     }
@@ -338,7 +332,7 @@ namespace Megrez {
       if (perceptedGIP == null) return null;
 
       var arrGIPs = grams.ToList();
-      while (arrGIPs.Count > 0 && !arrGIPs.Last().Gram.Equals(perceptedGIP.Value.Gram)) {
+      while (arrGIPs.Count > 0 && !ReferenceEquals(arrGIPs.Last().Gram, perceptedGIP.Value.Gram)) {
         arrGIPs.RemoveAt(arrGIPs.Count - 1);
       }
 

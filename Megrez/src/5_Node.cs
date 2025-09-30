@@ -124,7 +124,7 @@ namespace Megrez {
       OverridingScore = node.OverridingScore;
       KeyArray = node.KeyArray.ToList();
       SegLength = node.SegLength;
-      Unigrams = node.Unigrams.ToList();
+      Unigrams = node.Unigrams.Select(x => x.Copy()).ToList();
       CurrentOverrideType = node.CurrentOverrideType;
       CurrentUnigramIndex = node.CurrentUnigramIndex;
     }

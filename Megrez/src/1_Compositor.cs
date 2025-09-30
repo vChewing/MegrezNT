@@ -290,9 +290,10 @@ namespace Megrez {
     /// <param name="isMarker">是否為標記游標。</param>
     /// <returns>游標是否已經抵達邊界。</returns>
     public bool IsCursorAtEdge(TypingDirection direction, bool isMarker = false) {
+      int pos = isMarker ? Marker : Cursor;
       return direction switch {
-        TypingDirection.ToFront => Cursor == Length,
-        TypingDirection.ToRear => Cursor == 0,
+        TypingDirection.ToFront => pos == Length,
+        TypingDirection.ToRear => pos == 0,
         _ => false
       };
     }
@@ -315,7 +316,7 @@ namespace Megrez {
       } else {
         Cursor += delta;
       }
-      if (IsCursorCuttingChar(true)) {
+      if (IsCursorCuttingChar(isMarker)) {
         return JumpCursorBySegment(direction, isMarker);
       }
       return true;
@@ -555,11 +556,20 @@ namespace Megrez {
     private List<Unigram> GetSortedUnigrams(List<string> keyArray, ref Dictionary<string, List<Unigram>> cache) {
       string cacheKey = keyArray.Joined("\u001F");
       if (cache.TryGetValue(cacheKey, out List<Unigram>? cached)) {
-        return cached.ToList();  // 如果將來 Gram 變成 class 的話，不要與之前的結果共用記憶體位置。
+        return cached.Select(x => x.Copy()).ToList();
       }
-      List<Unigram> result = TheLangModel.UnigramsFor(keyArray).OrderBy(x => -x.Score).ToList();
-      cache[cacheKey] = result;
-      return result;
+      List<Unigram> canonical = TheLangModel
+        .UnigramsFor(keyArray)
+        .Select(source => {
+          if (source.KeyArray.SequenceEqual(keyArray)) {
+            return source.Copy();
+          }
+          return source.Copy(keyArray);
+        })
+        .OrderByDescending(x => x.Score)
+        .ToList();
+      cache[cacheKey] = canonical;
+      return canonical.Select(x => x.Copy()).ToList();
     }
   }
 
@@ -577,7 +587,7 @@ namespace Megrez {
       int cursor = 0,
       int maxSegLength = 10,
       int marker = 0,
-      string? separator = null
+      string separator = ""
     ) {
       AssembledSentence = assembledSentence ?? new List<GramInPath>();
       Keys = keys ?? new List<string>();
@@ -585,7 +595,7 @@ namespace Megrez {
       _cursor = cursor;
       _maxSegLength = Math.Max(6, maxSegLength);
       _marker = marker;
-      Separator = separator ?? "";
+      Separator = separator;
     }
 
     /// <summary>
@@ -637,13 +647,21 @@ namespace Megrez {
       set => _marker = Math.Max(0, Math.Min(value, Length));
     }
 
+    private string _separator = Compositor.TheSeparator;
+
     /// <summary>
     /// 在生成索引鍵字串時用來分割每個索引鍵單位。最好是鍵盤無法直接敲的 ASCII 字元。
     /// </summary>
     /// <remarks>
     /// 更新該內容會同步更新 <see cref="Compositor.TheSeparator"/>；每次初期化一個新的組字器的時候都會覆寫之。
     /// </remarks>
-    public string Separator { get; set; }
+    public string Separator {
+      readonly get => _separator;
+      set {
+        _separator = value;
+        Compositor.TheSeparator = _separator;
+      }
+    }
 
     /// <summary>
     /// 公開：該組字器的長度。<para/>
@@ -698,7 +716,7 @@ namespace Megrez {
         hash = hash * 23 + Cursor.GetHashCode();
         hash = hash * 23 + Marker.GetHashCode();
         hash = hash * 23 + MaxSegLength.GetHashCode();
-        hash = hash * 23 + (Separator?.GetHashCode() ?? 0);
+        hash = hash * 23 + Separator.GetHashCode();
         hash = hash * 23 + Keys.GetHashCode();
         hash = hash * 23 + Segments.GetHashCode();
         hash = hash * 23 + AssembledSentence.GetHashCode();
