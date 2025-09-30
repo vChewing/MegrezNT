@@ -55,12 +55,12 @@ namespace Megrez {
   // MARK: - Range with Int Bounds
 
   /// <summary>
-  /// 一個「可以返回整數的上下限」的自訂 Range 類型。
+  /// 一個「可以返回整數的上下限」的自訂閉區間類型。
   /// </summary>
-  public struct BRange : IEnumerable<int> {
+  public struct ClosedRange : IEnumerable<int> {
     public int Lowerbound { get; }
     public int Upperbound { get; }
-    public BRange(int lowerbound, int upperbound) {
+    public ClosedRange(int lowerbound, int upperbound) {
       Lowerbound = lowerbound;
       Upperbound = (upperbound < lowerbound) ? lowerbound : upperbound;
     }
@@ -81,12 +81,12 @@ namespace Megrez {
   }
 
   /// <summary>
-  /// 一個「可以返回整數的上下限」的自訂 Range 類型。該類型允許邊界顛倒。
+  /// 一個允許自動交換上下界的閉區間型別。
   /// </summary>
-  public struct BRangeSwappable : IEnumerable<int> {
+  public struct ClosedRangeSwappable : IEnumerable<int> {
     public int Lowerbound { get; }
     public int Upperbound { get; }
-    public BRangeSwappable(int lowerbound, int upperbound) {
+    public ClosedRangeSwappable(int lowerbound, int upperbound) {
       Lowerbound = Math.Min(lowerbound, upperbound);
       Upperbound = Math.Max(lowerbound, upperbound);
     }

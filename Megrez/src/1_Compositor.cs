@@ -237,7 +237,7 @@ namespace Megrez {
       Keys.Insert(Cursor, key);
       List<Segment> gridBackup = Segments.Select(x => x.HardCopy()).ToList();
       ResizeGridAt(Cursor, ResizeBehavior.Expand);
-      int nodesInserted = Update();
+      int nodesInserted = AssignNodes();
       // 用來在 langModel.HasUnigramsFor() 結果不準確的時候防呆、恢復被搞壞的 Segments。
       if (nodesInserted == 0) {
         Segments = gridBackup;
@@ -262,7 +262,62 @@ namespace Megrez {
       Keys.RemoveAt(Cursor - (isBksp ? 1 : 0));
       Cursor -= isBksp ? 1 : 0;
       ResizeGridAt(Cursor, ResizeBehavior.Shrink);
-      Update();
+      AssignNodes();
+      return true;
+    }
+
+    /// <summary>
+    /// 獲取當前標記範圍，並返回符合 C# 標準語意的半開區間。
+    /// </summary>
+    /// <returns>當前標記範圍對應的 <see cref="Range"/>。</returns>
+    public Range CurrentMarkedRange() =>
+      new(Math.Min(Cursor, Marker), Math.Max(Cursor, Marker));
+
+    /// <summary>
+    /// 偵測是否出現游標切斷組字區內字元的情況。
+    /// </summary>
+    /// <param name="isMarker">是否檢查副游標。</param>
+    /// <returns>是否發生游標切斷字元的情況。</returns>
+    public bool IsCursorCuttingChar(bool isMarker = false) {
+      int index = isMarker ? Marker : Cursor;
+      return AssembledSentence.IsCursorCuttingChar(index);
+    }
+
+    /// <summary>
+    /// 判斷游標是否可以繼續沿著給定方向移動。
+    /// </summary>
+    /// <param name="direction">指定方向（相對於文字輸入方向而言）。</param>
+    /// <param name="isMarker">是否為標記游標。</param>
+    /// <returns>游標是否已經抵達邊界。</returns>
+    public bool IsCursorAtEdge(TypingDirection direction, bool isMarker = false) {
+      return direction switch {
+        TypingDirection.ToFront => Cursor == Length,
+        TypingDirection.ToRear => Cursor == 0,
+        _ => false
+      };
+    }
+
+    /// <summary>
+    /// 按步移動游標。如果遇到游標切斷組字區內字元的情況，則改為按幅節移動直到該情況消失。
+    /// </summary>
+    /// <param name="direction">指定方向（相對於文字輸入方向而言）。</param>
+    /// <param name="isMarker">是否為標記游標。</param>
+    /// <returns>是否成功移動。</returns>
+    public bool MoveCursorStepwise(TypingDirection direction, bool isMarker = false) {
+      int delta = direction switch {
+        TypingDirection.ToFront => 1,
+        TypingDirection.ToRear => -1,
+        _ => 0
+      };
+      if (IsCursorAtEdge(direction, isMarker)) return false;
+      if (isMarker) {
+        Marker += delta;
+      } else {
+        Cursor += delta;
+      }
+      if (IsCursorCuttingChar(true)) {
+        return JumpCursorBySegment(direction, isMarker);
+      }
       return true;
     }
 
@@ -414,10 +469,10 @@ namespace Megrez {
       int affectedLength = MaxSegLength - 1;
       int begin = Math.Max(0, location - affectedLength);
       if (location < begin) return;
-      foreach (int delta in new BRange(begin, location)) {
+      foreach (int delta in new ClosedRange(begin, location)) {
         int lowestLength = location - delta + 1;
         if (lowestLength > MaxSegLength) break;
-        foreach (int theLength in new BRange(lowestLength, MaxSegLength)) {
+        foreach (int theLength in new ClosedRange(lowestLength, MaxSegLength)) {
           if (delta >= 0 && delta < Segments.Count) {
             Segments[delta].Nodes.Remove(theLength);
           }
@@ -430,10 +485,10 @@ namespace Megrez {
     /// </summary>
     /// <param name="range">指定範圍。</param>
     /// <returns>拿到的資料。</returns>
-    private List<string> GetJoinedKeyArray(BRange range) =>
-        range.Upperbound <= Keys.Count && range.Lowerbound >= 0
-            ? Keys.GetRange(range.Lowerbound, range.Upperbound - range.Lowerbound).ToList()
-            : new();
+    private List<string> GetJoinedKeyArray(ClosedRange range) =>
+          range.Upperbound <= Keys.Count && range.Lowerbound >= 0
+              ? Keys.GetRange(range.Lowerbound, range.Upperbound - range.Lowerbound).ToList()
+              : new();
 
     /// <summary>
     /// 在指定位置（以指定索引鍵陣列和指定幅節長度）拿取節點。
@@ -457,41 +512,55 @@ namespace Megrez {
     /// 該特性可以用於「在選字窗內屏蔽了某個詞之後，立刻生效」這樣的軟體功能需求的實現。
     /// </param>
     /// <returns>新增或影響了多少個節點。如果返回「0」則表示可能發生了錯誤。 </returns>
-    public int Update(bool updateExisting = false) {
+    public int AssignNodes(bool updateExisting = false) {
       int lowerboundPos = updateExisting ? 0 : Math.Max(0, Cursor - MaxSegLength);
       int upperboundPos = updateExisting ? Segments.Count : Math.Min(Cursor + MaxSegLength, Keys.Count);
-      BRange rangeOfPos = new(lowerboundPos, upperboundPos);
-      int nodesChanged = 0;
+      ClosedRange rangeOfPos = new(lowerboundPos, upperboundPos);
+      int nodesChangedCounter = 0;
+      Dictionary<string, List<Unigram>> queryBuffer = new();
       foreach (int position in rangeOfPos) {
-        foreach (int theLength in new BRange(1, Math.Min(MaxSegLength, rangeOfPos.Upperbound - position))) {
+        int maxLengthWithinRange = Math.Min(MaxSegLength, rangeOfPos.Upperbound - position);
+        foreach (int theLength in new ClosedRange(1, maxLengthWithinRange)) {
+          if (position + theLength > Keys.Count || position < 0) continue;
           List<string> joinedKeyArray = GetJoinedKeyArray(new(position, position + theLength));
-          BRange safeLocationRange = new(0, Segments.Count);
+          ClosedRange safeLocationRange = new(0, Segments.Count);
           Node? theNode = safeLocationRange.Contains(position) ? GetNodeAt(position, theLength, joinedKeyArray) : null;
           if (theNode is { }) {
             if (!updateExisting) continue;
-            List<Unigram> unigramsA = GetUnigramsFor(joinedKeyArray);
+            List<Unigram> unigramsExisting = GetSortedUnigrams(joinedKeyArray, ref queryBuffer);
             // 自動銷毀無效的節點。
-            if (unigramsA.IsEmpty()) {
+            if (unigramsExisting.IsEmpty()) {
               if (theNode.KeyArray.Count == 1) continue;
               Segments[position].Nodes.Remove(theNode.SegLength);
             } else {
-              theNode.SyncingUnigramsFrom(unigramsA);
+              theNode.SyncingUnigramsFrom(unigramsExisting);
             }
-            nodesChanged += 1;
+            nodesChangedCounter += 1;
             continue;
           }
-          List<Unigram> unigramsB = GetUnigramsFor(joinedKeyArray);
-          if (unigramsB.IsEmpty()) continue;
+          List<Unigram> unigramsNew = GetSortedUnigrams(joinedKeyArray, ref queryBuffer);
+          if (unigramsNew.IsEmpty()) continue;
           if (position < 0 || position >= Segments.Count) continue;
-          Segments[position].Nodes[theLength] = new(joinedKeyArray, theLength, unigramsB);
-          nodesChanged += 1;
+          Segments[position].Nodes[theLength] = new(joinedKeyArray, theLength, unigramsNew);
+          nodesChangedCounter += 1;
         }
       }
-      return nodesChanged;
+      queryBuffer.Clear();  // 手動清理，免得 GC 拖時間。
+      if (nodesChangedCounter > 0) {
+        Assemble();
+      }
+      return nodesChangedCounter;
     }
 
-    private List<Unigram> GetUnigramsFor(List<string> keyArray)
-      => TheLangModel.UnigramsFor(keyArray).OrderBy(x => -x.Score).ToList();
+    private List<Unigram> GetSortedUnigrams(List<string> keyArray, ref Dictionary<string, List<Unigram>> cache) {
+      string cacheKey = keyArray.Joined("\u001F");
+      if (cache.TryGetValue(cacheKey, out List<Unigram>? cached)) {
+        return cached.ToList();  // 如果將來 Gram 變成 class 的話，不要與之前的結果共用記憶體位置。
+      }
+      List<Unigram> result = TheLangModel.UnigramsFor(keyArray).OrderBy(x => -x.Score).ToList();
+      cache[cacheKey] = result;
+      return result;
+    }
   }
 
   /// <summary>
@@ -655,7 +724,7 @@ namespace Megrez {
     /// </summary>
     public void DropNodesBeyondMaxSegLength() {
       if (Segments.IsEmpty()) return;
-      List<int> indicesOfPositions = new BRange(0, Segments.Count - 1).ToList();
+      List<int> indicesOfPositions = new ClosedRange(0, Segments.Count - 1).ToList();
       foreach (int currentPos in indicesOfPositions) {
         foreach (int currentSegLength in Segments[currentPos].Nodes.Keys) {
           if (currentSegLength > MaxSegLength) {

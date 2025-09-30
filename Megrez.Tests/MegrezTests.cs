@@ -305,7 +305,7 @@ namespace Megrez.Tests {
       List<string> oldResult = compositor.Assemble().Values();
       CollectionAssert.AreEqual(new[] { "樹心", "封" }, oldResult);
       lm.ReConstruct(newRawStringLM);
-      compositor.Update(true);
+      compositor.AssignNodes(true);
       List<string> newResult = compositor.Assemble().Values();
       CollectionAssert.AreEqual(new[] { "樹新風" }, newResult);
     }

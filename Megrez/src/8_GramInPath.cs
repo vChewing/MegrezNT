@@ -200,22 +200,22 @@ namespace Megrez {
     /// </summary>
     /// <param name="grams">節點陣列</param>
     /// <param name="cursor">給定的游標。</param>
-    public static BRange ContextRange(this List<GramInPath> grams, int cursor) {
-      if (grams.IsEmpty()) return new BRange(0, 0);
+    public static ClosedRange ContextRange(this List<GramInPath> grams, int cursor) {
+      if (grams.IsEmpty()) return new ClosedRange(0, 0);
 
       int frontestSegLength = grams.Last().KeyArray.Count;
-      var nilReturn = new BRange(grams.TotalKeyCount() - frontestSegLength, grams.TotalKeyCount());
+      var nilReturn = new ClosedRange(grams.TotalKeyCount() - frontestSegLength, grams.TotalKeyCount());
 
       if (cursor >= grams.TotalKeyCount()) return nilReturn; // 防呆
       cursor = Math.Max(0, cursor); // 防呆
 
       var mapPair = grams.GramBorderPointDictPairFor();
 
-      if (!mapPair.cursorRegionMap.TryGetValue(cursor, out int rearNodeID)) return new BRange(cursor, cursor);
-      if (!mapPair.regionCursorMap.TryGetValue(rearNodeID, out int rearIndex)) return new BRange(cursor, cursor);
-      if (!mapPair.regionCursorMap.TryGetValue(rearNodeID + 1, out int frontIndex)) return new BRange(cursor, cursor);
+      if (!mapPair.cursorRegionMap.TryGetValue(cursor, out int rearNodeID)) return new ClosedRange(cursor, cursor);
+      if (!mapPair.regionCursorMap.TryGetValue(rearNodeID, out int rearIndex)) return new ClosedRange(cursor, cursor);
+      if (!mapPair.regionCursorMap.TryGetValue(rearNodeID + 1, out int frontIndex)) return new ClosedRange(cursor, cursor);
 
-      return new BRange(rearIndex, frontIndex);
+      return new ClosedRange(rearIndex, frontIndex);
     }
 
     /// <summary>
@@ -229,7 +229,7 @@ namespace Megrez {
       /// <summary>
       /// 節點所在的範圍。
       /// </summary>
-      public BRange range;
+      public ClosedRange range;
     }
 
     /// <summary>

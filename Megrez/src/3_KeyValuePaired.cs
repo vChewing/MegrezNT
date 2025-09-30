@@ -271,7 +271,7 @@ namespace Megrez {
       if (Equals(overridden.Node, fakeNode)) return false;  // 啥也不覆寫。
 
       int lengthUpperBound = Math.Min(Segments.Count, overridden.Location + overridden.Node.SegLength);
-      foreach (int i in new BRange(overridden.Location, lengthUpperBound - 1)) {
+      foreach (int i in new ClosedRange(overridden.Location, lengthUpperBound - 1)) {
         // 咱們還得弱化所有在相同的幅節座標的節點的複寫權重。舉例說之前組句的結果是「A BC」
         // 且 A 與 BC 都是被覆寫的結果，然後使用者現在在與 A 相同的幅節座標位置
         // 選了「DEF」，那麼 BC 的覆寫狀態就有必要重設（但 A 不用重設）。

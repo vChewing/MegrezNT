@@ -147,7 +147,7 @@ namespace Megrez {
         return results;
 
       // 先獲取該位置的所有單字節點。
-      foreach (int segLength in new BRange(1, Segments[givenLocation].MaxLength + 1)) {
+      foreach (int segLength in new ClosedRange(1, Segments[givenLocation].MaxLength + 1)) {
         if (Segments[givenLocation].NodeOf(segLength) is not { } node)
           continue;
         InsertAnchor(segmentIndex: givenLocation, node: node, targetContainer: ref results);
@@ -155,12 +155,12 @@ namespace Megrez {
 
       // 再獲取以當前位置結尾或開頭的節點。
       int begin = givenLocation - Math.Min(givenLocation, MaxSegLength - 1);
-      foreach (int theLocation in new BRange(begin, givenLocation)) {
+      foreach (int theLocation in new ClosedRange(begin, givenLocation)) {
         int alpha = givenLocation - theLocation + 1;
         int bravo = Segments[theLocation].MaxLength;
         if (alpha > bravo)
           continue;
-        foreach (int theLength in new BRange(alpha, bravo + 1)) {
+        foreach (int theLength in new ClosedRange(alpha, bravo + 1)) {
           if (Segments[theLocation].NodeOf(theLength) is not { } node)
             continue;
           InsertAnchor(segmentIndex: theLocation, node: node, targetContainer: ref results);
@@ -173,7 +173,7 @@ namespace Megrez {
       if (string.IsNullOrEmpty(node.KeyArray.Joined()))
         return;
       NodeWithLocation anchor = new(segmentIndex, node);
-      foreach (int i in new BRange(lowerbound: 0, upperbound: targetContainer.Count + 1)) {
+      foreach (int i in new ClosedRange(lowerbound: 0, upperbound: targetContainer.Count + 1)) {
         if (targetContainer.IsEmpty())
           break;
         if (targetContainer.First().Node.SegLength > anchor.Node.SegLength)
