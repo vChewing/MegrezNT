@@ -258,12 +258,12 @@ namespace Megrez {
     /// <param name="candidate">指定用來覆寫為的候選字（詞音鍵值配對）。</param>
     /// <param name="location">游標位置。</param>
     /// <param name="overrideType">指定覆寫行為。</param>
-    /// <param name="perceptionKeyHandler">覆寫成功後用於回傳漸退記憶感知資料的回呼。</param>
+    /// <param name="perceptionHandler">覆寫成功後用於回傳觀測智慧的回呼。</param>
     /// <returns>該操作是否成功執行。</returns>
     public bool OverrideCandidate(KeyValuePaired candidate, int location,
                     Node.OverrideType overrideType = Node.OverrideType.HighScore,
-                    Action<List<GramInPath>>? perceptionKeyHandler = null) =>
-      OverrideCandidateAgainst(candidate.KeyArray, location, candidate.Value, overrideType, perceptionKeyHandler);
+                    Action<PerceptionIntel>? perceptionHandler = null) =>
+      OverrideCandidateAgainst(candidate.KeyArray, location, candidate.Value, overrideType, perceptionHandler);
 
     /// <summary>
     /// 使用給定的候選字詞字串，將給定位置的節點的候選字詞改為與之一致的候選字詞。<para/>
@@ -272,12 +272,12 @@ namespace Megrez {
     /// <param name="candidate">指定用來覆寫為的候選字（字串）。</param>
     /// <param name="location">游標位置。</param>
     /// <param name="overrideType">指定覆寫行為。</param>
-    /// <param name="perceptionKeyHandler">覆寫成功後用於回傳漸退記憶感知資料的回呼。</param>
+    /// <param name="perceptionHandler">覆寫成功後用於回傳觀測智慧的回呼。</param>
     /// <returns>該操作是否成功執行。</returns>
     public bool OverrideCandidateLiteral(string candidate, int location,
                        Node.OverrideType overrideType = Node.OverrideType.HighScore,
-                       Action<List<GramInPath>>? perceptionKeyHandler = null) =>
-      OverrideCandidateAgainst(null, location, candidate, overrideType, perceptionKeyHandler);
+                       Action<PerceptionIntel>? perceptionHandler = null) =>
+      OverrideCandidateAgainst(null, location, candidate, overrideType, perceptionHandler);
 
     /// <summary>
     /// 使用給定的候選字（詞音配對）、或給定的候選字詞字串，將給定位置的節點的候選字詞改為與之一致的候選字詞。
@@ -286,16 +286,21 @@ namespace Megrez {
     /// <param name="location">游標位置。</param>
     /// <param name="value">資料值。</param>
     /// <param name="overrideType">指定覆寫行為。</param>
-    /// <param name="perceptionKeyHandler">覆寫成功後用於回傳漸退記憶感知資料的回呼。</param>
+    /// <param name="perceptionHandler">覆寫成功後用於回傳觀測智慧的回呼。</param>
     /// <returns>該操作是否成功執行。</returns>
     internal bool OverrideCandidateAgainst(List<string>? keyArray, int location, string value,
                                            Node.OverrideType overrideType,
-                                           Action<List<GramInPath>>? perceptionKeyHandler = null) {
+                                           Action<PerceptionIntel>? perceptionHandler = null) {
       if (Keys.IsEmpty()) return false;
       location = Math.Max(Math.Min(location, Keys.Count), 0);  // 防呆。
       int effectiveLocation = Math.Min(Keys.Count - 1, location);
       List<NodeWithLocation> arrOverlappedNodes = FetchOverlappingNodesAt(effectiveLocation);
       if (arrOverlappedNodes.IsEmpty()) return false;
+
+      // 用於觀測：覆寫生效前的 walk 與游標
+      bool hasPerceptor = perceptionHandler != null;
+      List<GramInPath> previouslyAssembled = hasPerceptor ? Assemble().ToList() : new List<GramInPath>();
+      int beforeCursor = Math.Min(Keys.Count, location);
 
       NodeWithLocation? overriddenAnchor = null;
       Unigram? overriddenGram = null;
@@ -334,15 +339,17 @@ namespace Megrez {
           }
         }
       } finally {
-        if (perceptionKeyHandler is { } handler) {
-          List<GramInPath> assembledSentence = Assemble().ToList();
-          while (assembledSentence.Count > 0 &&
-                 !ReferenceEquals(assembledSentence[assembledSentence.Count - 1].Gram, overriddenGram)) {
-            assembledSentence.RemoveAt(assembledSentence.Count - 1);
-          }
-          if (assembledSentence.Count > 0) {
-            int count = Math.Min(3, assembledSentence.Count);
-            handler(assembledSentence.GetRange(assembledSentence.Count - count, count));
+        // 覆寫後組句與觀測：
+        List<GramInPath> currentAssembled = Assemble().ToList();
+        if (perceptionHandler != null && !previouslyAssembled.IsEmpty()) {
+          // 供新版觀測 API（前/後路徑比較 + 三情境分類）
+          PerceptionIntel? perceptedIntel = MakePerceptionObservation(
+            previouslyAssembled,
+            currentAssembled,
+            beforeCursor
+          );
+          if (perceptedIntel.HasValue) {
+            perceptionHandler(perceptedIntel.Value);
           }
         }
       }
@@ -362,5 +369,170 @@ namespace Megrez {
       }
       return shouldReset;
     }
+
+    /// <summary>
+    /// 根據候選字覆寫行為前後的組句結果，在指定游標位置得出觀測上下文之情形。
+    /// </summary>
+    /// <param name="previouslyAssembled">候選字覆寫行為前的組句結果。</param>
+    /// <param name="currentAssembled">候選字覆寫行為後的組句結果。</param>
+    /// <param name="cursor">游標。</param>
+    /// <returns>觀測上下文結果。</returns>
+    public static PerceptionIntel? MakePerceptionObservation(
+      List<GramInPath> previouslyAssembled,
+      List<GramInPath> currentAssembled,
+      int cursor) {
+      if (previouslyAssembled.IsEmpty() || currentAssembled.IsEmpty()) return null;
+
+      // 確認游標落在 currentAssembled 的有效節點
+      var afterHit = currentAssembled.FindGram(cursor);
+      if (afterHit == null) return null;
+      var current = afterHit.Value.gram;
+      int currentLen = current.SegLength;
+      if (currentLen > 3) return null;
+
+      // 在 previouslyAssembled 中找到對應 head 的節點（使用 after 的節點區間上界 -1 作為內點）
+      int border1 = afterHit.Value.range.Upperbound - 1;
+      int border2 = previouslyAssembled.TotalKeyCount() - 1;
+      int innerIndex = Math.Max(0, Math.Min(border1, border2));
+      var beforeHit = previouslyAssembled.FindGram(innerIndex);
+      if (beforeHit == null) return null;
+      var prevHead = beforeHit.Value.gram;
+      int prevLen = prevHead.SegLength;
+
+      bool isBreakingUp = (currentLen == 1 && prevLen > 1);
+      bool isShortToLong = (currentLen > prevLen);
+      POMObservationScenario scenario;
+      if (isBreakingUp) {
+        scenario = POMObservationScenario.LongToShort;
+      } else if (isShortToLong) {
+        scenario = POMObservationScenario.ShortToLong;
+      } else {
+        scenario = POMObservationScenario.SameLenSwap;
+      }
+      bool forceHSO = isShortToLong; // 只有短→長時需要強推長詞
+
+      // 選擇用來形成觀測 key 的資料源：長→短使用 after，其他使用 before
+      List<GramInPath> keySource = isBreakingUp ? currentAssembled : previouslyAssembled;
+      int keyCursorRaw = Math.Max(
+        afterHit.Value.range.Lowerbound,
+        Math.Min(cursor, afterHit.Value.range.Upperbound - 1)
+      );
+      if (keySource.TotalKeyCount() <= 0) return null;
+      int keyCursor = Math.Max(0, Math.Min(keyCursorRaw, keySource.TotalKeyCount() - 1));
+
+      var keyGen = keySource.GenerateKeyForPerception(keyCursor);
+      if (keyGen == null) return null;
+
+      return new PerceptionIntel {
+        NGramKey = keyGen.Value.NGramKey,
+        Candidate = current.Value,
+        HeadReading = keyGen.Value.HeadReading,
+        Scenario = scenario,
+        ForceHighScoreOverride = forceHSO,
+        ScoreFromLM = afterHit.Value.gram.Score
+      };
+    }
+  }
+
+  /// <summary>
+  /// 觀測上下文類型。
+  /// </summary>
+  public enum POMObservationScenario {
+    /// <summary>
+    /// 同長度更換。
+    /// </summary>
+    SameLenSwap,
+    /// <summary>
+    /// 短詞變長詞。
+    /// </summary>
+    ShortToLong,
+    /// <summary>
+    /// 長詞變短詞。
+    /// </summary>
+    LongToShort
+  }
+
+  /// <summary>
+  /// 觀測上下文情形。
+  /// </summary>
+  public struct PerceptionIntel : IEquatable<PerceptionIntel> {
+    /// <summary>
+    /// N-gram 索引鍵。
+    /// </summary>
+    public string NGramKey { get; set; }
+    /// <summary>
+    /// 候選字。
+    /// </summary>
+    public string Candidate { get; set; }
+    /// <summary>
+    /// 頭部讀音。
+    /// </summary>
+    public string HeadReading { get; set; }
+    /// <summary>
+    /// 觀測場景。
+    /// </summary>
+    public POMObservationScenario Scenario { get; set; }
+    /// <summary>
+    /// 強制高分覆寫。
+    /// </summary>
+    public bool ForceHighScoreOverride { get; set; }
+    /// <summary>
+    /// 語言模型分數。
+    /// </summary>
+    public double ScoreFromLM { get; set; }
+
+    /// <summary>
+    /// 判斷當前 PerceptionIntel 是否等於另一個 PerceptionIntel。
+    /// </summary>
+    /// <param name="other">要比較的另一個 PerceptionIntel 物件。</param>
+    /// <returns>如果相等則返回 true，否則返回 false。</returns>
+    public bool Equals(PerceptionIntel other) {
+      return NGramKey == other.NGramKey &&
+             Candidate == other.Candidate &&
+             HeadReading == other.HeadReading &&
+             Scenario == other.Scenario &&
+             ForceHighScoreOverride == other.ForceHighScoreOverride &&
+             Math.Abs(ScoreFromLM - other.ScoreFromLM) < 1e-12;
+    }
+
+    /// <summary>
+    /// 判斷當前 PerceptionIntel 是否等於指定的物件。
+    /// </summary>
+    /// <param name="obj">要比較的物件。</param>
+    /// <returns>如果相等則返回 true，否則返回 false。</returns>
+    public override bool Equals(object obj) => obj is PerceptionIntel other && Equals(other);
+
+    /// <summary>
+    /// 獲取當前 PerceptionIntel 的雜湊碼。
+    /// </summary>
+    /// <returns>雜湊碼值。</returns>
+    public override int GetHashCode() {
+      unchecked {
+        int hash = 17;
+        hash = hash * 23 + (NGramKey?.GetHashCode() ?? 0);
+        hash = hash * 23 + (Candidate?.GetHashCode() ?? 0);
+        hash = hash * 23 + (HeadReading?.GetHashCode() ?? 0);
+        hash = hash * 23 + Scenario.GetHashCode();
+        hash = hash * 23 + ForceHighScoreOverride.GetHashCode();
+        hash = hash * 23 + ScoreFromLM.GetHashCode();
+        return hash;
+      }
+    }
+
+    /// <summary>
+    /// 判斷兩個 PerceptionIntel 是否相等。
+    /// </summary>
+    /// <param name="left">左側 PerceptionIntel 物件。</param>
+    /// <param name="right">右側 PerceptionIntel 物件。</param>
+    /// <returns>如果相等則返回 true，否則返回 false。</returns>
+    public static bool operator ==(PerceptionIntel left, PerceptionIntel right) => left.Equals(right);
+
+    /// <summary>
+    /// 判斷兩個 PerceptionIntel 是否不相等。
+    /// </summary>
+    /// <param name="left">左側 PerceptionIntel 物件。</param>
+    /// <param name="right">右側 PerceptionIntel 物件。</param>
+    /// <returns>如果不相等則返回 true，否則返回 false。</returns>
+    public static bool operator !=(PerceptionIntel left, PerceptionIntel right) => !(left == right);
   }
 }  // namespace Megrez

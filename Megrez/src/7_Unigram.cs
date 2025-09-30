@@ -65,7 +65,7 @@ namespace Megrez {
     /// 傳回代表目前物件的字串。
     /// </summary>
     /// <returns>表示目前物件的字串。</returns>
-    public override string ToString() => $"({Value},{Score})";
+    public override string ToString() => $"({string.Join("-", KeyArray)},{Value},{Score})";
 
     /// <inheritdoc />
     public override bool Equals(object? obj) => Equals(obj as Unigram);

@@ -686,5 +686,88 @@ EOS;
       result = compositor.Assemble();
       CollectionAssert.AreEqual(new[] { "大樹", "🆕", "蜜蜂" }, result.Values());
     }
+
+    [Test]
+    public void Test18_Composer_UOMMarginalCaseTest() {
+      SimpleLM lm = new(TestDataClass.StrLMSampleDataSaisoukiNoGaika);
+      Compositor compositor = new(lm);
+      string[] readings = { "zai4", "chuang4", "shi4", "de5", "kai3", "ge1" };
+      foreach (string reading in readings) {
+        Assert.That(compositor.InsertKey(reading), Is.True);
+      }
+      compositor.Assemble();
+      string assembledBefore = string.Join(" ", compositor.AssembledSentence.Values());
+      Assert.That("再 創 是的 凱歌" == assembledBefore, Is.True);
+
+      int cursorShi = 2;
+      int cursorShiDe = 3;
+      var keyForQueryingDataAt2 = compositor.AssembledSentence.GenerateKeyForPerception(cursorShi);
+      Assert.That(keyForQueryingDataAt2.HasValue, Is.True);
+      if (keyForQueryingDataAt2 is not { } keyDataAt2) throw new InvalidOperationException("keyForQueryingDataAt2 should have a value");
+      Assert.That(keyDataAt2.NGramKey, Is.EqualTo("(zai4,再)&(chuang4,創)&(shi4-de5,是的)"));
+      Assert.That(keyDataAt2.HeadReading, Is.EqualTo("shi4"));
+      var keyForQueryingDataAt3 = compositor.AssembledSentence.GenerateKeyForPerception(cursorShiDe);
+      Assert.That(keyForQueryingDataAt3.HasValue, Is.True);
+      if (keyForQueryingDataAt3 is not { } keyDataAt3) throw new InvalidOperationException("keyForQueryingDataAt3 should have a value");
+      Assert.That(keyDataAt3.NGramKey, Is.EqualTo("(zai4,再)&(chuang4,創)&(shi4-de5,是的)"));
+      Assert.That(keyDataAt3.HeadReading, Is.EqualTo("de5"));
+
+      // 應能提供『是的』『似的』『凱歌』等候選
+      List<KeyValuePaired> pairsAtShiDeEnd = compositor.FetchCandidatesAt(4, Compositor.CandidateFetchFilter.EndAt);
+      Assert.That(pairsAtShiDeEnd.Select(p => p.Value).Contains("是的"), Is.True);
+      Assert.That(pairsAtShiDeEnd.Select(p => p.Value).Contains("似的"), Is.True);
+
+      // 模擬使用者把『是』改為『世』，再合成：觀測應為 shortToLong
+      PerceptionIntel? obsCaptured = null;
+      bool overrideSucceeded = compositor.OverrideCandidate(
+        new KeyValuePaired(new List<string> { "shi4" }, "世"),
+        cursorShi,
+        Node.OverrideType.HighScore,
+        intel => {
+          obsCaptured = intel;
+        }
+      );
+      Assert.That(overrideSucceeded, Is.True);
+      Assert.That(obsCaptured.HasValue, Is.True);
+      if (obsCaptured is not { } obsAfterShiResult) throw new InvalidOperationException("obsCaptured should have a value after first override");
+      Assert.That(obsAfterShiResult.NGramKey, Is.EqualTo("(zai4,再)&(chuang4,創)&(shi4,世)"));
+
+      // compositor.Assemble() <- 已經組句了。
+      string assembledAfter = string.Join(" ", compositor.AssembledSentence.Values());
+      Assert.That("再 創 世 的 凱歌" == assembledAfter, Is.True);
+
+      List<GramInPath> prevAssembly = compositor.AssembledSentence;
+      obsCaptured = null;
+      overrideSucceeded = compositor.OverrideCandidate(
+        new KeyValuePaired(new List<string> { "shi4", "de5" }, "是的"),
+        cursorShiDe,
+        Node.OverrideType.HighScore,
+        intel => {
+          obsCaptured = intel;
+        }
+      );
+      Assert.That(overrideSucceeded, Is.True);
+      Assert.That(obsCaptured.HasValue, Is.True);
+      if (obsCaptured is not { } obsAfterShiDeResult) throw new InvalidOperationException("obsCaptured should have a value after second override");
+      Assert.That(obsAfterShiDeResult.NGramKey, Is.EqualTo("(chuang4,創)&(shi4,世)&(de5,的)"));
+
+      List<GramInPath> currentAssembly = compositor.AssembledSentence;
+      var afterHit = currentAssembly.FindGram(cursorShiDe);
+      Assert.That(afterHit.HasValue, Is.True);
+      Assert.That(afterHit.HasValue, Is.True);
+      if (afterHit is not { } afterHitResult) throw new InvalidOperationException("afterHit should have a value");
+      int border1 = afterHitResult.range.Upperbound - 1;
+      int border2 = prevAssembly.TotalKeyCount() - 1;
+      int innerIndex = Math.Max(0, Math.Min(border1, border2));
+      var prevHit = prevAssembly.FindGram(innerIndex);
+      Assert.That(prevHit.HasValue, Is.True);
+      if (prevHit is not { } prevHitResult) throw new InvalidOperationException("prevHit should have a value");
+      Assert.That(afterHitResult.gram.SegLength, Is.EqualTo(2));
+      Assert.That(prevHitResult.gram.SegLength, Is.EqualTo(1));
+      Assert.That(obsCaptured.HasValue, Is.True);
+      if (obsCaptured is not { } obsCapturedResult) throw new InvalidOperationException("obsCaptured should have a value");
+      Assert.That(obsCapturedResult.Scenario, Is.EqualTo(POMObservationScenario.ShortToLong));
+      Assert.That(obsCapturedResult.Candidate, Is.EqualTo("是的"));
+    }
   }
 }

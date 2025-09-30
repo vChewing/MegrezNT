@@ -312,64 +312,119 @@ namespace Megrez {
     }
 
     /// <summary>
-    /// 生成用以洞察使用者覆寫行為的複元圖索引鍵，最多支援 3-gram。
+    /// 生成用以洞察使用者覆寫行為的複元圖索引鍵，最多支援指定長度的 n-gram（預設 3-gram）。
     /// </summary>
     /// <remarks>
     /// 除非有專門指定游標，否則身為 List&lt;GramInPath&gt; 自身的
     /// 「陣列最尾端」（也就是打字方向上最前方）的那個 Gram 會被當成 Head。
     /// </remarks>
+    /// <param name="grams">節點陣列。</param>
+    /// <param name="cursor">指定用於當作 head 的游標位置；若為 null 則取陣列尾端。</param>
+    /// <param name="maxContext">最多向前取用的上下文節點數（含 head），預設 3。</param>
+    /// <returns>感知結果資料。</returns>
     public static PerceptionResult?
-      GenerateKeyForPerception(this List<GramInPath> grams, int? cursor = null) {
+      GenerateKeyForPerception(this List<GramInPath> grams, int? cursor = null, int maxContext = 3) {
+      if (maxContext <= 0) return null;
 
-      GramInPath? perceptedGIP = null;
+      int totalKeyCount = grams.TotalKeyCount();
+      bool hasHeadInfo = false;
+      GramInPath headPair = default;
+      ClosedRange headRange = default;
+      int resolvedCursor = 0;
 
-      if (cursor.HasValue && cursor.Value >= 0 && cursor.Value < grams.TotalKeyCount()) {
-        perceptedGIP = grams.FindGram(cursor.Value)?.gram;
-      } else {
-        perceptedGIP = grams.LastOrDefault();
+      if (cursor.HasValue && cursor.Value >= 0 && cursor.Value < totalKeyCount) {
+        var hit = grams.FindGram(cursor.Value);
+        if (hit.HasValue) {
+          headPair = hit.Value.gram;
+          headRange = hit.Value.range;
+          resolvedCursor = Math.Max(
+            hit.Value.range.Lowerbound,
+            Math.Min(cursor.Value, hit.Value.range.Upperbound - 1)
+          );
+          hasHeadInfo = true;
+        }
       }
 
-      if (perceptedGIP == null) return null;
-
-      var arrGIPs = grams.ToList();
-      while (arrGIPs.Count > 0 && !ReferenceEquals(arrGIPs.Last().Gram, perceptedGIP.Value.Gram)) {
-        arrGIPs.RemoveAt(arrGIPs.Count - 1);
+      if (!hasHeadInfo && grams.Count > 0) {
+        headPair = grams[^1];
+        int lowerBound = Math.Max(0, totalKeyCount - headPair.KeyArray.Count);
+        headRange = new ClosedRange(lowerBound, totalKeyCount);
+        resolvedCursor = Math.Max(lowerBound, totalKeyCount - 1);
+        hasHeadInfo = true;
       }
 
-      bool isHead = true;
-      var outputCells = new List<string>();
+      if (!hasHeadInfo) return null;
 
-      while (arrGIPs.Count > 0) {
-        var frontendPair = arrGIPs.Last();
-        arrGIPs.RemoveAt(arrGIPs.Count - 1);
+      int headKeyOffset = Math.Max(0, resolvedCursor - headRange.Lowerbound);
+      if (headPair.KeyArray.Count <= headKeyOffset) return null;
 
-        string? keyCellStr = null;
+      const string placeholder = "()";
+      string readingSeparator = Compositor.TheSeparator;
 
-        // 字音數與字數不一致的內容會被拋棄。
-        if (!frontendPair.IsReadingMismatched &&
-            !string.IsNullOrEmpty(frontendPair.Value) &&
-            !string.IsNullOrEmpty(string.Join("", frontendPair.KeyArray))) {
+      static bool IsPunctuation(GramInPath pair) {
+        if (pair.KeyArray.Count == 0) return false;
+        string firstReading = pair.KeyArray[0];
+        return !string.IsNullOrEmpty(firstReading) && firstReading[0] == '_';
+      }
 
-          var keyChain = string.Join("-", frontendPair.KeyArray);
-          if (!keyChain.Contains("_")) {
-            // 前置單元只記錄讀音，在其後的單元則同時記錄讀音與字詞
-            keyCellStr = isHead ? keyChain : $"({keyChain}:{frontendPair.Value})";
+      string? CombinedString(GramInPath pair) {
+        if (string.IsNullOrEmpty(pair.Value)) return null;
+        if (pair.KeyArray.Count == 0) return null;
+        string reading = pair.JoinedCurrentKey(readingSeparator);
+        if (string.IsNullOrEmpty(reading)) return null;
+        return $"({reading},{pair.Value})";
+      }
+
+      int? headIndex = null;
+      for (int idx = grams.Count - 1; idx >= 0; idx--) {
+        if (ReferenceEquals(grams[idx].Gram, headPair.Gram)) {
+          headIndex = idx;
+          break;
+        }
+      }
+      if (!headIndex.HasValue) {
+        for (int idx = 0; idx < grams.Count; idx++) {
+          if (grams[idx].Equals(headPair)) {
+            headIndex = idx;
+            break;
           }
         }
+      }
+      if (!headIndex.HasValue) return null;
 
-        if (keyCellStr == null) break;
+      string[] resultCells = Enumerable.Repeat(placeholder, maxContext).ToArray();
+      resultCells[^1] = CombinedString(headPair) ?? placeholder;
 
-        outputCells.Insert(0, keyCellStr);
-        if (outputCells.Count >= 3) break;
-        if (isHead) isHead = false;
+      int contextSlot = maxContext - 2;
+      int currentIndex = headIndex.Value - 1;
+      bool encounteredPunctuation = false;
+
+      while (contextSlot >= 0) {
+        if (currentIndex < 0) {
+          resultCells[contextSlot] = placeholder;
+          contextSlot--;
+          continue;
+        }
+
+        var currentPair = grams[currentIndex];
+        currentIndex--;
+
+        if (encounteredPunctuation || IsPunctuation(currentPair)) {
+          encounteredPunctuation = true;
+          resultCells[contextSlot] = placeholder;
+          contextSlot--;
+          continue;
+        }
+
+        resultCells[contextSlot] = CombinedString(currentPair) ?? placeholder;
+        contextSlot--;
       }
 
-      if (outputCells.IsEmpty()) return null;
-
+      string headReading = headPair.KeyArray[headKeyOffset];
       return new PerceptionResult {
-        NGramKey = $"({string.Join(",", outputCells)})",
-        Candidate = perceptedGIP.Value.Gram.Value,
-        HeadReading = perceptedGIP.Value.JoinedCurrentKey("-")
+        NGramKey = string.Join("&", resultCells),
+        Candidate = headPair.Value,
+        HeadReading = headReading
       };
     }
   }
