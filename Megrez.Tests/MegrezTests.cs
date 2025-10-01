@@ -723,6 +723,7 @@ EOS;
         new KeyValuePaired(new List<string> { "shi4" }, "世"),
         cursorShi,
         Node.OverrideType.HighScore,
+        true,
         intel => {
           obsCaptured = intel;
         }
@@ -742,6 +743,7 @@ EOS;
         new KeyValuePaired(new List<string> { "shi4", "de5" }, "是的"),
         cursorShiDe,
         Node.OverrideType.HighScore,
+        true,
         intel => {
           obsCaptured = intel;
         }
@@ -768,6 +770,24 @@ EOS;
       if (obsCaptured is not { } obsCapturedResult) throw new InvalidOperationException("obsCaptured should have a value");
       Assert.That(obsCapturedResult.Scenario, Is.EqualTo(POMObservationScenario.ShortToLong));
       Assert.That(obsCapturedResult.Candidate, Is.EqualTo("是的"));
+
+      // 測試 POM 建議的候選覆寫
+      compositor.Clear();
+      foreach (string reading in readings.Take(4)) {
+        Assert.That(compositor.InsertKey(reading), Is.True);
+      }
+
+      KeyValuePaired pomSuggestedCandidate = new(new List<string> { "shi4" }, "世", -0.07449307430679043);
+      int pomSuggestedCandidateOverrideCursor = 2;
+      compositor.OverrideCandidate(
+        pomSuggestedCandidate,
+        pomSuggestedCandidateOverrideCursor,
+        Node.OverrideType.TopUnigramScore,
+        true
+      );
+      compositor.Assemble();
+      string assembledByPOM = string.Join(" ", compositor.AssembledSentence.Values());
+      Assert.That(assembledByPOM, Is.EqualTo("再 創 世 的"));
     }
   }
 }

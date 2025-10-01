@@ -258,12 +258,21 @@ namespace Megrez {
     /// <param name="candidate">指定用來覆寫為的候選字（詞音鍵值配對）。</param>
     /// <param name="location">游標位置。</param>
     /// <param name="overrideType">指定覆寫行為。</param>
+    /// <param name="enforceRetokenization">是否強制重新分詞，對所有重疊節點施作重置與降權，以避免殘留舊節點狀態。</param>
     /// <param name="perceptionHandler">覆寫成功後用於回傳觀測智慧的回呼。</param>
     /// <returns>該操作是否成功執行。</returns>
     public bool OverrideCandidate(KeyValuePaired candidate, int location,
                     Node.OverrideType overrideType = Node.OverrideType.HighScore,
+                    bool enforceRetokenization = false,
                     Action<PerceptionIntel>? perceptionHandler = null) =>
-      OverrideCandidateAgainst(candidate.KeyArray, location, candidate.Value, overrideType, perceptionHandler);
+      OverrideCandidateAgainst(
+        candidate.KeyArray,
+        location,
+        candidate.Value,
+        overrideType,
+        enforceRetokenization,
+        perceptionHandler
+      );
 
     /// <summary>
     /// 使用給定的候選字詞字串，將給定位置的節點的候選字詞改為與之一致的候選字詞。<para/>
@@ -272,12 +281,14 @@ namespace Megrez {
     /// <param name="candidate">指定用來覆寫為的候選字（字串）。</param>
     /// <param name="location">游標位置。</param>
     /// <param name="overrideType">指定覆寫行為。</param>
+    /// <param name="enforceRetokenization">是否強制重新分詞，對所有重疊節點施作重置與降權，以避免殘留舊節點狀態。</param>
     /// <param name="perceptionHandler">覆寫成功後用於回傳觀測智慧的回呼。</param>
     /// <returns>該操作是否成功執行。</returns>
     public bool OverrideCandidateLiteral(string candidate, int location,
                        Node.OverrideType overrideType = Node.OverrideType.HighScore,
+                       bool enforceRetokenization = false,
                        Action<PerceptionIntel>? perceptionHandler = null) =>
-      OverrideCandidateAgainst(null, location, candidate, overrideType, perceptionHandler);
+      OverrideCandidateAgainst(null, location, candidate, overrideType, enforceRetokenization, perceptionHandler);
 
     /// <summary>
     /// 使用給定的候選字（詞音配對）、或給定的候選字詞字串，將給定位置的節點的候選字詞改為與之一致的候選字詞。
@@ -286,11 +297,13 @@ namespace Megrez {
     /// <param name="location">游標位置。</param>
     /// <param name="value">資料值。</param>
     /// <param name="overrideType">指定覆寫行為。</param>
-    /// <param name="perceptionHandler">覆寫成功後用於回傳觀測智慧的回呼。</param>
+  /// <param name="enforceRetokenization">是否強制重新分詞，對所有重疊節點施作重置與降權，以避免殘留舊節點狀態。</param>
+  /// <param name="perceptionHandler">覆寫成功後用於回傳觀測智慧的回呼。</param>
     /// <returns>該操作是否成功執行。</returns>
     internal bool OverrideCandidateAgainst(List<string>? keyArray, int location, string value,
-                                           Node.OverrideType overrideType,
-                                           Action<PerceptionIntel>? perceptionHandler = null) {
+                       Node.OverrideType overrideType,
+                       bool enforceRetokenization = false,
+                       Action<PerceptionIntel>? perceptionHandler = null) {
       if (Keys.IsEmpty()) return false;
       location = Math.Max(Math.Min(location, Keys.Count), 0);  // 防呆。
       int effectiveLocation = Math.Min(Keys.Count - 1, location);
@@ -326,15 +339,35 @@ namespace Megrez {
       NodeWithLocation overridden = overriddenAnchor.Value;
       try {
         int lengthUpperBound = Math.Min(Segments.Count, overridden.Location + overridden.Node.SegLength);
-        foreach (int i in new ClosedRange(overridden.Location, lengthUpperBound - 1)) {
-          List<NodeWithLocation> overlappingNodes = FetchOverlappingNodesAt(i);
-          foreach (NodeWithLocation anchor in overlappingNodes) {
-            if (ReferenceEquals(anchor.Node, overridden.Node)) continue;
+        if (enforceRetokenization) {
+          Node overriddenNodeRef = overridden.Node;
+          double demotionScore = -Math.Max(1.0, Math.Abs(overriddenNodeRef.OverridingScore));
+          foreach (int i in new ClosedRange(overridden.Location, lengthUpperBound - 1)) {
+            List<NodeWithLocation> overlappingNodes = FetchOverlappingNodesAt(i);
+            foreach (NodeWithLocation anchor in overlappingNodes) {
+              if (ReferenceEquals(anchor.Node, overriddenNodeRef)) continue;
+              if (anchor.Location > overridden.Location) continue;
+              if (ShouldResetNode(anchor.Node, overriddenNodeRef)) {
+                anchor.Node.Reset();
+              }
+              anchor.Node.OverrideStatus = new NodeOverrideStatus(
+                demotionScore,
+                Node.OverrideType.HighScore,
+                anchor.Node.CurrentUnigramIndex
+              );
+            }
+          }
+        } else {
+          foreach (int i in new ClosedRange(overridden.Location, lengthUpperBound - 1)) {
+            List<NodeWithLocation> overlappingNodes = FetchOverlappingNodesAt(i);
+            foreach (NodeWithLocation anchor in overlappingNodes) {
+              if (ReferenceEquals(anchor.Node, overridden.Node)) continue;
 
-            if (ShouldResetNode(anchor.Node, overridden.Node)) {
-              anchor.Node.Reset();
-            } else {
-              anchor.Node.OverridingScore /= 4;
+              if (ShouldResetNode(anchor.Node, overridden.Node)) {
+                anchor.Node.Reset();
+              } else {
+                anchor.Node.OverridingScore /= 4;
+              }
             }
           }
         }
