@@ -510,17 +510,17 @@ EOS;
       CollectionAssert.AreEqual(new[] { "幽蝶", "能", "留意", "呂方" }, assembledSentence);
       // 測試覆寫「留」以試圖打斷「留意」。
       compositor.OverrideCandidate(
-          new KeyValuePaired(new List<string> { "liu2" }, "留"), 3, Megrez.Node.OverrideType.HighScore
+          new KeyValuePaired(new List<string> { "liu2" }, "留"), 3, Megrez.Node.OverrideType.Specified
       );
       // 測試覆寫「一縷」以打斷「留意」與「呂方」。
       compositor.OverrideCandidate(
-          new KeyValuePaired(new List<string> { "yi4", "lv3" }, "一縷"), 4, Megrez.Node.OverrideType.HighScore
+          new KeyValuePaired(new List<string> { "yi4", "lv3" }, "一縷"), 4, Megrez.Node.OverrideType.Specified
       );
       assembledSentence = compositor.Assemble().Values().ToList();
       CollectionAssert.AreEqual(new[] { "幽蝶", "能", "留", "一縷", "方" }, assembledSentence);
       // 對位置 7 這個最前方的座標位置使用節點覆寫。會在此過程中自動糾正成對位置 6 的覆寫。
       compositor.OverrideCandidate(
-          new KeyValuePaired(new List<string> { "fang1" }, "芳"), 7, Megrez.Node.OverrideType.HighScore
+          new KeyValuePaired(new List<string> { "fang1" }, "芳"), 7, Megrez.Node.OverrideType.Specified
       );
       assembledSentence = compositor.Assemble().Values().ToList();
       CollectionAssert.AreEqual(new[] { "幽蝶", "能", "留", "一縷", "芳" }, assembledSentence);
@@ -722,7 +722,7 @@ EOS;
       bool overrideSucceeded = compositor.OverrideCandidate(
         new KeyValuePaired(new List<string> { "shi4" }, "世"),
         cursorShi,
-        Node.OverrideType.HighScore,
+        Node.OverrideType.Specified,
         true,
         intel => {
           obsCaptured = intel;
@@ -742,7 +742,7 @@ EOS;
       overrideSucceeded = compositor.OverrideCandidate(
         new KeyValuePaired(new List<string> { "shi4", "de5" }, "是的"),
         cursorShiDe,
-        Node.OverrideType.HighScore,
+        Node.OverrideType.Specified,
         true,
         intel => {
           obsCaptured = intel;

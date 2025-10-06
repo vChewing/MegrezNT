@@ -262,7 +262,7 @@ namespace Megrez {
     /// <param name="perceptionHandler">覆寫成功後用於回傳觀測智慧的回呼。</param>
     /// <returns>該操作是否成功執行。</returns>
     public bool OverrideCandidate(KeyValuePaired candidate, int location,
-                    Node.OverrideType overrideType = Node.OverrideType.HighScore,
+                    Node.OverrideType overrideType = Node.OverrideType.Specified,
                     bool enforceRetokenization = false,
                     Action<PerceptionIntel>? perceptionHandler = null) =>
       OverrideCandidateAgainst(
@@ -285,7 +285,7 @@ namespace Megrez {
     /// <param name="perceptionHandler">覆寫成功後用於回傳觀測智慧的回呼。</param>
     /// <returns>該操作是否成功執行。</returns>
     public bool OverrideCandidateLiteral(string candidate, int location,
-                       Node.OverrideType overrideType = Node.OverrideType.HighScore,
+                       Node.OverrideType overrideType = Node.OverrideType.Specified,
                        bool enforceRetokenization = false,
                        Action<PerceptionIntel>? perceptionHandler = null) =>
       OverrideCandidateAgainst(null, location, candidate, overrideType, enforceRetokenization, perceptionHandler);
@@ -297,8 +297,8 @@ namespace Megrez {
     /// <param name="location">游標位置。</param>
     /// <param name="value">資料值。</param>
     /// <param name="overrideType">指定覆寫行為。</param>
-  /// <param name="enforceRetokenization">是否強制重新分詞，對所有重疊節點施作重置與降權，以避免殘留舊節點狀態。</param>
-  /// <param name="perceptionHandler">覆寫成功後用於回傳觀測智慧的回呼。</param>
+    /// <param name="enforceRetokenization">是否強制重新分詞，對所有重疊節點施作重置與降權，以避免殘留舊節點狀態。</param>
+    /// <param name="perceptionHandler">覆寫成功後用於回傳觀測智慧的回呼。</param>
     /// <returns>該操作是否成功執行。</returns>
     internal bool OverrideCandidateAgainst(List<string>? keyArray, int location, string value,
                        Node.OverrideType overrideType,
@@ -352,7 +352,7 @@ namespace Megrez {
               }
               anchor.Node.OverrideStatus = new NodeOverrideStatus(
                 demotionScore,
-                Node.OverrideType.HighScore,
+                Node.OverrideType.Specified,
                 anchor.Node.CurrentUnigramIndex
               );
             }

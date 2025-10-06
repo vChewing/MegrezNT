@@ -23,22 +23,16 @@ namespace Megrez {
     /// </summary>
     public enum OverrideType {
       /// <summary>
-      /// 預設模式，無任何覆寫操作。
-      /// </summary>
-      NoOverrides = 0,
-      /// <summary>
-      /// 採用指定的單元圖詞彙內容進行覆寫，但保留最高權重單元圖的分數值。
-      /// 例如，若節點包含單元圖序列 [("甲", -114), ("乙", -514), ("丙", -1919)]，
-      /// 選擇覆寫為「丙」時，實際返回結果為 ("丙", -114)。此模式主要應用於
-      /// 使用者記憶模組的輔助建議功能。經過覆寫的節點狀態將維持穩定，不會被
-      /// 組句演算法自動還原。然而，此模式無法完全阻止其他節點在組句過程中
-      /// 產生的影響。如需完全控制，應配合使用 <see cref="OverridingScore"/> 屬性。
+      /// 專用於雙元圖的自動選取功能，但效力低於 withSpecified 模式。
+      /// 該覆寫行為無法防止其它節點被組句函式所支配。
+      /// 這種情況下就需要用到 <see cref="OverridingScore"/> 屬性。
       /// </summary>
       TopUnigramScore = 1,
       /// <summary>
-      /// 將節點的權重強制設定為 <see cref="OverridingScore"/> 數值，確保組句演算法優先選擇該節點。
+      /// 強制覆寫節點權重為 <see cref="OverridingScore"/>
+      /// 確保組句函式優先選擇該節點且不受其他節點影響。
       /// </summary>
-      HighScore = 2
+      Specified = 2
     }
 
     // MARK: - Variables
@@ -72,9 +66,9 @@ namespace Megrez {
     /// </summary>
     public List<Unigram> Unigrams { get; private set; }
     /// <summary>
-    /// 目前應用於該節點的覆寫模式類型。
+    /// 目前應用於該節點的覆寫模式類型。為 <c>null</c> 時表示無覆寫行為。
     /// </summary>
-    public OverrideType CurrentOverrideType { get; private set; }
+    public OverrideType? CurrentOverrideType { get; private set; }
 
     private int _currentUnigramIndex;
     /// <summary>
@@ -107,7 +101,7 @@ namespace Megrez {
       KeyArray = keyArray;
       SegLength = Math.Max(0, segLength);
       Unigrams = unigrams;
-      CurrentOverrideType = OverrideType.NoOverrides;
+      CurrentOverrideType = null;
     }
 
     /// <summary>
@@ -195,7 +189,7 @@ namespace Megrez {
       get {
         return Unigrams.IsEmpty() ? 0
                                   : CurrentOverrideType switch {
-                                    OverrideType.HighScore => OverridingScore,
+                                    OverrideType.Specified => OverridingScore,
                                     OverrideType.TopUnigramScore => Unigrams.First().Score,
                                     _ => CurrentUnigram.Score
                                   };
@@ -209,7 +203,7 @@ namespace Megrez {
     /// <summary>
     /// 該節點是否處於被覆寫的狀態。
     /// </summary>
-    public bool IsOverridden => CurrentOverrideType != OverrideType.NoOverrides;
+    public bool IsOverridden => CurrentOverrideType.HasValue;
 
     /// <summary>
     /// 節點覆寫狀態的動態屬性，允許直接讀取和設定覆寫狀態。
@@ -243,7 +237,7 @@ namespace Megrez {
     /// </summary>
     public void Reset() {
       _currentUnigramIndex = 0;
-      CurrentOverrideType = OverrideType.NoOverrides;
+      CurrentOverrideType = null;
     }
 
     /// <summary>
@@ -266,7 +260,6 @@ namespace Megrez {
     /// <param name="type">覆寫行為種類。</param>
     /// <returns>操作是否順利完成。</returns>
     public bool SelectOverrideUnigram(string value, OverrideType type) {
-      if (type == OverrideType.NoOverrides) return false;
       foreach (EnumeratedItem<Unigram> pair in Unigrams.Enumerated()) {
         int i = pair.Offset;
         Unigram gram = pair.Value;
@@ -292,7 +285,7 @@ namespace Megrez {
     /// <summary>
     /// 當前覆寫狀態種類
     /// </summary>
-    public Node.OverrideType CurrentOverrideType { get; set; }
+    public Node.OverrideType? CurrentOverrideType { get; set; }
 
     /// <summary>
     /// 當前單元圖索引位置
@@ -307,7 +300,7 @@ namespace Megrez {
     /// <param name="currentUnigramIndex">當前單元圖索引位置</param>
     public NodeOverrideStatus(
       double overridingScore = 114514,
-      Node.OverrideType currentOverrideType = Node.OverrideType.NoOverrides,
+      Node.OverrideType? currentOverrideType = null,
       int currentUnigramIndex = 0
     ) {
       OverridingScore = overridingScore;

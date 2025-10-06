@@ -44,20 +44,20 @@ namespace Megrez.Tests {
     public void TestNodeOverrideStatus() {
       var status = new NodeOverrideStatus(
         overridingScore: 100.0,
-        currentOverrideType: Node.OverrideType.HighScore,
+        currentOverrideType: Node.OverrideType.Specified,
         currentUnigramIndex: 2
       );
 
       Assert.That(status.OverridingScore, Is.EqualTo(100.0));
-      Assert.That(status.CurrentOverrideType, Is.EqualTo(Node.OverrideType.HighScore));
+      Assert.That(status.CurrentOverrideType, Is.EqualTo(Node.OverrideType.Specified));
       Assert.That(status.CurrentUnigramIndex, Is.EqualTo(2));
 
       // 測試等價性
-      var status2 = new NodeOverrideStatus(100.0, Node.OverrideType.HighScore, 2);
+      var status2 = new NodeOverrideStatus(100.0, Node.OverrideType.Specified, 2);
       Assert.That(status, Is.EqualTo(status2));
       Assert.That(status == status2, Is.True);
 
-      var status3 = new NodeOverrideStatus(200.0, Node.OverrideType.HighScore, 2);
+      var status3 = new NodeOverrideStatus(200.0, Node.OverrideType.Specified, 2);
       Assert.That(status != status3, Is.True);
     }
 
@@ -84,21 +84,21 @@ namespace Megrez.Tests {
       // 測試初始狀態
       var initialStatus = node1.OverrideStatus;
       Assert.That(initialStatus.OverridingScore, Is.EqualTo(114514));
-      Assert.That(initialStatus.CurrentOverrideType, Is.EqualTo(Node.OverrideType.NoOverrides));
+      Assert.That(initialStatus.CurrentOverrideType, Is.Null);
       Assert.That(initialStatus.CurrentUnigramIndex, Is.EqualTo(0));
 
       // 修改節點狀態
       node1.OverridingScore = 200.0;
       bool overrideSet = false;
       if (node1.Unigrams.Count > 0) {
-        overrideSet = node1.SelectOverrideUnigram(node1.Unigrams[0].Value, Node.OverrideType.HighScore);
+        overrideSet = node1.SelectOverrideUnigram(node1.Unigrams[0].Value, Node.OverrideType.Specified);
       }
 
       // 驗證通過 OverrideStatus 能正確讀取
       var modifiedStatus = node1.OverrideStatus;
       Assert.That(modifiedStatus.OverridingScore, Is.EqualTo(200.0));
       if (overrideSet && node1.Unigrams.Count > 0) {
-        Assert.That(modifiedStatus.CurrentOverrideType, Is.EqualTo(Node.OverrideType.HighScore));
+        Assert.That(modifiedStatus.CurrentOverrideType, Is.EqualTo(Node.OverrideType.Specified));
         Assert.That(modifiedStatus.CurrentUnigramIndex, Is.EqualTo(0));
       }
 
@@ -132,14 +132,14 @@ namespace Megrez.Tests {
       // 嘗試設定溢出的索引
       var overflowStatus = new NodeOverrideStatus(
         overridingScore: 100.0,
-        currentOverrideType: Node.OverrideType.HighScore,
+        currentOverrideType: Node.OverrideType.Specified,
         currentUnigramIndex: 999 // 遠超出 unigrams 陣列範圍
       );
 
       node.OverrideStatus = overflowStatus;
 
       // 應該觸發重設，狀態回到初始值
-      Assert.That(node.CurrentOverrideType, Is.EqualTo(Node.OverrideType.NoOverrides));
+      Assert.That(node.CurrentOverrideType, Is.Null);
       Assert.That(node.CurrentUnigramIndex, Is.EqualTo(0));
     }
 
@@ -161,7 +161,7 @@ namespace Megrez.Tests {
       // 修改一些節點的狀態
       if (compositor.Segments[0].NodeOf(1) is { } node1 && node1.Unigrams.Count > 0) {
         node1.OverridingScore = 500.0;
-        node1.SelectOverrideUnigram(node1.Unigrams[0].Value, Node.OverrideType.HighScore);
+        node1.SelectOverrideUnigram(node1.Unigrams[0].Value, Node.OverrideType.Specified);
       }
 
       if (compositor.Segments.Count > 1 && compositor.Segments[1].NodeOf(2) is { } node2 && node2.Unigrams.Count > 0) {
@@ -182,7 +182,7 @@ namespace Megrez.Tests {
 
       // 驗證狀態確實被重設
       if (compositor.Segments[0].NodeOf(1) is { } resetNode) {
-        Assert.That(resetNode.CurrentOverrideType, Is.EqualTo(Node.OverrideType.NoOverrides));
+        Assert.That(resetNode.CurrentOverrideType, Is.Null);
         Assert.That(resetNode.CurrentUnigramIndex, Is.EqualTo(0));
       }
 
@@ -192,7 +192,7 @@ namespace Megrez.Tests {
       // 驗證狀態被正確恢復
       if (compositor.Segments[0].NodeOf(1) is { } restoredNode1) {
         Assert.That(restoredNode1.OverridingScore, Is.EqualTo(500.0));
-        Assert.That(restoredNode1.CurrentOverrideType, Is.EqualTo(Node.OverrideType.HighScore));
+        Assert.That(restoredNode1.CurrentOverrideType, Is.EqualTo(Node.OverrideType.Specified));
       }
 
       if (compositor.Segments[1].NodeOf(2) is { } restoredNode2) {
@@ -221,7 +221,7 @@ namespace Megrez.Tests {
         foreach (var node in segment.Nodes.Values) {
           if (node.Unigrams.Count > 0) {
             node.OverridingScore = random.NextDouble() * 900 + 100; // 100-1000
-            node.SelectOverrideUnigram(node.Unigrams[0].Value, Node.OverrideType.HighScore);
+            node.SelectOverrideUnigram(node.Unigrams[0].Value, Node.OverrideType.Specified);
             modifiedNodes++;
           }
         }
@@ -239,7 +239,7 @@ namespace Megrez.Tests {
 
       // 鏡照應該包含所有修改的狀態
       foreach (var (nodeId, status) in mirror) {
-        Assert.That(status.CurrentOverrideType, Is.EqualTo(Node.OverrideType.HighScore));
+        Assert.That(status.CurrentOverrideType, Is.EqualTo(Node.OverrideType.Specified));
         Assert.That(status.OverridingScore, Is.GreaterThanOrEqualTo(100).And.LessThanOrEqualTo(1000));
       }
 
@@ -257,7 +257,7 @@ namespace Megrez.Tests {
       int restoredNodes = 0;
       foreach (var segment in compositor.Segments) {
         foreach (var node in segment.Nodes.Values) {
-          if (node.CurrentOverrideType == Node.OverrideType.HighScore) {
+          if (node.CurrentOverrideType == Node.OverrideType.Specified) {
             restoredNodes++;
           }
         }
