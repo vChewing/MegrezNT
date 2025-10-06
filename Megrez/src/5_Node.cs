@@ -316,10 +316,10 @@ namespace Megrez {
     }
 
     /// <summary>
-    /// Determines whether the specified NodeOverrideStatus is equal to the current NodeOverrideStatus.
+    /// 判斷指定的 NodeOverrideStatus 是否等同於目前的 NodeOverrideStatus。
     /// </summary>
-    /// <param name="other">The NodeOverrideStatus to compare with the current NodeOverrideStatus.</param>
-    /// <returns>true if the specified NodeOverrideStatus is equal to the current NodeOverrideStatus; otherwise, false.</returns>
+    /// <param name="other">要與目前 NodeOverrideStatus 比較的目標。</param>
+    /// <returns>若兩者相同則為 true，否則為 false。</returns>
     public bool Equals(NodeOverrideStatus other) {
       return OverridingScore.Equals(other.OverridingScore) &&
              CurrentOverrideType == other.CurrentOverrideType &&
@@ -327,18 +327,18 @@ namespace Megrez {
     }
 
     /// <summary>
-    /// Determines whether the specified object is equal to the current NodeOverrideStatus.
+    /// 判斷指定物件是否等同於目前的 NodeOverrideStatus。
     /// </summary>
-    /// <param name="obj">The object to compare with the current NodeOverrideStatus.</param>
-    /// <returns>true if the specified object is equal to the current NodeOverrideStatus; otherwise, false.</returns>
+    /// <param name="obj">要與目前 NodeOverrideStatus 比較的物件。</param>
+    /// <returns>若兩者相同則為 true，否則為 false。</returns>
     public override bool Equals(object obj) {
       return obj is NodeOverrideStatus other && Equals(other);
     }
 
     /// <summary>
-    /// Returns the hash code for this NodeOverrideStatus.
+    /// 傳回此 NodeOverrideStatus 的雜湊碼。
     /// </summary>
-    /// <returns>A 32-bit signed integer hash code.</returns>
+    /// <returns>32 位元帶正負號的整數雜湊值。</returns>
     public override int GetHashCode() {
       unchecked {
         int hash = 17;
@@ -350,19 +350,19 @@ namespace Megrez {
     }
 
     /// <summary>
-    /// Determines whether two NodeOverrideStatus instances are equal.
+    /// 判斷兩個 NodeOverrideStatus 實例是否相等。
     /// </summary>
-    /// <param name="left">The first NodeOverrideStatus to compare.</param>
-    /// <param name="right">The second NodeOverrideStatus to compare.</param>
-    /// <returns>true if the NodeOverrideStatus instances are equal; otherwise, false.</returns>
+    /// <param name="left">第一個待比較的 NodeOverrideStatus。</param>
+    /// <param name="right">第二個待比較的 NodeOverrideStatus。</param>
+    /// <returns>若兩個實例相等則為 true，否則為 false。</returns>
     public static bool operator ==(NodeOverrideStatus left, NodeOverrideStatus right) => left.Equals(right);
 
     /// <summary>
-    /// Determines whether two NodeOverrideStatus instances are not equal.
+    /// 判斷兩個 NodeOverrideStatus 實例是否不相等。
     /// </summary>
-    /// <param name="left">The first NodeOverrideStatus to compare.</param>
-    /// <param name="right">The second NodeOverrideStatus to compare.</param>
-    /// <returns>true if the NodeOverrideStatus instances are not equal; otherwise, false.</returns>
+    /// <param name="left">第一個待比較的 NodeOverrideStatus。</param>
+    /// <param name="right">第二個待比較的 NodeOverrideStatus。</param>
+    /// <returns>若兩個實例不相等則為 true，否則為 false。</returns>
     public static bool operator !=(NodeOverrideStatus left, NodeOverrideStatus right) => !left.Equals(right);
   }
 }  // namespace Megrez
