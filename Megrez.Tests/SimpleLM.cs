@@ -24,7 +24,9 @@ namespace Megrez.Tests {
       sStream.ForEach(line => {
         if (IsNullOrEmpty(line) || line.FirstOrDefault().CompareTo('#') == 0)
           return;
-        List<string> lineStream = new(line.Split(' '));
+        List<string> lineStream = new(line.Split(
+          new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries
+        ));
         if (lineStream.Count != 3)
           return;
         string col0 = lineStream[0];  // 假設其不為 nil

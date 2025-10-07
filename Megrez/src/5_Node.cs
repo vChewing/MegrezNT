@@ -31,6 +31,7 @@ namespace Megrez {
       /// <summary>
       /// 強制覆寫節點權重為 <see cref="OverridingScore"/>
       /// 確保組句函式優先選擇該節點且不受其他節點影響。
+      /// 但是這個選項也可以允許搭配過低的 overridingScore 來起到 demote 的效果。
       /// </summary>
       Specified = 2
     }
@@ -266,6 +267,7 @@ namespace Megrez {
         if (value != gram.Value) continue;
         CurrentUnigramIndex = i;
         CurrentOverrideType = type;
+        if (OverridingScore < 114_514) OverridingScore = 114_514;
         return true;
       }
       return false;

@@ -14,6 +14,7 @@ namespace Megrez.Tests {
   /// </summary>
   [TestFixture]
   public class NodeOverrideStatusTests {
+    private double _baselineOverrideScore = 114_514;
 
     /// <summary>
     /// 測試 Guid 的基本功能
@@ -96,7 +97,7 @@ namespace Megrez.Tests {
 
       // 驗證通過 OverrideStatus 能正確讀取
       var modifiedStatus = node1.OverrideStatus;
-      Assert.That(modifiedStatus.OverridingScore, Is.EqualTo(200.0));
+      Assert.That(modifiedStatus.OverridingScore, Is.EqualTo(_baselineOverrideScore));
       if (overrideSet && node1.Unigrams.Count > 0) {
         Assert.That(modifiedStatus.CurrentOverrideType, Is.EqualTo(Node.OverrideType.Specified));
         Assert.That(modifiedStatus.CurrentUnigramIndex, Is.EqualTo(0));
@@ -191,12 +192,12 @@ namespace Megrez.Tests {
 
       // 驗證狀態被正確恢復
       if (compositor.Segments[0].NodeOf(1) is { } restoredNode1) {
-        Assert.That(restoredNode1.OverridingScore, Is.EqualTo(500.0));
+        Assert.That(restoredNode1.OverridingScore, Is.EqualTo(_baselineOverrideScore));
         Assert.That(restoredNode1.CurrentOverrideType, Is.EqualTo(Node.OverrideType.Specified));
       }
 
       if (compositor.Segments[1].NodeOf(2) is { } restoredNode2) {
-        Assert.That(restoredNode2.OverridingScore, Is.EqualTo(600.0));
+        Assert.That(restoredNode2.OverridingScore, Is.EqualTo(_baselineOverrideScore));
         Assert.That(restoredNode2.CurrentOverrideType, Is.EqualTo(Node.OverrideType.TopUnigramScore));
       }
     }
@@ -240,7 +241,7 @@ namespace Megrez.Tests {
       // 鏡照應該包含所有修改的狀態
       foreach (var (nodeId, status) in mirror) {
         Assert.That(status.CurrentOverrideType, Is.EqualTo(Node.OverrideType.Specified));
-        Assert.That(status.OverridingScore, Is.GreaterThanOrEqualTo(100).And.LessThanOrEqualTo(1000));
+        Assert.That(status.OverridingScore, Is.EqualTo(_baselineOverrideScore));
       }
 
       // 現在清空原始 compositor 的狀態
