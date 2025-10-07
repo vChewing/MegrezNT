@@ -2,16 +2,16 @@
 
   <PropertyGroup>
     <Nullable>enable</Nullable>
-    <ReleaseVersion>5.0.3</ReleaseVersion>
+    <ReleaseVersion>5.0.4</ReleaseVersion>
     <PackageId>vChewing.Megrez</PackageId>
     <Authors>Shiki Suen</Authors>
     <Company>Atelier Inmu</Company>
     <Copyright>(c) 2022 and onwards The vChewing Project (LGPL v3.0 License or later).</Copyright>
     <RepositoryUrl>https://github.com/ShikiSuen/MegrezNT</RepositoryUrl>
     <NeutralLanguage>zh-TW</NeutralLanguage>
-    <AssemblyVersion>5.0.3</AssemblyVersion>
-    <FileVersion>5.0.3</FileVersion>
-    <Version>5.0.3</Version>
+    <AssemblyVersion>5.0.4</AssemblyVersion>
+    <FileVersion>5.0.4</FileVersion>
+    <Version>5.0.4</Version>
     <Product>Megrez</Product>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageReadmeFile>README.md</PackageReadmeFile>
