@@ -28,6 +28,7 @@ namespace Megrez {
       /// 這種情況下就需要用到 <see cref="OverridingScore"/> 屬性。
       /// </summary>
       TopUnigramScore = 1,
+
       /// <summary>
       /// 強制覆寫節點權重為 <see cref="OverridingScore"/>
       /// 確保組句函式優先選擇該節點且不受其他節點影響。
@@ -58,20 +59,24 @@ namespace Megrez {
     /// 讀音索引鍵序列。
     /// </summary>
     public List<string> KeyArray { get; }
+
     /// <summary>
     /// 節點的涵蓋範圍長度。
     /// </summary>
     public int SegLength { get; }
+
     /// <summary>
     /// 節點包含的單元圖資料集合。
     /// </summary>
     public List<Unigram> Unigrams { get; private set; }
+
     /// <summary>
     /// 目前應用於該節點的覆寫模式類型。為 <c>null</c> 時表示無覆寫行為。
     /// </summary>
     public OverrideType? CurrentOverrideType { get; private set; }
 
     private int _currentUnigramIndex;
+
     /// <summary>
     /// 指向單元圖集合中當前選定項目的索引值。
     /// </summary>
@@ -142,10 +147,10 @@ namespace Megrez {
     /// <returns></returns>
     public override bool Equals(object obj) {
       return obj is not Node node
-                 ? false
-                 : OverridingScore == node.OverridingScore && KeyArray.SequenceEqual(node.KeyArray) &&
-                       SegLength == node.SegLength && Unigrams.SequenceEqual(node.Unigrams) &&
-                       CurrentOverrideType == node.CurrentOverrideType && CurrentUnigramIndex == node.CurrentUnigramIndex;
+        ? false
+        : OverridingScore == node.OverridingScore && KeyArray.SequenceEqual(node.KeyArray) &&
+          SegLength == node.SegLength && Unigrams.SequenceEqual(node.Unigrams) &&
+          CurrentOverrideType == node.CurrentOverrideType && CurrentUnigramIndex == node.CurrentUnigramIndex;
     }
 
     /// <summary>
@@ -188,12 +193,13 @@ namespace Megrez {
     /// </summary>
     public double Score {
       get {
-        return Unigrams.IsEmpty() ? 0
-                                  : CurrentOverrideType switch {
-                                    OverrideType.Specified => OverridingScore,
-                                    OverrideType.TopUnigramScore => Unigrams.First().Score,
-                                    _ => CurrentUnigram.Score
-                                  };
+        return Unigrams.IsEmpty()
+          ? 0
+          : CurrentOverrideType switch {
+            OverrideType.Specified => OverridingScore,
+            OverrideType.TopUnigramScore => Unigrams.First().Score,
+            _ => CurrentUnigram.Score
+          };
       }
     }
 
@@ -201,6 +207,7 @@ namespace Megrez {
     /// 檢查當前節點是否「讀音字長與候選字字長不一致」。
     /// </summary>
     public bool IsReadingMismatched => KeyArray.Count != Value.LiteralCount();
+
     /// <summary>
     /// 該節點是否處於被覆寫的狀態。
     /// </summary>
@@ -231,7 +238,7 @@ namespace Megrez {
     /// <param name="separator">給定的分隔符，預設值為 <see cref="Compositor.TheSeparator"/>。</param>
     /// <returns>已經銜接完畢的字串。</returns>
     public string JoinedKey(string? separator = null) =>
-        string.Join(separator ?? Compositor.TheSeparator, KeyArray);
+      string.Join(separator ?? Compositor.TheSeparator, KeyArray);
 
     /// <summary>
     /// 重設該節點的覆寫狀態、及其內部的單元圖索引位置指向。
@@ -249,7 +256,7 @@ namespace Megrez {
     public void SyncingUnigramsFrom(List<Unigram> source) {
       string oldCurrentValue = Unigrams[CurrentUnigramIndex].Value;
       Unigrams = source;
-      CurrentUnigramIndex = _currentUnigramIndex;  // 自動觸發 didSet() 的糾錯過程。
+      CurrentUnigramIndex = _currentUnigramIndex; // 自動觸發 didSet() 的糾錯過程。
       string newCurrentValue = Unigrams[CurrentUnigramIndex].Value;
       if (oldCurrentValue != newCurrentValue) Reset();
     }
@@ -270,6 +277,7 @@ namespace Megrez {
         if (OverridingScore < 114_514) OverridingScore = 114_514;
         return true;
       }
+
       return false;
     }
   }
@@ -360,4 +368,4 @@ namespace Megrez {
     /// <returns>若兩個實例不相等則為 true，否則為 false。</returns>
     public static bool operator !=(NodeOverrideStatus left, NodeOverrideStatus right) => !left.Equals(right);
   }
-}  // namespace Megrez
+} // namespace Megrez

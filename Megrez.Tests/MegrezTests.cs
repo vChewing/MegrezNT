@@ -16,11 +16,11 @@ namespace Megrez.Tests {
       SimpleLM langModel = new(TestDataClass.StrLMSampleDataLitch);
       Compositor.Segment segment = new();
       Node n1 = new(
-          new List<string> { "da4" }, 1, langModel.UnigramsFor(new List<string> { "da4" })
+        new List<string> { "da4" }, 1, langModel.UnigramsFor(new List<string> { "da4" })
       );
       Node n3 = new(
-          new List<string> { "da4", "qian2", "tian1" }, 3,
-          langModel.UnigramsFor(new List<string> { "da4-qian2-tian1" })
+        new List<string> { "da4", "qian2", "tian1" }, 3,
+        langModel.UnigramsFor(new List<string> { "da4-qian2-tian1" })
       );
 
       Assert.That(segment.MaxLength, Is.EqualTo(0));
@@ -215,6 +215,7 @@ namespace Megrez.Tests {
       foreach (char key in "無可奈何花作香幽蝶能留一縷芳") {
         compositor.InsertKey(key.ToString());
       }
+
       {
         compositor.Cursor = 8;
         Assert.That(compositor.DropKey(Compositor.TypingDirection.ToRear), Is.True);
@@ -234,15 +235,41 @@ namespace Megrez.Tests {
         Assert.That(compositor.InsertKey("幽"), Is.True);
         Assert.That((compositor.Cursor, compositor.Length), Is.EqualTo((8, 14)));
         Assert.That(compositor.Segments.Count, Is.EqualTo(14));
-        Assert.That(compositor.Segments[0].Nodes[6].KeyArray.SequenceEqual(new[] { "無", "可", "奈", "何", "花", "作" }), Is.True);
-        Assert.That(compositor.Segments[1].Nodes[6].KeyArray.SequenceEqual(new[] { "可", "奈", "何", "花", "作", "香" }), Is.True);
-        Assert.That(compositor.Segments[2].Nodes[6].KeyArray.SequenceEqual(new[] { "奈", "何", "花", "作", "香", "幽" }), Is.True);
-        Assert.That(compositor.Segments[3].Nodes[6].KeyArray.SequenceEqual(new[] { "何", "花", "作", "香", "幽", "蝶" }), Is.True);
-        Assert.That(compositor.Segments[4].Nodes[6].KeyArray.SequenceEqual(new[] { "花", "作", "香", "幽", "蝶", "能" }), Is.True);
-        Assert.That(compositor.Segments[5].Nodes[6].KeyArray.SequenceEqual(new[] { "作", "香", "幽", "蝶", "能", "留" }), Is.True);
-        Assert.That(compositor.Segments[6].Nodes[6].KeyArray.SequenceEqual(new[] { "香", "幽", "蝶", "能", "留", "一" }), Is.True);
-        Assert.That(compositor.Segments[7].Nodes[6].KeyArray.SequenceEqual(new[] { "幽", "蝶", "能", "留", "一", "縷" }), Is.True);
-        Assert.That(compositor.Segments[8].Nodes[6].KeyArray.SequenceEqual(new[] { "蝶", "能", "留", "一", "縷", "芳" }), Is.True);
+        Assert.That(
+          compositor.Segments[0].Nodes[6].KeyArray.SequenceEqual(new[] { "無", "可", "奈", "何", "花", "作" }),
+          Is.True
+        );
+        Assert.That(
+          compositor.Segments[1].Nodes[6].KeyArray.SequenceEqual(new[] { "可", "奈", "何", "花", "作", "香" }),
+          Is.True
+        );
+        Assert.That(
+          compositor.Segments[2].Nodes[6].KeyArray.SequenceEqual(new[] { "奈", "何", "花", "作", "香", "幽" }),
+          Is.True);
+        Assert.That(
+          compositor.Segments[3].Nodes[6].KeyArray.SequenceEqual(new[] { "何", "花", "作", "香", "幽", "蝶" }),
+          Is.True
+        );
+        Assert.That(
+          compositor.Segments[4].Nodes[6].KeyArray.SequenceEqual(new[] { "花", "作", "香", "幽", "蝶", "能" }),
+          Is.True
+        );
+        Assert.That(
+          compositor.Segments[5].Nodes[6].KeyArray.SequenceEqual(new[] { "作", "香", "幽", "蝶", "能", "留" }),
+          Is.True
+        );
+        Assert.That(
+          compositor.Segments[6].Nodes[6].KeyArray.SequenceEqual(new[] { "香", "幽", "蝶", "能", "留", "一" }),
+          Is.True
+        );
+        Assert.That(
+          compositor.Segments[7].Nodes[6].KeyArray.SequenceEqual(new[] { "幽", "蝶", "能", "留", "一", "縷" }),
+          Is.True
+        );
+        Assert.That(
+          compositor.Segments[8].Nodes[6].KeyArray.SequenceEqual(new[] { "蝶", "能", "留", "一", "縷", "芳" }),
+          Is.True
+        );
       }
     }
   }
@@ -270,7 +297,7 @@ namespace Megrez.Tests {
       List<GramInPath> result = compositor.Assemble();
 
       Assert.That(result.JoinedKeys("").SequenceEqual(
-        new[] { "幽蝶", "能", "留", "一縷", "芳" }), Is.True
+                    new[] { "幽蝶", "能", "留", "一縷", "芳" }), Is.True
       );
 
       Compositor hardCopy = compositor.Copy();
@@ -284,6 +311,7 @@ namespace Megrez.Tests {
       for (int i = 0; i < 1919; i++) {
         compositor.InsertKey("sheng1");
       }
+
       Console.WriteLine("// Stress test started.");
       DateTime startTime = DateTime.Now;
       compositor.Assemble();
@@ -301,6 +329,7 @@ namespace Megrez.Tests {
       foreach (string key in readings) {
         Assert.That(compositor.InsertKey(key), Is.True);
       }
+
       Console.WriteLine(string.Join(", ", compositor.Keys));
       List<string> oldResult = compositor.Assemble().Values();
       CollectionAssert.AreEqual(new[] { "樹心", "封" }, oldResult);
@@ -318,16 +347,22 @@ namespace Megrez.Tests {
       foreach (string key in rawReadings.Split(' ')) {
         compositor.InsertKey(key);
       }
+
       List<string> stack1A = new();
       List<string> stack1B = new();
       List<string> stack2A = new();
       List<string> stack2B = new();
       for (int i = 0; i <= compositor.Keys.Count; i++) {
-        stack1A.Add(string.Join("-", compositor.FetchCandidatesAt(i, Compositor.CandidateFetchFilter.BeginAt).Select(c => c.Value)));
-        stack1B.Add(string.Join("-", compositor.FetchCandidatesAt(i, Compositor.CandidateFetchFilter.EndAt).Select(c => c.Value)));
-        stack2A.Add(string.Join("-", compositor.FetchCandidatesDeprecatedAt(i, Compositor.CandidateFetchFilter.BeginAt).Select(c => c.Value)));
-        stack2B.Add(string.Join("-", compositor.FetchCandidatesDeprecatedAt(i, Compositor.CandidateFetchFilter.EndAt).Select(c => c.Value)));
+        stack1A.Add(string.Join("-", compositor.FetchCandidatesAt(i, Compositor.CandidateFetchFilter.BeginAt)
+                                               .Select(c => c.Value)));
+        stack1B.Add(string.Join("-", compositor.FetchCandidatesAt(i, Compositor.CandidateFetchFilter.EndAt)
+                                               .Select(c => c.Value)));
+        stack2A.Add(string.Join("-", compositor.FetchCandidatesDeprecatedAt(i, Compositor.CandidateFetchFilter.BeginAt)
+                                               .Select(c => c.Value)));
+        stack2B.Add(string.Join("-", compositor.FetchCandidatesDeprecatedAt(i, Compositor.CandidateFetchFilter.EndAt)
+                                               .Select(c => c.Value)));
       }
+
       stack1B.RemoveAt(0);
       stack2B.RemoveAt(stack2B.Count - 1);
       CollectionAssert.AreEqual(stack1A, stack2A);
@@ -344,12 +379,15 @@ namespace Megrez.Tests {
         foreach (string key in readings) {
           compositor.InsertKey(key);
         }
+
         // 初始組句結果。
         List<string> assembledSentence = compositor.Assemble().Values().ToList();
         CollectionAssert.AreEqual(new[] { "科技", "公園" }, assembledSentence);
         // 測試候選字詞過濾。
-        List<string> gotBeginAt = compositor.FetchCandidatesAt(2, Compositor.CandidateFetchFilter.BeginAt).Select(c => c.Value).ToList();
-        List<string> gotEndAt = compositor.FetchCandidatesAt(2, Compositor.CandidateFetchFilter.EndAt).Select(c => c.Value).ToList();
+        List<string> gotBeginAt = compositor.FetchCandidatesAt(2, Compositor.CandidateFetchFilter.BeginAt)
+                                            .Select(c => c.Value).ToList();
+        List<string> gotEndAt = compositor.FetchCandidatesAt(2, Compositor.CandidateFetchFilter.EndAt)
+                                          .Select(c => c.Value).ToList();
         Assert.That(gotBeginAt.Contains("濟公"), Is.False);
         Assert.That(gotBeginAt.Contains("公園"), Is.True);
         Assert.That(gotEndAt.Contains("公園"), Is.False);
@@ -363,16 +401,23 @@ namespace Megrez.Tests {
         foreach (string key in readings) {
           compositor.InsertKey(key);
         }
-        int a = compositor.FetchCandidatesAt(1, Compositor.CandidateFetchFilter.BeginAt).Select(c => c.KeyArray.Count).Max();
-        int b = compositor.FetchCandidatesAt(1, Compositor.CandidateFetchFilter.EndAt).Select(c => c.KeyArray.Count).Max();
-        int c = compositor.FetchCandidatesAt(0, Compositor.CandidateFetchFilter.BeginAt).Select(c => c.KeyArray.Count).Max();
-        int d = compositor.FetchCandidatesAt(2, Compositor.CandidateFetchFilter.EndAt).Select(c => c.KeyArray.Count).Max();
+
+        int a = compositor.FetchCandidatesAt(1, Compositor.CandidateFetchFilter.BeginAt).Select(c => c.KeyArray.Count)
+                          .Max();
+        int b = compositor.FetchCandidatesAt(1, Compositor.CandidateFetchFilter.EndAt).Select(c => c.KeyArray.Count)
+                          .Max();
+        int c = compositor.FetchCandidatesAt(0, Compositor.CandidateFetchFilter.BeginAt).Select(c => c.KeyArray.Count)
+                          .Max();
+        int d = compositor.FetchCandidatesAt(2, Compositor.CandidateFetchFilter.EndAt).Select(c => c.KeyArray.Count)
+                          .Max();
         Assert.That($"{a} {b} {c} {d}", Is.EqualTo("1 1 2 2"));
         compositor.Cursor = compositor.Length;
         compositor.InsertKey("jin1");
-        a = compositor.FetchCandidatesAt(1, Compositor.CandidateFetchFilter.BeginAt).Select(c => c.KeyArray.Count).Max();
+        a = compositor.FetchCandidatesAt(1, Compositor.CandidateFetchFilter.BeginAt).Select(c => c.KeyArray.Count)
+                      .Max();
         b = compositor.FetchCandidatesAt(1, Compositor.CandidateFetchFilter.EndAt).Select(c => c.KeyArray.Count).Max();
-        c = compositor.FetchCandidatesAt(0, Compositor.CandidateFetchFilter.BeginAt).Select(c => c.KeyArray.Count).Max();
+        c = compositor.FetchCandidatesAt(0, Compositor.CandidateFetchFilter.BeginAt).Select(c => c.KeyArray.Count)
+                      .Max();
         d = compositor.FetchCandidatesAt(2, Compositor.CandidateFetchFilter.EndAt).Select(c => c.KeyArray.Count).Max();
         Assert.That($"{a} {b} {c} {d}", Is.EqualTo("1 1 2 2"));
       }
@@ -386,6 +431,7 @@ namespace Megrez.Tests {
       foreach (string key in readings.Split(' ')) {
         compositor.InsertKey(key);
       }
+
       Assert.That(compositor.Length, Is.EqualTo(12));
       Assert.That(compositor.Length, Is.EqualTo(compositor.Cursor));
       // 初始組句結果。
@@ -452,14 +498,14 @@ EOS;
       {
         Compositor compositorCopy1 = compositor.Copy();
         Assert.That(
-            compositorCopy1.OverrideCandidate(new(new List<string> { "ji1" }, "雞"), 11), Is.True
+          compositorCopy1.OverrideCandidate(new(new List<string> { "ji1" }, "雞"), 11), Is.True
         );
         assembledSentence = compositorCopy1.Assemble().Values().ToList();
         CollectionAssert.AreEqual(new[] { "超商", "大前天", "為止", "還", "在", "賣", "乃", "雞" }, assembledSentence);
       }
       // 回到先前的測試，測試對整個詞的覆寫。
       Assert.That(
-          compositor.OverrideCandidate(new(new List<string> { "nai3", "ji1" }, "奶雞"), 10), Is.True
+        compositor.OverrideCandidate(new(new List<string> { "nai3", "ji1" }, "奶雞"), 10), Is.True
       );
       assembledSentence = compositor.Assemble().Values().ToList();
       CollectionAssert.AreEqual(new[] { "超商", "大前天", "為止", "還", "在", "賣", "奶雞" }, assembledSentence);
@@ -505,22 +551,23 @@ EOS;
       foreach (string key in readings) {
         compositor.InsertKey(key);
       }
+
       // 初始組句結果。
       List<string> assembledSentence = compositor.Assemble().Values().ToList();
       CollectionAssert.AreEqual(new[] { "幽蝶", "能", "留意", "呂方" }, assembledSentence);
       // 測試覆寫「留」以試圖打斷「留意」。
       compositor.OverrideCandidate(
-          new KeyValuePaired(new List<string> { "liu2" }, "留"), 3, Megrez.Node.OverrideType.Specified
+        new KeyValuePaired(new List<string> { "liu2" }, "留"), 3, Megrez.Node.OverrideType.Specified
       );
       // 測試覆寫「一縷」以打斷「留意」與「呂方」。
       compositor.OverrideCandidate(
-          new KeyValuePaired(new List<string> { "yi4", "lv3" }, "一縷"), 4, Megrez.Node.OverrideType.Specified
+        new KeyValuePaired(new List<string> { "yi4", "lv3" }, "一縷"), 4, Megrez.Node.OverrideType.Specified
       );
       assembledSentence = compositor.Assemble().Values().ToList();
       CollectionAssert.AreEqual(new[] { "幽蝶", "能", "留", "一縷", "方" }, assembledSentence);
       // 對位置 7 這個最前方的座標位置使用節點覆寫。會在此過程中自動糾正成對位置 6 的覆寫。
       compositor.OverrideCandidate(
-          new KeyValuePaired(new List<string> { "fang1" }, "芳"), 7, Megrez.Node.OverrideType.Specified
+        new KeyValuePaired(new List<string> { "fang1" }, "芳"), 7, Megrez.Node.OverrideType.Specified
       );
       assembledSentence = compositor.Assemble().Values().ToList();
       CollectionAssert.AreEqual(new[] { "幽蝶", "能", "留", "一縷", "芳" }, assembledSentence);
@@ -575,6 +622,7 @@ EOS;
       foreach (string key in readings) {
         compositor.InsertKey(key);
       }
+
       List<GramInPath> result = compositor.Assemble();
       List<string> assembledSentence = result.Values().ToList();
       CollectionAssert.AreEqual(new[] { "水果汁" }, result.Values());
@@ -582,23 +630,23 @@ EOS;
       {
         {
           Assert.That(
-              compositor.OverrideCandidate(new KeyValuePaired(new List<string> { "shui3" }, "💦"), 0), Is.True
+            compositor.OverrideCandidate(new KeyValuePaired(new List<string> { "shui3" }, "💦"), 0), Is.True
           );
           assembledSentence = compositor.Assemble().Values().ToList();
           CollectionAssert.AreEqual(new[] { "💦", "果汁" }, assembledSentence);
         }
         {
           Assert.That(
-              compositor.OverrideCandidate(
-                  new KeyValuePaired(new List<string> { "shui3", "guo3", "zhi1" }, "水果汁"), 1), Is.True
+            compositor.OverrideCandidate(
+              new KeyValuePaired(new List<string> { "shui3", "guo3", "zhi1" }, "水果汁"), 1), Is.True
           );
           assembledSentence = compositor.Assemble().Values().ToList();
           CollectionAssert.AreEqual(new[] { "水果汁" }, assembledSentence);
         }
         {
           Assert.That(
-              // 再覆寫回來。
-              compositor.OverrideCandidate(new KeyValuePaired(new List<string> { "shui3" }, "💦"), 0), Is.True
+            // 再覆寫回來。
+            compositor.OverrideCandidate(new KeyValuePaired(new List<string> { "shui3" }, "💦"), 0), Is.True
           );
           assembledSentence = compositor.Assemble().Values().ToList();
           CollectionAssert.AreEqual(new[] { "💦", "果汁" }, assembledSentence);
@@ -609,23 +657,23 @@ EOS;
       {
         {
           Assert.That(
-              compositor.OverrideCandidate(new KeyValuePaired(new List<string> { "guo3" }, "裹"), 1), Is.True
+            compositor.OverrideCandidate(new KeyValuePaired(new List<string> { "guo3" }, "裹"), 1), Is.True
           );
           assembledSentence = compositor.Assemble().Values().ToList();
           CollectionAssert.AreEqual(new[] { "💦", "裹", "之" }, assembledSentence);
         }
         {
           Assert.That(
-              compositor.OverrideCandidate(new KeyValuePaired(new List<string> { "zhi1" }, "知"), 2), Is.True
+            compositor.OverrideCandidate(new KeyValuePaired(new List<string> { "zhi1" }, "知"), 2), Is.True
           );
           assembledSentence = compositor.Assemble().Values().ToList();
           CollectionAssert.AreEqual(new[] { "💦", "裹", "知" }, assembledSentence);
         }
         {
           Assert.That(
-              // 再覆寫回來。
-              compositor.OverrideCandidate(
-                  new KeyValuePaired(new List<string> { "shui3", "guo3", "zhi1" }, "水果汁"), 3), Is.True
+            // 再覆寫回來。
+            compositor.OverrideCandidate(
+              new KeyValuePaired(new List<string> { "shui3", "guo3", "zhi1" }, "水果汁"), 3), Is.True
           );
           assembledSentence = compositor.Assemble().Values().ToList();
           CollectionAssert.AreEqual(new[] { "水果汁" }, assembledSentence);
@@ -641,23 +689,24 @@ EOS;
       foreach (string key in readings) {
         compositor.InsertKey(key);
       }
+
       List<GramInPath> result = compositor.Assemble();
       CollectionAssert.AreEqual(new[] { "科技", "公園" }, result.Values());
 
       Assert.That(compositor.OverrideCandidate(
-          new KeyValuePaired(new List<string> { "ji4", "gong1" }, "濟公"), 1), Is.True
+                    new KeyValuePaired(new List<string> { "ji4", "gong1" }, "濟公"), 1), Is.True
       );
       result = compositor.Assemble();
       CollectionAssert.AreEqual(new[] { "顆", "濟公", "元" }, result.Values());
 
       Assert.That(compositor.OverrideCandidate(
-          new KeyValuePaired(new List<string> { "gong1", "yuan2" }, "公猿"), 2), Is.True
+                    new KeyValuePaired(new List<string> { "gong1", "yuan2" }, "公猿"), 2), Is.True
       );
       result = compositor.Assemble();
       CollectionAssert.AreEqual(new[] { "科技", "公猿" }, result.Values());
 
       Assert.That(compositor.OverrideCandidate(
-          new KeyValuePaired(new List<string> { "ke1", "ji4" }, "科際"), 0), Is.True
+                    new KeyValuePaired(new List<string> { "ke1", "ji4" }, "科際"), 0), Is.True
       );
       result = compositor.Assemble();
       CollectionAssert.AreEqual(new[] { "科際", "公猿" }, result.Values());
@@ -672,6 +721,7 @@ EOS;
       foreach (string key in readings) {
         compositor.InsertKey(key);
       }
+
       List<GramInPath> result = compositor.Assemble();
       CollectionAssert.AreEqual(new[] { "大樹", "新的", "蜜蜂" }, result.Values());
       int pos = 2;
@@ -681,7 +731,7 @@ EOS;
       CollectionAssert.AreEqual(new[] { "大樹", "🆕", "的", "蜜蜂" }, result.Values());
 
       Assert.That(
-          compositor.OverrideCandidate(new KeyValuePaired(new List<string> { "xin1", "de5" }, "🆕"), pos), Is.True
+        compositor.OverrideCandidate(new KeyValuePaired(new List<string> { "xin1", "de5" }, "🆕"), pos), Is.True
       );
       result = compositor.Assemble();
       CollectionAssert.AreEqual(new[] { "大樹", "🆕", "蜜蜂" }, result.Values());
@@ -695,6 +745,7 @@ EOS;
       foreach (string reading in readings) {
         Assert.That(compositor.InsertKey(reading), Is.True);
       }
+
       compositor.Assemble();
       string assembledBefore = string.Join(" ", compositor.AssembledSentence.Values());
       Assert.That("再 創 是的 凱歌" == assembledBefore, Is.True);
@@ -703,12 +754,14 @@ EOS;
       int cursorShiDe = 3;
       var keyForQueryingDataAt2 = compositor.AssembledSentence.GenerateKeyForPerception(cursorShi);
       Assert.That(keyForQueryingDataAt2.HasValue, Is.True);
-      if (keyForQueryingDataAt2 is not { } keyDataAt2) throw new InvalidOperationException("keyForQueryingDataAt2 should have a value");
+      if (keyForQueryingDataAt2 is not { } keyDataAt2)
+        throw new InvalidOperationException("keyForQueryingDataAt2 should have a value");
       Assert.That(keyDataAt2.NGramKey, Is.EqualTo("(zai4,再)&(chuang4,創)&(shi4-de5,是的)"));
       Assert.That(keyDataAt2.HeadReading, Is.EqualTo("shi4"));
       var keyForQueryingDataAt3 = compositor.AssembledSentence.GenerateKeyForPerception(cursorShiDe);
       Assert.That(keyForQueryingDataAt3.HasValue, Is.True);
-      if (keyForQueryingDataAt3 is not { } keyDataAt3) throw new InvalidOperationException("keyForQueryingDataAt3 should have a value");
+      if (keyForQueryingDataAt3 is not { } keyDataAt3)
+        throw new InvalidOperationException("keyForQueryingDataAt3 should have a value");
       Assert.That(keyDataAt3.NGramKey, Is.EqualTo("(zai4,再)&(chuang4,創)&(shi4-de5,是的)"));
       Assert.That(keyDataAt3.HeadReading, Is.EqualTo("de5"));
 
@@ -730,7 +783,8 @@ EOS;
       );
       Assert.That(overrideSucceeded, Is.True);
       Assert.That(obsCaptured.HasValue, Is.True);
-      if (obsCaptured is not { } obsAfterShiResult) throw new InvalidOperationException("obsCaptured should have a value after first override");
+      if (obsCaptured is not { } obsAfterShiResult)
+        throw new InvalidOperationException("obsCaptured should have a value after first override");
       Assert.That(obsAfterShiResult.NGramKey, Is.EqualTo("(zai4,再)&(chuang4,創)&(shi4,世)"));
 
       // compositor.Assemble() <- 已經組句了。
@@ -750,7 +804,8 @@ EOS;
       );
       Assert.That(overrideSucceeded, Is.True);
       Assert.That(obsCaptured.HasValue, Is.True);
-      if (obsCaptured is not { } obsAfterShiDeResult) throw new InvalidOperationException("obsCaptured should have a value after second override");
+      if (obsCaptured is not { } obsAfterShiDeResult)
+        throw new InvalidOperationException("obsCaptured should have a value after second override");
       Assert.That(obsAfterShiDeResult.NGramKey, Is.EqualTo("(chuang4,創)&(shi4,世)&(de5,的)"));
 
       List<GramInPath> currentAssembly = compositor.AssembledSentence;
@@ -767,7 +822,8 @@ EOS;
       Assert.That(afterHitResult.gram.SegLength, Is.EqualTo(2));
       Assert.That(prevHitResult.gram.SegLength, Is.EqualTo(1));
       Assert.That(obsCaptured.HasValue, Is.True);
-      if (obsCaptured is not { } obsCapturedResult) throw new InvalidOperationException("obsCaptured should have a value");
+      if (obsCaptured is not { } obsCapturedResult)
+        throw new InvalidOperationException("obsCaptured should have a value");
       Assert.That(obsCapturedResult.Scenario, Is.EqualTo(POMObservationScenario.ShortToLong));
       Assert.That(obsCapturedResult.Candidate, Is.EqualTo("是的"));
 
@@ -798,6 +854,7 @@ EOS;
       foreach (string reading in readings) {
         Assert.That(compositor.InsertKey(reading), Is.True);
       }
+
       compositor.Assemble();
       string assembledBefore = string.Join(" ", compositor.AssembledSentence.Values());
       Assert.That("商務 英語 繪畫" == assembledBefore, Is.True);
@@ -805,7 +862,8 @@ EOS;
       int cursorHua = 5;
       var keyForQueryingDataAt5 = compositor.AssembledSentence.GenerateKeyForPerception(cursorHua);
       Assert.That(keyForQueryingDataAt5.HasValue, Is.True);
-      if (keyForQueryingDataAt5 is not { } keyDataAt5) throw new InvalidOperationException("keyForQueryingDataAt5 should have a value");
+      if (keyForQueryingDataAt5 is not { } keyDataAt5)
+        throw new InvalidOperationException("keyForQueryingDataAt5 should have a value");
       Assert.That(keyDataAt5.NGramKey, Is.EqualTo("(shang1-wu4,商務)&(ying1-yu3,英語)&(hui4-hua4,繪畫)"));
       Assert.That(keyDataAt5.HeadReading, Is.EqualTo("hua4"));
 
@@ -823,7 +881,8 @@ EOS;
       );
       Assert.That(overrideSucceeded, Is.True);
       Assert.That(obsCaptured.HasValue, Is.True);
-      if (obsCaptured is not { } obsAfterResult) throw new InvalidOperationException("obsCaptured should have a value after override");
+      if (obsCaptured is not { } obsAfterResult)
+        throw new InvalidOperationException("obsCaptured should have a value after override");
       Assert.That(obsAfterResult.NGramKey, Is.EqualTo("(shang1-wu4,商務)&(ying1-yu3,英語)&(hui4-hua4,會話)"));
 
       string assembledAfter = string.Join(" ", compositor.AssembledSentence.Values());

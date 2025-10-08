@@ -42,6 +42,7 @@ namespace Megrez {
       /// 相對於文字書寫方向的前端位置。
       /// </summary>
       ToFront,
+
       /// <summary>
       /// 相對於文字書寫方向的後端位置。
       /// </summary>
@@ -56,6 +57,7 @@ namespace Megrez {
       /// 軌格增減行為：增加。
       /// </summary>
       Expand,
+
       /// <summary>
       /// 軌格增減行為：減少。
       /// </summary>
@@ -68,6 +70,7 @@ namespace Megrez {
     /// 組字器的組態設定。
     /// </summary>
     public CompositorConfig Config;
+
     /// <summary>
     /// 一個幅節單元內所能接受的最長的節點幅節長度。
     /// </summary>
@@ -120,6 +123,7 @@ namespace Megrez {
     /// 但是，為了防止萬一，就用了目前的方法來計算。
     /// </remarks>
     public int Length => Keys.Count;
+
     /// <summary>
     /// 最近一次組句結果。
     /// </summary>
@@ -127,6 +131,7 @@ namespace Megrez {
       get => Config.AssembledSentence;
       set => Config.AssembledSentence = value;
     }
+
     /// <summary>
     /// 組字器是否為空。
     /// </summary>
@@ -149,6 +154,7 @@ namespace Megrez {
     }
 
     private LangModelProtocol _theLangModel;
+
     /// <summary>
     /// 該組字器所使用的語言模型（被 LangModelRanked 所封裝）。
     /// </summary>
@@ -243,7 +249,8 @@ namespace Megrez {
         Segments = gridBackup;
         return false;
       }
-      Cursor += 1;  // 游標必須得在執行 update() 之後才可以變動。
+
+      Cursor += 1; // 游標必須得在執行 update() 之後才可以變動。
       return true;
     }
 
@@ -316,9 +323,11 @@ namespace Megrez {
       } else {
         Cursor += delta;
       }
+
       if (IsCursorCuttingChar(isMarker)) {
         return JumpCursorBySegment(direction, isMarker);
       }
+
       return true;
     }
 
@@ -348,6 +357,7 @@ namespace Megrez {
           if (target == 0) return false;
           break;
       }
+
       if (!AssembledSentence.CursorRegionMap().TryGetValue(key: target, out int currentRegion)) return false;
       int guardedCurrentRegion = Math.Min(AssembledSentence.Count - 1, currentRegion);
       int aRegionForward = Math.Max(currentRegion - 1, 0);
@@ -356,20 +366,21 @@ namespace Megrez {
       if (target == currentRegionBorderRear) {
         target = direction switch {
           TypingDirection.ToFront =>
-              currentRegion > AssembledSentence.Count
-                  ? Keys.Count
-                  : AssembledSentence.GetRange(0, guardedCurrentRegion + 1).Select(x => x.SegLength).Sum(),
+            currentRegion > AssembledSentence.Count
+              ? Keys.Count
+              : AssembledSentence.GetRange(0, guardedCurrentRegion + 1).Select(x => x.SegLength).Sum(),
           TypingDirection.ToRear => AssembledSentence.GetRange(0, aRegionForward).Select(x => x.SegLength).Sum(),
           _ => target
         };
       } else {
         target = direction switch {
           TypingDirection.ToFront => currentRegionBorderRear
-              + AssembledSentence[guardedCurrentRegion].SegLength,
+                                     + AssembledSentence[guardedCurrentRegion].SegLength,
           TypingDirection.ToRear => currentRegionBorderRear,
           _ => target
         };
       }
+
       switch (isMarker) {
         case false:
           Cursor = target;
@@ -378,6 +389,7 @@ namespace Megrez {
           Marker = target;
           break;
       }
+
       return true;
     }
 
@@ -402,9 +414,11 @@ namespace Megrez {
               strOutput.Append(np.CurrentPair.Value + " -> " + dn.CurrentPair.Value + ";\n");
             }
           }
+
           if (p + ni == Segments.Count) strOutput.Append(np.CurrentPair.Value + " -> EOS;\n");
         }
       }
+
       strOutput.Append("EOS;\n}\n");
       return strOutput.ToString();
     }
@@ -417,7 +431,7 @@ namespace Megrez {
     /// <param name="location">給定的幅節座標。</param>
     /// <param name="action">指定是擴張還是縮減一個幅節。</param>
     internal void ResizeGridAt(int location, ResizeBehavior action) {
-      location = Math.Max(Math.Min(location, Segments.Count), 0);  // 防呆。
+      location = Math.Max(Math.Min(location, Segments.Count), 0); // 防呆。
       switch (action) {
         case ResizeBehavior.Expand:
           Segments.Insert(location, new());
@@ -428,6 +442,7 @@ namespace Megrez {
           Segments.RemoveAt(location);
           break;
       }
+
       DropWreckedNodesAt(location);
     }
 
@@ -465,7 +480,7 @@ namespace Megrez {
     /// </summary>
     /// <param name="location">給定的幅節座標。</param>
     internal void DropWreckedNodesAt(int location) {
-      location = Math.Max(Math.Min(location, Segments.Count), 0);  // 防呆。
+      location = Math.Max(Math.Min(location, Segments.Count), 0); // 防呆。
       if (Segments.IsEmpty()) return;
       int affectedLength = MaxSegLength - 1;
       int begin = Math.Max(0, location - affectedLength);
@@ -487,9 +502,9 @@ namespace Megrez {
     /// <param name="range">指定範圍。</param>
     /// <returns>拿到的資料。</returns>
     private List<string> GetJoinedKeyArray(ClosedRange range) =>
-          range.Upperbound <= Keys.Count && range.Lowerbound >= 0
-              ? Keys.GetRange(range.Lowerbound, range.Upperbound - range.Lowerbound).ToList()
-              : new();
+      range.Upperbound <= Keys.Count && range.Lowerbound >= 0
+        ? Keys.GetRange(range.Lowerbound, range.Upperbound - range.Lowerbound)
+        : new();
 
     /// <summary>
     /// 在指定位置（以指定索引鍵陣列和指定幅節長度）拿取節點。
@@ -499,8 +514,8 @@ namespace Megrez {
     /// <param name="keyArray">指定索引鍵陣列。</param>
     /// <returns>拿取的節點。拿不到的話就會是 null。</returns>
     private Node? GetNodeAt(int location, int length, List<string> keyArray) {
-      location = Math.Max(Math.Min(location, Segments.Count), 0);  // 防呆。
-      if (location < 0 || location >= Segments.Count) return null;
+      // 這個函式是個語法糖，僅存在於 C# 版當中。
+      location = Math.Max(Math.Min(location, Segments.Count - 1), 0); // 防呆。
       if (Segments[location].NodeOf(length) is not { } node) return null;
       return node.KeyArray.SequenceEqual(keyArray) ? node : null;
     }
@@ -536,9 +551,11 @@ namespace Megrez {
             } else {
               theNode.SyncingUnigramsFrom(unigramsExisting);
             }
+
             nodesChangedCounter += 1;
             continue;
           }
+
           List<Unigram> unigramsNew = GetSortedUnigrams(joinedKeyArray, ref queryBuffer);
           if (unigramsNew.IsEmpty()) continue;
           if (position < 0 || position >= Segments.Count) continue;
@@ -546,10 +563,12 @@ namespace Megrez {
           nodesChangedCounter += 1;
         }
       }
-      queryBuffer.Clear();  // 手動清理，免得 GC 拖時間。
+
+      queryBuffer.Clear(); // 手動清理，免得 GC 拖時間。
       if (nodesChangedCounter > 0) {
         Assemble();
       }
+
       return nodesChangedCounter;
     }
 
@@ -558,16 +577,18 @@ namespace Megrez {
       if (cache.TryGetValue(cacheKey, out List<Unigram>? cached)) {
         return cached.Select(x => x.Copy()).ToList();
       }
+
       List<Unigram> canonical = TheLangModel
-        .UnigramsFor(keyArray)
-        .Select(source => {
-          if (source.KeyArray.SequenceEqual(keyArray)) {
-            return source.Copy();
-          }
-          return source.Copy(keyArray);
-        })
-        .OrderByDescending(x => x.Score)
-        .ToList();
+                                .UnigramsFor(keyArray)
+                                .Select(source => {
+                                  if (source.KeyArray.SequenceEqual(keyArray)) {
+                                    return source.Copy();
+                                  }
+
+                                  return source.Copy(keyArray);
+                                })
+                                .OrderByDescending(x => x.Score)
+                                .ToList();
       cache[cacheKey] = canonical;
       return canonical.Select(x => x.Copy()).ToList();
     }
@@ -614,6 +635,7 @@ namespace Megrez {
     public List<Compositor.Segment> Segments { get; set; }
 
     private int _cursor = 0;
+
     /// <summary>
     /// 該組字器的敲字游標位置。
     /// </summary>
@@ -621,11 +643,12 @@ namespace Megrez {
       get => _cursor;
       set {
         _cursor = Math.Max(0, Math.Min(value, Length));
-        _marker = Cursor;  // 同步当前游标至标记器。
+        _marker = Cursor; // 同步当前游标至标记器。
       }
     }
 
     private int _maxSegLength = 10;
+
     /// <summary>
     /// 一個幅節單元內所能接受的最長的節點幅節長度。
     /// </summary>
@@ -684,7 +707,7 @@ namespace Megrez {
     /// <returns>拷貝。</returns>
     public CompositorConfig HardCopy() {
       CompositorConfig config = this;
-      config.Keys = Keys.ToList();  // List 是 class，需要單獨複製。
+      config.Keys = Keys.ToList(); // List 是 class，需要單獨複製。
       config.Segments = Segments.Select(x => x.HardCopy()).ToList();
       config.AssembledSentence = AssembledSentence.ToList();
       config.Separator = Separator;
@@ -711,8 +734,9 @@ namespace Megrez {
     /// </summary>
     /// <returns></returns>
     public override int GetHashCode() {
-      unchecked {       // 使用 unchecked 來允許溢位操作
-        int hash = 17;  // 使用質數作為基礎值
+      unchecked {
+        // 使用 unchecked 來允許溢位操作
+        int hash = 17; // 使用質數作為基礎值
         hash = hash * 23 + Cursor.GetHashCode();
         hash = hash * 23 + Marker.GetHashCode();
         hash = hash * 23 + MaxSegLength.GetHashCode();
@@ -763,6 +787,7 @@ namespace Megrez {
           mirror[node.Id] = node.OverrideStatus;
         }
       }
+
       return mirror;
     }
 
@@ -800,4 +825,4 @@ namespace Megrez {
       return !(left == right);
     }
   }
-}  // namespace Megrez
+} // namespace Megrez

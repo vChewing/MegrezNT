@@ -15,6 +15,7 @@ namespace Megrez {
     /// <param name="keyArray">給定索引鍵陣列。</param>
     /// <returns>找出來的對應的在庫的單元圖。</returns>
     public List<Unigram> UnigramsFor(List<string> keyArray);
+
     /// <summary>
     /// 根據給定的索引鍵來確認各個資料庫陣列內是否存在對應的資料。
     /// </summary>
@@ -22,4 +23,4 @@ namespace Megrez {
     /// <returns></returns>
     public bool HasUnigramsFor(List<string> keyArray);
   }
-}  // namespace Megrez
+} // namespace Megrez

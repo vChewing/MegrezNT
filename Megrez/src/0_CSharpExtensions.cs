@@ -46,7 +46,7 @@ namespace Megrez {
     // MARK: - Enumerable.Enumerated() (Swift-Style)
 
     public static IEnumerable<EnumeratedItem<T>> Enumerated<T>(this IEnumerable<T> source) =>
-        source.Select((item, index) => new EnumeratedItem<T>(index, item));
+      source.Select((item, index) => new EnumeratedItem<T>(index, item));
 
     // MARK: - List.Reversed() (Swift-Style)
     public static List<T> Reversed<T>(this List<T> self) => self.ToArray().Reverse().ToList();
@@ -60,6 +60,7 @@ namespace Megrez {
   public struct ClosedRange : IEnumerable<int> {
     public int Lowerbound { get; }
     public int Upperbound { get; }
+
     public ClosedRange(int lowerbound, int upperbound) {
       Lowerbound = lowerbound;
       Upperbound = (upperbound < lowerbound) ? lowerbound : upperbound;
@@ -70,6 +71,7 @@ namespace Megrez {
       for (int i = Lowerbound; i <= Upperbound; i++) {
         result.Add(i);
       }
+
       return result;
     }
 
@@ -86,6 +88,7 @@ namespace Megrez {
   public struct ClosedRangeSwappable : IEnumerable<int> {
     public int Lowerbound { get; }
     public int Upperbound { get; }
+
     public ClosedRangeSwappable(int lowerbound, int upperbound) {
       Lowerbound = Math.Min(lowerbound, upperbound);
       Upperbound = Math.Max(lowerbound, upperbound);
@@ -96,6 +99,7 @@ namespace Megrez {
       for (int i = Lowerbound; i <= Upperbound; i++) {
         result.Add(i);
       }
+
       return result;
     }
 
@@ -109,9 +113,10 @@ namespace Megrez {
   public struct EnumeratedItem<T> {
     public int Offset;
     public T Value;
+
     public EnumeratedItem(int offset, T value) {
       Offset = offset;
       Value = value;
     }
   }
-}  // namespace Megrez
+} // namespace Megrez

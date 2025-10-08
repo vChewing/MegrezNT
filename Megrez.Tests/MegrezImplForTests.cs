@@ -14,8 +14,8 @@ namespace Megrez.Tests {
     /// <param name="filter">候選字音配對陣列。</param>
     /// <returns></returns>
     public static List<KeyValuePaired> FetchCandidatesDeprecatedAt(
-        this Compositor self, int location,
-        Compositor.CandidateFetchFilter filter = Compositor.CandidateFetchFilter.All) {
+      this Compositor self, int location,
+      Compositor.CandidateFetchFilter filter = Compositor.CandidateFetchFilter.All) {
       List<KeyValuePaired> result = new();
       if (self.Keys.IsEmpty())
         return result;
@@ -39,6 +39,7 @@ namespace Megrez.Tests {
                 return;
               break;
           }
+
           result.Add(new(anchor.Node.KeyArray, gram.Value));
         });
       });

@@ -32,10 +32,12 @@ namespace Megrez {
     /// 索引鍵陣列。
     /// </summary>
     public List<string> KeyArray { get; }
+
     /// <summary>
     /// 詞彙內容，可以是單字或詞組。
     /// </summary>
     public string Value { get; }
+
     /// <summary>
     /// 統計權重（雙精度浮點數）。
     /// </summary>
@@ -86,6 +88,7 @@ namespace Megrez {
         foreach (string key in KeyArray) {
           hash = hash * 23 + key.GetHashCode();
         }
+
         hash = hash * 23 + Value.GetHashCode();
         hash = hash * 23 + Score.GetHashCode();
         return hash;
@@ -102,4 +105,4 @@ namespace Megrez {
     /// </summary>
     public static bool operator !=(Unigram lhs, Unigram rhs) => !(lhs == rhs);
   }
-}  // namespace Megrez
+} // namespace Megrez

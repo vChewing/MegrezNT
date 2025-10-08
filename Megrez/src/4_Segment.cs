@@ -21,6 +21,7 @@ namespace Megrez {
       /// 節點資料的儲存字典，每個位置可能包含對應的節點物件或為空值。
       /// </summary>
       public Dictionary<int, Node> Nodes = new();
+
       /// <summary>
       /// 區段單元內所有節點中具有最大涵蓋範圍的節點長度數值。
       /// 此數值會隨著區段操作函數的執行而自動更新。
@@ -119,6 +120,7 @@ namespace Megrez {
       /// 節點在注拼槽當中的位置。
       /// </summary>
       public int Location { get; private set; }
+
       /// <summary>
       /// 節點。
       /// </summary>
@@ -166,6 +168,7 @@ namespace Megrez {
           InsertAnchor(segmentIndex: theLocation, node: node, targetContainer: ref results);
         }
       }
+
       return results;
     }
 
@@ -181,9 +184,10 @@ namespace Megrez {
         targetContainer.Insert(i, anchor);
         return;
       }
+
       if (!targetContainer.IsEmpty())
         return;
       targetContainer.Add(anchor);
     }
   }
-}  // namespace Megrez
+} // namespace Megrez

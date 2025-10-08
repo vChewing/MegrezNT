@@ -4,7 +4,6 @@
 
 namespace Megrez.Tests {
   public class TestDataClass {
-
     public static string StrLMStressData = @"
 sheng1-sheng1 聲聲 -5.506
 sheng1 聲 -5.246

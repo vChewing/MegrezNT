@@ -17,10 +17,12 @@ namespace Megrez {
     /// 索引鍵陣列。一般情況下用來放置讀音等可以用來作為索引的內容。
     /// </summary>
     public List<string> KeyArray { get; }
+
     /// <summary>
     /// 資料值，通常是詞語或單個字。
     /// </summary>
     public string Value { get; }
+
     /// <summary>
     /// 權重（雙精度小數）。
     /// </summary>
@@ -37,6 +39,7 @@ namespace Megrez {
       if (sanitizedKeyArray.Count == 0) {
         sanitizedKeyArray = new List<string> { "N/A" };
       }
+
       KeyArray = sanitizedKeyArray;
       Value = string.IsNullOrEmpty(value) ? "N/A" : value;
       Score = score;
@@ -48,10 +51,11 @@ namespace Megrez {
     /// <param name="tripletExpression">傳入的通用陣列表達形式。</param>
     public KeyValuePaired(Tuple<List<string>, string, double> tripletExpression)
       : this(
-          tripletExpression?.Item1?.ToList() ?? new List<string>(),
-          tripletExpression?.Item2 ?? "N/A",
-          tripletExpression?.Item3 ?? 0
-        ) { }
+        tripletExpression?.Item1?.ToList() ?? new List<string>(),
+        tripletExpression?.Item2 ?? "N/A",
+        tripletExpression?.Item3 ?? 0
+      ) {
+    }
 
     /// <summary>
     /// 初期化一組鍵值配對。
@@ -59,10 +63,11 @@ namespace Megrez {
     /// <param name="tupletExpression">傳入的通用陣列表達形式。</param>
     public KeyValuePaired(Tuple<List<string>, string> tupletExpression)
       : this(
-          tupletExpression?.Item1?.ToList() ?? new List<string>(),
-          tupletExpression?.Item2 ?? "N/A",
-          0
-        ) { }
+        tupletExpression?.Item1?.ToList() ?? new List<string>(),
+        tupletExpression?.Item2 ?? "N/A",
+        0
+      ) {
+    }
 
     /// <summary>
     /// 初期化一組鍵值配對。
@@ -71,7 +76,8 @@ namespace Megrez {
     /// <param name="value">資料值。</param>
     /// <param name="score">權重（雙精度小數）。</param>
     public KeyValuePaired(string key = "N/A", string value = "N/A", double score = 0)
-      : this(SliceKey(key), value, score) { }
+      : this(SliceKey(key), value, score) {
+    }
 
     /// <summary>
     /// 通用陣列表達形式。
@@ -94,7 +100,7 @@ namespace Megrez {
     /// <param name="separator">給定的分隔符，預設值為 <see cref="Compositor.TheSeparator"/>。</param>
     /// <returns>已經銜接完畢的字串。</returns>
     public string JoinedKey(string? separator = null) =>
-        string.Join(separator ?? Compositor.TheSeparator, KeyArray);
+      string.Join(separator ?? Compositor.TheSeparator, KeyArray);
 
     /// <summary>
     /// 判斷當前鍵值配對是否合規。如果鍵與值有任一為空，則結果為 false。
@@ -122,6 +128,7 @@ namespace Megrez {
         foreach (string key in KeyArray) {
           hash = hash * 23 + key.GetHashCode();
         }
+
         hash = hash * 23 + Value.GetHashCode();
         hash = hash * 23 + Score.GetHashCode();
         return hash;
@@ -178,9 +185,11 @@ namespace Megrez {
       if (string.IsNullOrEmpty(key)) {
         return new List<string>();
       }
+
       if (string.IsNullOrEmpty(Compositor.TheSeparator)) {
         return key.LiteralCharComponents();
       }
+
       return key.Split(new[] { Compositor.TheSeparator }, StringSplitOptions.None).ToList();
     }
 
@@ -189,6 +198,7 @@ namespace Megrez {
       return $"[{content}]";
     }
   }
+
   public partial class Compositor {
     /// <summary>
     /// 候選字陣列內容的獲取範圍類型。
@@ -198,10 +208,12 @@ namespace Megrez {
       /// 不只包含其它兩類結果，還允許游標穿插候選字。
       /// </summary>
       All,
+
       /// <summary>
       /// 僅獲取從當前游標位置開始的節點內的候選字。
       /// </summary>
       BeginAt,
+
       /// <summary>
       /// 僅獲取在當前游標位置結束的節點內的候選字。
       /// </summary>
@@ -225,6 +237,7 @@ namespace Megrez {
         if (location == Keys.Count) filter = CandidateFetchFilter.All;
         location -= 1;
       }
+
       location = Math.Max(0, Math.Min(location, Keys.Count - 1));
       // 按照讀音的長度（幅節長度）來給節點排序。
       List<NodeWithLocation> anchors = FetchOverlappingNodesAt(location);
@@ -245,6 +258,7 @@ namespace Megrez {
               if (theNode.SegLength >= 2 && theAnchor.Location + theAnchor.Node.SegLength - 1 != location) continue;
               break;
           }
+
           result.Add(new(theNode.KeyArray, gram.Value));
         }
       });
@@ -261,10 +275,12 @@ namespace Megrez {
     /// <param name="enforceRetokenization">是否強制重新分詞，對所有重疊節點施作重置與降權，以避免殘留舊節點狀態。</param>
     /// <param name="perceptionHandler">覆寫成功後用於回傳觀測智慧的回呼。</param>
     /// <returns>該操作是否成功執行。</returns>
-    public bool OverrideCandidate(KeyValuePaired candidate, int location,
-                    Node.OverrideType overrideType = Node.OverrideType.Specified,
-                    bool enforceRetokenization = false,
-                    Action<PerceptionIntel>? perceptionHandler = null) =>
+    public bool OverrideCandidate(
+      KeyValuePaired candidate, int location,
+      Node.OverrideType overrideType = Node.OverrideType.Specified,
+      bool enforceRetokenization = false,
+      Action<PerceptionIntel>? perceptionHandler = null
+    ) =>
       OverrideCandidateAgainst(
         candidate.KeyArray,
         location,
@@ -285,11 +301,15 @@ namespace Megrez {
     /// <param name="enforceRetokenization">是否強制重新分詞，對所有重疊節點施作重置與降權，以避免殘留舊節點狀態。</param>
     /// <param name="perceptionHandler">覆寫成功後用於回傳觀測智慧的回呼。</param>
     /// <returns>該操作是否成功執行。</returns>
-    public bool OverrideCandidateLiteral(string candidate, int location,
-                       Node.OverrideType overrideType = Node.OverrideType.Specified,
-                       bool enforceRetokenization = false,
-                       Action<PerceptionIntel>? perceptionHandler = null) =>
-      OverrideCandidateAgainst(null, location, candidate, null, overrideType, enforceRetokenization, perceptionHandler);
+    public bool OverrideCandidateLiteral(
+      string candidate, int location,
+      Node.OverrideType overrideType = Node.OverrideType.Specified,
+      bool enforceRetokenization = false,
+      Action<PerceptionIntel>? perceptionHandler = null
+    ) =>
+      OverrideCandidateAgainst(
+        null, location, candidate, null, overrideType, enforceRetokenization, perceptionHandler
+      );
 
     /// <summary>
     /// 使用給定的候選字（詞音配對）、或給定的候選字詞字串，將給定位置的節點的候選字詞改為與之一致的候選字詞。
@@ -312,7 +332,7 @@ namespace Megrez {
       Action<PerceptionIntel>? perceptionHandler = null
     ) {
       if (Keys.IsEmpty()) return false;
-      location = Math.Max(Math.Min(location, Keys.Count), 0);  // 防呆。
+      location = Math.Max(Math.Min(location, Keys.Count), 0); // 防呆。
       int effectiveLocation = Math.Min(Keys.Count - 1, location);
       List<NodeWithLocation> arrOverlappedNodes = FetchOverlappingNodesAt(effectiveLocation);
       if (arrOverlappedNodes.IsEmpty()) return false;
@@ -335,14 +355,16 @@ namespace Megrez {
           errorHappened = true;
           break;
         }
+
         if (specifiedScore is double score && anchor.Node.Score < score
-            && anchor.Node.CurrentOverrideType != Node.OverrideType.TopUnigramScore) {
+                                           && anchor.Node.CurrentOverrideType != Node.OverrideType.TopUnigramScore) {
           anchor.Node.OverrideStatus = new NodeOverrideStatus(
             score,
             Node.OverrideType.Specified,
             anchor.Node.CurrentUnigramIndex
           );
         }
+
         overriddenAnchor = anchor;
         break;
       }
@@ -365,6 +387,7 @@ namespace Megrez {
               if (ShouldResetNode(anchor.Node, overriddenNodeRef)) {
                 anchor.Node.Reset();
               }
+
               anchor.Node.OverrideStatus = new NodeOverrideStatus(
                 demotionScore,
                 Node.OverrideType.Specified,
@@ -401,6 +424,7 @@ namespace Megrez {
           }
         }
       }
+
       return true;
     }
 
@@ -415,6 +439,7 @@ namespace Megrez {
       if (overriddenNode.Value.IndexOf(anchor.Value, StringComparison.Ordinal) < 0) {
         shouldReset = true;
       }
+
       return shouldReset;
     }
 
@@ -457,6 +482,7 @@ namespace Megrez {
       } else {
         scenario = POMObservationScenario.SameLenSwap;
       }
+
       bool forceHSO = isShortToLong; // 只有短→長時需要強推長詞
 
       List<GramInPath> primaryKeySource;
@@ -479,6 +505,7 @@ namespace Megrez {
           fallbackKeySource = currentAssembled;
           break;
       }
+
       int keyCursorRaw = Math.Max(
         afterHit.Value.range.Lowerbound,
         Math.Min(cursor, afterHit.Value.range.Upperbound - 1)
@@ -492,6 +519,7 @@ namespace Megrez {
         int keyCursorFallback = Math.Max(0, Math.Min(keyCursorRaw, Math.Max(fallbackTotal - 1, 0)));
         keyGen = fallbackKeySource.GenerateKeyForPerception(keyCursorFallback);
       }
+
       if (keyGen == null) return null;
 
       return new PerceptionIntel {
@@ -513,10 +541,12 @@ namespace Megrez {
     /// 同長度更換。
     /// </summary>
     SameLenSwap,
+
     /// <summary>
     /// 短詞變長詞。
     /// </summary>
     ShortToLong,
+
     /// <summary>
     /// 長詞變短詞。
     /// </summary>
@@ -531,22 +561,27 @@ namespace Megrez {
     /// N-gram 索引鍵。
     /// </summary>
     public string NGramKey { get; set; }
+
     /// <summary>
     /// 候選字。
     /// </summary>
     public string Candidate { get; set; }
+
     /// <summary>
     /// 頭部讀音。
     /// </summary>
     public string HeadReading { get; set; }
+
     /// <summary>
     /// 觀測場景。
     /// </summary>
     public POMObservationScenario Scenario { get; set; }
+
     /// <summary>
     /// 強制高分覆寫。
     /// </summary>
     public bool ForceHighScoreOverride { get; set; }
+
     /// <summary>
     /// 語言模型分數。
     /// </summary>
@@ -606,4 +641,4 @@ namespace Megrez {
     /// <returns>如果不相等則返回 true，否則返回 false。</returns>
     public static bool operator !=(PerceptionIntel left, PerceptionIntel right) => !(left == right);
   }
-}  // namespace Megrez
+} // namespace Megrez

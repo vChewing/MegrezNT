@@ -32,14 +32,17 @@ namespace Megrez {
     /// 單元圖資料。
     /// </summary>
     public readonly Unigram Gram;
+
     /// <summary>
     /// 是否被覆寫。
     /// </summary>
     public readonly bool IsOverridden;
+
     /// <summary>
     /// 索引鍵陣列。
     /// </summary>
     public List<string> KeyArray => Gram.KeyArray;
+
     /// <summary>
     /// 讀音是否不匹配。
     /// </summary>
@@ -49,10 +52,12 @@ namespace Megrez {
     /// 單元圖的值。
     /// </summary>
     public string Value => Gram.Value;
+
     /// <summary>
     /// 單元圖的權重分數。
     /// </summary>
     public double Score => Gram.Score;
+
     /// <summary>
     /// 區段長度（索引鍵陣列的數量）。
     /// </summary>
@@ -106,6 +111,7 @@ namespace Megrez {
     /// <param name="right">右側 GramInPath 物件。</param>
     /// <returns>如果相等則返回 true，否則返回 false。</returns>
     public static bool operator ==(GramInPath left, GramInPath right) => left.Equals(right);
+
     /// <summary>
     /// 判斷兩個 GramInPath 是否不相等。
     /// </summary>
@@ -148,6 +154,7 @@ namespace Megrez {
       /// 區域到游標的對映表。
       /// </summary>
       public Dictionary<int, int> regionCursorMap;
+
       /// <summary>
       /// 游標到區域的對映表。
       /// </summary>
@@ -172,6 +179,7 @@ namespace Megrez {
           cursorCounter += 1;
         }
       }
+
       resultA[grams.Count] = cursorCounter;
       resultB[cursorCounter] = grams.Count;
       return new GramBorderPointDictPair { regionCursorMap = resultA, cursorRegionMap = resultB };
@@ -207,7 +215,8 @@ namespace Megrez {
 
       if (!mapPair.cursorRegionMap.TryGetValue(cursor, out int rearNodeID)) return new ClosedRange(cursor, cursor);
       if (!mapPair.regionCursorMap.TryGetValue(rearNodeID, out int rearIndex)) return new ClosedRange(cursor, cursor);
-      if (!mapPair.regionCursorMap.TryGetValue(rearNodeID + 1, out int frontIndex)) return new ClosedRange(cursor, cursor);
+      if (!mapPair.regionCursorMap.TryGetValue(rearNodeID + 1, out int frontIndex))
+        return new ClosedRange(cursor, cursor);
 
       return new ClosedRange(rearIndex, frontIndex);
     }
@@ -220,6 +229,7 @@ namespace Megrez {
       /// 找到的 GramInPath 節點。
       /// </summary>
       public GramInPath gram;
+
       /// <summary>
       /// 節點所在的範圍。
       /// </summary>
@@ -301,10 +311,12 @@ namespace Megrez {
       /// N-gram 索引鍵。
       /// </summary>
       public string NGramKey;
+
       /// <summary>
       /// 候選詞。
       /// </summary>
       public string Candidate;
+
       /// <summary>
       /// 頭部讀音。
       /// </summary>
@@ -382,6 +394,7 @@ namespace Megrez {
           break;
         }
       }
+
       if (!headIndex.HasValue) {
         for (int idx = 0; idx < grams.Count; idx++) {
           if (grams[idx].Equals(headPair)) {
@@ -390,6 +403,7 @@ namespace Megrez {
           }
         }
       }
+
       if (!headIndex.HasValue) return null;
 
       string[] resultCells = Enumerable.Repeat(placeholder, maxContext).ToArray();
