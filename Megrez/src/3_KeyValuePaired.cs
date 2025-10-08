@@ -356,10 +356,14 @@ namespace Megrez {
           break;
         }
 
-        if (specifiedScore is double score && anchor.Node.Score < score
-                                           && anchor.Node.CurrentOverrideType != Node.OverrideType.TopUnigramScore) {
+        if (overrideType == Node.OverrideType.Specified) {
+          const double baselineOverrideScore = 114_514d;
+          double desiredScore = specifiedScore ?? Math.Max(
+            anchor.Node.OverridingScore,
+            baselineOverrideScore
+          );
           anchor.Node.OverrideStatus = new NodeOverrideStatus(
-            score,
+            desiredScore,
             Node.OverrideType.Specified,
             anchor.Node.CurrentUnigramIndex
           );
