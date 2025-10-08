@@ -269,6 +269,7 @@ namespace Megrez {
         candidate.KeyArray,
         location,
         candidate.Value,
+        candidate.Score < 0 ? candidate.Score : null,
         overrideType,
         enforceRetokenization,
         perceptionHandler
@@ -288,7 +289,7 @@ namespace Megrez {
                        Node.OverrideType overrideType = Node.OverrideType.Specified,
                        bool enforceRetokenization = false,
                        Action<PerceptionIntel>? perceptionHandler = null) =>
-      OverrideCandidateAgainst(null, location, candidate, overrideType, enforceRetokenization, perceptionHandler);
+      OverrideCandidateAgainst(null, location, candidate, null, overrideType, enforceRetokenization, perceptionHandler);
 
     /// <summary>
     /// 使用給定的候選字（詞音配對）、或給定的候選字詞字串，將給定位置的節點的候選字詞改為與之一致的候選字詞。
@@ -296,14 +297,20 @@ namespace Megrez {
     /// <param name="keyArray">索引鍵陣列，也就是詞音配對當中的讀音。</param>
     /// <param name="location">游標位置。</param>
     /// <param name="value">資料值。</param>
+    /// <param name="specifiedScore">指定分數。</param>
     /// <param name="overrideType">指定覆寫行為。</param>
     /// <param name="enforceRetokenization">是否強制重新分詞，對所有重疊節點施作重置與降權，以避免殘留舊節點狀態。</param>
     /// <param name="perceptionHandler">覆寫成功後用於回傳觀測智慧的回呼。</param>
     /// <returns>該操作是否成功執行。</returns>
-    internal bool OverrideCandidateAgainst(List<string>? keyArray, int location, string value,
-                       Node.OverrideType overrideType,
-                       bool enforceRetokenization = false,
-                       Action<PerceptionIntel>? perceptionHandler = null) {
+    internal bool OverrideCandidateAgainst(
+      List<string>? keyArray,
+      int location,
+      string value,
+      double? specifiedScore,
+      Node.OverrideType overrideType,
+      bool enforceRetokenization = false,
+      Action<PerceptionIntel>? perceptionHandler = null
+    ) {
       if (Keys.IsEmpty()) return false;
       location = Math.Max(Math.Min(location, Keys.Count), 0);  // 防呆。
       int effectiveLocation = Math.Min(Keys.Count - 1, location);
@@ -327,6 +334,14 @@ namespace Megrez {
         if (!selectionSucceeded) {
           errorHappened = true;
           break;
+        }
+        if (specifiedScore is double score && anchor.Node.Score < score
+            && anchor.Node.CurrentOverrideType != Node.OverrideType.TopUnigramScore) {
+          anchor.Node.OverrideStatus = new NodeOverrideStatus(
+            score,
+            Node.OverrideType.Specified,
+            anchor.Node.CurrentUnigramIndex
+          );
         }
         overriddenAnchor = anchor;
         break;
@@ -376,7 +391,7 @@ namespace Megrez {
         List<GramInPath> currentAssembled = Assemble().ToList();
         if (perceptionHandler != null && !previouslyAssembled.IsEmpty()) {
           // 供新版觀測 API（前/後路徑比較 + 三情境分類）
-          PerceptionIntel? perceptedIntel = MakePerceptionObservation(
+          PerceptionIntel? perceptedIntel = MakePerceptionIntel(
             previouslyAssembled,
             currentAssembled,
             beforeCursor
@@ -410,7 +425,7 @@ namespace Megrez {
     /// <param name="currentAssembled">候選字覆寫行為後的組句結果。</param>
     /// <param name="cursor">游標。</param>
     /// <returns>觀測上下文結果。</returns>
-    public static PerceptionIntel? MakePerceptionObservation(
+    public static PerceptionIntel? MakePerceptionIntel(
       List<GramInPath> previouslyAssembled,
       List<GramInPath> currentAssembled,
       int cursor) {
@@ -444,16 +459,39 @@ namespace Megrez {
       }
       bool forceHSO = isShortToLong; // 只有短→長時需要強推長詞
 
-      // 選擇用來形成觀測 key 的資料源：長→短使用 after，其他使用 before
-      List<GramInPath> keySource = isBreakingUp ? currentAssembled : previouslyAssembled;
+      List<GramInPath> primaryKeySource;
+      List<GramInPath> fallbackKeySource;
+      switch (scenario) {
+        case POMObservationScenario.SameLenSwap:
+          primaryKeySource = currentAssembled;
+          fallbackKeySource = previouslyAssembled;
+          break;
+        case POMObservationScenario.ShortToLong:
+          primaryKeySource = previouslyAssembled;
+          fallbackKeySource = currentAssembled;
+          break;
+        case POMObservationScenario.LongToShort:
+          primaryKeySource = currentAssembled;
+          fallbackKeySource = previouslyAssembled;
+          break;
+        default:
+          primaryKeySource = previouslyAssembled;
+          fallbackKeySource = currentAssembled;
+          break;
+      }
       int keyCursorRaw = Math.Max(
         afterHit.Value.range.Lowerbound,
         Math.Min(cursor, afterHit.Value.range.Upperbound - 1)
       );
-      if (keySource.TotalKeyCount() <= 0) return null;
-      int keyCursor = Math.Max(0, Math.Min(keyCursorRaw, keySource.TotalKeyCount() - 1));
-
-      var keyGen = keySource.GenerateKeyForPerception(keyCursor);
+      if (primaryKeySource.TotalKeyCount() <= 0 && fallbackKeySource.TotalKeyCount() <= 0) return null;
+      int primaryTotal = primaryKeySource.TotalKeyCount();
+      int keyCursorPrimary = Math.Max(0, Math.Min(keyCursorRaw, Math.Max(primaryTotal - 1, 0)));
+      var keyGen = primaryKeySource.GenerateKeyForPerception(keyCursorPrimary);
+      if (keyGen == null && fallbackKeySource.TotalKeyCount() > 0) {
+        int fallbackTotal = fallbackKeySource.TotalKeyCount();
+        int keyCursorFallback = Math.Max(0, Math.Min(keyCursorRaw, Math.Max(fallbackTotal - 1, 0)));
+        keyGen = fallbackKeySource.GenerateKeyForPerception(keyCursorFallback);
+      }
       if (keyGen == null) return null;
 
       return new PerceptionIntel {

@@ -789,5 +789,62 @@ EOS;
       string assembledByPOM = string.Join(" ", compositor.AssembledSentence.Values());
       Assert.That(assembledByPOM, Is.EqualTo("再 創 世 的"));
     }
+
+    [Test]
+    public void Test18_Composer_UOMMarginalCaseTest_BusinessEnglishSession() {
+      SimpleLM lm = new(TestDataClass.StrLMSampleDataBusinessEnglishSession);
+      Compositor compositor = new(lm);
+      string[] readings = { "shang1", "wu4", "ying1", "yu3", "hui4", "hua4" };
+      foreach (string reading in readings) {
+        Assert.That(compositor.InsertKey(reading), Is.True);
+      }
+      compositor.Assemble();
+      string assembledBefore = string.Join(" ", compositor.AssembledSentence.Values());
+      Assert.That("商務 英語 繪畫" == assembledBefore, Is.True);
+
+      int cursorHua = 5;
+      var keyForQueryingDataAt5 = compositor.AssembledSentence.GenerateKeyForPerception(cursorHua);
+      Assert.That(keyForQueryingDataAt5.HasValue, Is.True);
+      if (keyForQueryingDataAt5 is not { } keyDataAt5) throw new InvalidOperationException("keyForQueryingDataAt5 should have a value");
+      Assert.That(keyDataAt5.NGramKey, Is.EqualTo("(shang1-wu4,商務)&(ying1-yu3,英語)&(hui4-hua4,繪畫)"));
+      Assert.That(keyDataAt5.HeadReading, Is.EqualTo("hua4"));
+
+      List<KeyValuePaired> pairsAtHuiHuaEnd = compositor.FetchCandidatesAt(6, Compositor.CandidateFetchFilter.EndAt);
+      Assert.That(pairsAtHuiHuaEnd.Select(p => p.Value).Contains("繪畫"), Is.True);
+      Assert.That(pairsAtHuiHuaEnd.Select(p => p.Value).Contains("會話"), Is.True);
+
+      PerceptionIntel? obsCaptured = null;
+      bool overrideSucceeded = compositor.OverrideCandidate(
+        new KeyValuePaired(new List<string> { "hui4", "hua4" }, "會話"),
+        cursorHua,
+        Node.OverrideType.Specified,
+        true,
+        intel => { obsCaptured = intel; }
+      );
+      Assert.That(overrideSucceeded, Is.True);
+      Assert.That(obsCaptured.HasValue, Is.True);
+      if (obsCaptured is not { } obsAfterResult) throw new InvalidOperationException("obsCaptured should have a value after override");
+      Assert.That(obsAfterResult.NGramKey, Is.EqualTo("(shang1-wu4,商務)&(ying1-yu3,英語)&(hui4-hua4,會話)"));
+
+      string assembledAfter = string.Join(" ", compositor.AssembledSentence.Values());
+      Assert.That("商務 英語 會話" == assembledAfter, Is.True);
+
+      compositor.Clear();
+      foreach (string reading in readings) {
+        Assert.That(compositor.InsertKey(reading), Is.True);
+      }
+
+      KeyValuePaired pomSuggestedCandidate = new(new List<string> { "hui4", "hua4" }, "會話", -0.074493074227700559);
+      int pomSuggestedCandidateOverrideCursor = 4;
+      compositor.OverrideCandidate(
+        pomSuggestedCandidate,
+        pomSuggestedCandidateOverrideCursor,
+        Node.OverrideType.TopUnigramScore,
+        true
+      );
+      compositor.Assemble();
+      string assembledByPOM = string.Join(" ", compositor.AssembledSentence.Values());
+      Assert.That(assembledByPOM, Is.EqualTo("商務 英語 會話"));
+    }
   }
 }
