@@ -738,7 +738,7 @@ EOS;
     }
 
     [Test]
-    public void Test18_Composer_UOMMarginalCaseTest() {
+    public void Test18_Composer_PerceptionDataTest_SaisoukiNoGaika() {
       SimpleLM lm = new(TestDataClass.StrLMSampleDataSaisoukiNoGaika);
       Compositor compositor = new(lm);
       string[] readings = { "zai4", "chuang4", "shi4", "de5", "kai3", "ge1" };
@@ -785,7 +785,7 @@ EOS;
       Assert.That(obsCaptured.HasValue, Is.True);
       if (obsCaptured is not { } obsAfterShiResult)
         throw new InvalidOperationException("obsCaptured should have a value after first override");
-      Assert.That(obsAfterShiResult.NGramKey, Is.EqualTo("(zai4,再)&(chuang4,創)&(shi4,世)"));
+      Assert.That(obsAfterShiResult.ContextualizedGramKey, Is.EqualTo("(zai4,再)&(chuang4,創)&(shi4,世)"));
 
       // compositor.Assemble() <- 已經組句了。
       string assembledAfter = string.Join(" ", compositor.AssembledSentence.Values());
@@ -806,7 +806,10 @@ EOS;
       Assert.That(obsCaptured.HasValue, Is.True);
       if (obsCaptured is not { } obsAfterShiDeResult)
         throw new InvalidOperationException("obsCaptured should have a value after second override");
-      Assert.That(obsAfterShiDeResult.NGramKey, Is.EqualTo("(chuang4,創)&(shi4,世)&(de5,的)"));
+      Assert.That(
+        obsAfterShiDeResult.ContextualizedGramKey,
+        Is.EqualTo("(chuang4,創)&(shi4,世)&(shi4-de5,是的)")
+      );
 
       List<GramInPath> currentAssembly = compositor.AssembledSentence;
       var afterHit = currentAssembly.FindGram(cursorShiDe);
@@ -835,19 +838,20 @@ EOS;
 
       KeyValuePaired pomSuggestedCandidate = new(new List<string> { "shi4" }, "世", -0.07449307430679043);
       int pomSuggestedCandidateOverrideCursor = 2;
-      compositor.OverrideCandidate(
+      bool pomOverrideSucceeded = compositor.OverrideCandidate(
         pomSuggestedCandidate,
         pomSuggestedCandidateOverrideCursor,
         Node.OverrideType.TopUnigramScore,
         true
       );
+      Assert.That(pomOverrideSucceeded, Is.True);
       compositor.Assemble();
       string assembledByPOM = string.Join(" ", compositor.AssembledSentence.Values());
       Assert.That(assembledByPOM, Is.EqualTo("再 創 世 的"));
     }
 
     [Test]
-    public void Test18_Composer_UOMMarginalCaseTest_BusinessEnglishSession() {
+    public void Test18_Composer_PerceptionDataTest_BusinessEnglishSession() {
       SimpleLM lm = new(TestDataClass.StrLMSampleDataBusinessEnglishSession);
       Compositor compositor = new(lm);
       string[] readings = { "shang1", "wu4", "ying1", "yu3", "hui4", "hua4" };
@@ -883,7 +887,7 @@ EOS;
       Assert.That(obsCaptured.HasValue, Is.True);
       if (obsCaptured is not { } obsAfterResult)
         throw new InvalidOperationException("obsCaptured should have a value after override");
-      Assert.That(obsAfterResult.NGramKey, Is.EqualTo("(shang1-wu4,商務)&(ying1-yu3,英語)&(hui4-hua4,會話)"));
+      Assert.That(obsAfterResult.ContextualizedGramKey, Is.EqualTo("(shang1-wu4,商務)&(ying1-yu3,英語)&(hui4-hua4,會話)"));
 
       string assembledAfter = string.Join(" ", compositor.AssembledSentence.Values());
       Assert.That("商務 英語 會話" == assembledAfter, Is.True);
@@ -895,15 +899,119 @@ EOS;
 
       KeyValuePaired pomSuggestedCandidate = new(new List<string> { "hui4", "hua4" }, "會話", -0.074493074227700559);
       int pomSuggestedCandidateOverrideCursor = 4;
-      compositor.OverrideCandidate(
+      bool pomOverrideSucceeded = compositor.OverrideCandidate(
         pomSuggestedCandidate,
         pomSuggestedCandidateOverrideCursor,
         Node.OverrideType.TopUnigramScore,
         true
       );
+      Assert.That(pomOverrideSucceeded, Is.True);
       compositor.Assemble();
       string assembledByPOM = string.Join(" ", compositor.AssembledSentence.Values());
       Assert.That(assembledByPOM, Is.EqualTo("商務 英語 會話"));
+    }
+
+    [Test]
+    public void Test19_PerceptionIntel_DiJiaoSubmission() {
+      string[] readingKeys = { "di4", "jiao1" };
+      SimpleLM lm = new(TestDataClass.strLMSampleData_DiJiaoSubmission);
+      Compositor compositor = new(lm);
+      foreach (string key in readingKeys) {
+        Assert.That(compositor.InsertKey(key), Is.True);
+      }
+
+      compositor.Assemble();
+      Assert.That(
+        compositor.OverrideCandidate(
+          new KeyValuePaired(new List<string> { "di4" }, "第"),
+          0,
+          Node.OverrideType.Specified,
+          true
+        ),
+        Is.True
+      );
+
+      compositor.Assemble();
+      string assembledAfterFirst = string.Join(" ", compositor.AssembledSentence.Values());
+      Assert.That(new[] { "第 交", "第 教" }.Contains(assembledAfterFirst), Is.True);
+
+      List<KeyValuePaired> candidatesAtEnd = compositor.FetchCandidatesAt(
+        readingKeys.Length,
+        Compositor.CandidateFetchFilter.EndAt
+      );
+      KeyValuePaired? diJiaoCandidate = candidatesAtEnd.FirstOrDefault(candidate => candidate.Value == "遞交");
+      Assert.That(diJiaoCandidate, Is.Not.Null, "遞交 should be available as a candidate ending at the current cursor.");
+
+      PerceptionIntel? obsCaptured = null;
+      Assert.That(
+        compositor.OverrideCandidate(
+          diJiaoCandidate!,
+          readingKeys.Length,
+          Node.OverrideType.Specified,
+          true,
+          intel => { obsCaptured = intel; }
+        ),
+        Is.True
+      );
+
+      Assert.That(obsCaptured.HasValue, Is.True, "Perception intel should be captured when overriding with 遞交.");
+      if (obsCaptured is not { } capturedIntel) throw new InvalidOperationException("obsCaptured should have a value");
+
+      Assert.That(capturedIntel.ContextualizedGramKey, Is.EqualTo("()&(di4,第)&(di4-jiao1,遞交)"));
+      Assert.That(capturedIntel.Candidate, Is.EqualTo("遞交"));
+      Assert.That(capturedIntel.Scenario, Is.EqualTo(POMObservationScenario.ShortToLong));
+      Assert.That(capturedIntel.ForceHighScoreOverride, Is.True);
+
+      compositor.Assemble();
+      string assembledAfterSecond = string.Join(" ", compositor.AssembledSentence.Values());
+      Assert.That(assembledAfterSecond, Is.EqualTo("遞交"));
+
+      Compositor validationCompositor = new(lm);
+      foreach (string key in readingKeys) {
+        Assert.That(validationCompositor.InsertKey(key), Is.True);
+      }
+
+      validationCompositor.Assemble();
+      Assert.That(
+        validationCompositor.OverrideCandidate(
+          new KeyValuePaired(new List<string> { "di4" }, "第"),
+          0,
+          Node.OverrideType.Specified,
+          true
+        ),
+        Is.True
+      );
+
+      validationCompositor.Assemble();
+      int validationCursor = Math.Max(validationCompositor.Cursor - 1, 0);
+      var baselineKey = validationCompositor.AssembledSentence.GenerateKeyForPerception(validationCursor);
+      Assert.That(baselineKey.HasValue, Is.True);
+      if (baselineKey is not { } baselineKeyData)
+        throw new InvalidOperationException("baselineKey should have a value");
+  Assert.That(baselineKeyData.NGramKey, Is.EqualTo("()&(di4,第)&(jiao1,交)"));
+
+      KeyValuePaired pomSuggestedCandidate = new(
+        diJiaoCandidate!.KeyArray.ToList(),
+        diJiaoCandidate.Value,
+        diJiaoCandidate.Score
+      );
+      int overrideCursor = readingKeys.Length;
+      Node.OverrideType overrideType = capturedIntel.ForceHighScoreOverride
+        ? Node.OverrideType.Specified
+        : Node.OverrideType.TopUnigramScore;
+      Assert.That(
+        validationCompositor.OverrideCandidate(
+          pomSuggestedCandidate,
+          overrideCursor,
+          overrideType,
+          true
+        ),
+        Is.True
+      );
+
+      validationCompositor.Assemble();
+      string assembledBySuggested = string.Join(" ", validationCompositor.AssembledSentence.Values());
+      Assert.That(assembledBySuggested, Is.EqualTo("遞交"));
     }
   }
 }

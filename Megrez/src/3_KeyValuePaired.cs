@@ -436,6 +436,9 @@ namespace Megrez {
     /// 判斷一個節點是否需要被重設。
     /// </summary>
     private static bool ShouldResetNode(Node anchor, Node overriddenNode) {
+      if (overriddenNode.SegLength > anchor.SegLength) {
+        return true;
+      }
       string anchorNodeKeyJoined = anchor.JoinedKey("\t");
       string overriddenNodeKeyJoined = overriddenNode.JoinedKey("\t");
 
@@ -488,48 +491,104 @@ namespace Megrez {
       }
 
       bool forceHSO = isShortToLong; // 只有短→長時需要強推長詞
-
-      List<GramInPath> primaryKeySource;
-      List<GramInPath> fallbackKeySource;
-      switch (scenario) {
-        case POMObservationScenario.SameLenSwap:
-          primaryKeySource = currentAssembled;
-          fallbackKeySource = previouslyAssembled;
-          break;
-        case POMObservationScenario.ShortToLong:
-          primaryKeySource = previouslyAssembled;
-          fallbackKeySource = currentAssembled;
-          break;
-        case POMObservationScenario.LongToShort:
-          primaryKeySource = currentAssembled;
-          fallbackKeySource = previouslyAssembled;
-          break;
-        default:
-          primaryKeySource = previouslyAssembled;
-          fallbackKeySource = currentAssembled;
-          break;
-      }
-
       int keyCursorRaw = Math.Max(
         afterHit.Value.range.Lowerbound,
         Math.Min(cursor, afterHit.Value.range.Upperbound - 1)
       );
-      if (primaryKeySource.TotalKeyCount() <= 0 && fallbackKeySource.TotalKeyCount() <= 0) return null;
-      int primaryTotal = primaryKeySource.TotalKeyCount();
-      int keyCursorPrimary = Math.Max(0, Math.Min(keyCursorRaw, Math.Max(primaryTotal - 1, 0)));
-      var keyGen = primaryKeySource.GenerateKeyForPerception(keyCursorPrimary);
-      if (keyGen == null && fallbackKeySource.TotalKeyCount() > 0) {
-        int fallbackTotal = fallbackKeySource.TotalKeyCount();
-        int keyCursorFallback = Math.Max(0, Math.Min(keyCursorRaw, Math.Max(fallbackTotal - 1, 0)));
-        keyGen = fallbackKeySource.GenerateKeyForPerception(keyCursorFallback);
+
+      int ClampedCursor(List<GramInPath> source) {
+        int totalKeyCount = source.TotalKeyCount();
+        if (totalKeyCount <= 0) return 0;
+        int upperBound = Math.Max(totalKeyCount - 1, 0);
+        return Math.Max(0, Math.Min(keyCursorRaw, upperBound));
       }
 
-      if (keyGen == null) return null;
+      static List<string> SplitKeyParts(string key) {
+        List<string> result = new();
+        if (!string.IsNullOrEmpty(key)) {
+          result = key.Split('&').ToList();
+        }
+
+        if (result.Count == 0) {
+          result.AddRange(new[] { "()", "()", "()" });
+        }
+
+        while (result.Count < 3) {
+          result.Insert(0, "()");
+        }
+
+        return result;
+      }
+
+      GramInPathArrayExtensions.PerceptionResult? keyGen = null;
+
+      switch (scenario) {
+        case POMObservationScenario.ShortToLong: {
+          int cursorPrev = ClampedCursor(previouslyAssembled);
+          int cursorCurr = ClampedCursor(currentAssembled);
+          var keyGenPrev = previouslyAssembled.GenerateKeyForPerception(cursorPrev);
+          var keyGenCurr = currentAssembled.GenerateKeyForPerception(cursorCurr);
+
+          if (keyGenPrev.HasValue && keyGenCurr.HasValue) {
+            List<string> mergedParts = SplitKeyParts(keyGenPrev.Value.NGramKey);
+            List<string> currentParts = SplitKeyParts(keyGenCurr.Value.NGramKey);
+            if (currentParts.Count > 0) {
+              mergedParts[mergedParts.Count - 1] = currentParts[^1];
+            }
+
+            keyGen = new GramInPathArrayExtensions.PerceptionResult {
+              NGramKey = string.Join("&", mergedParts),
+              Candidate = keyGenCurr.Value.Candidate,
+              HeadReading = keyGenCurr.Value.HeadReading
+            };
+          } else if (keyGenCurr.HasValue) {
+            keyGen = keyGenCurr;
+          } else if (keyGenPrev.HasValue) {
+            keyGen = keyGenPrev;
+          }
+
+          break;
+        }
+        case POMObservationScenario.LongToShort:
+        case POMObservationScenario.SameLenSwap: {
+          var primarySource = currentAssembled;
+          var fallbackSource = previouslyAssembled;
+
+          if (primarySource.TotalKeyCount() > 0) {
+            int cursorPrimary = ClampedCursor(primarySource);
+            var primaryKeyGen = primarySource.GenerateKeyForPerception(cursorPrimary);
+            if (primaryKeyGen.HasValue) {
+              keyGen = primaryKeyGen;
+            }
+          }
+
+          if (!keyGen.HasValue && fallbackSource.TotalKeyCount() > 0) {
+            int cursorFallback = ClampedCursor(fallbackSource);
+            var fallbackKeyGen = fallbackSource.GenerateKeyForPerception(cursorFallback);
+            if (fallbackKeyGen.HasValue) {
+              keyGen = fallbackKeyGen;
+            }
+          }
+
+          break;
+        }
+      }
+
+      if (!keyGen.HasValue) return null;
+
+      string normalizedHeadReading = keyGen.Value.HeadReading;
+      string separator = Compositor.TheSeparator;
+      if (scenario == POMObservationScenario.ShortToLong || afterHit.Value.gram.SegLength > 1) {
+        string joined = afterHit.Value.gram.JoinedCurrentKey(separator);
+        if (!string.IsNullOrEmpty(joined)) {
+          normalizedHeadReading = joined;
+        }
+      }
 
       return new PerceptionIntel {
-        NGramKey = keyGen.Value.NGramKey,
+        ContextualizedGramKey = keyGen.Value.NGramKey,
         Candidate = current.Value,
-        HeadReading = keyGen.Value.HeadReading,
+        HeadReading = normalizedHeadReading,
         Scenario = scenario,
         ForceHighScoreOverride = forceHSO,
         ScoreFromLM = afterHit.Value.gram.Score
@@ -564,7 +623,7 @@ namespace Megrez {
     /// <summary>
     /// N-gram 索引鍵。
     /// </summary>
-    public string NGramKey { get; set; }
+    public string ContextualizedGramKey { get; set; }
 
     /// <summary>
     /// 候選字。
@@ -597,7 +656,7 @@ namespace Megrez {
     /// <param name="other">要比較的另一個 PerceptionIntel 物件。</param>
     /// <returns>如果相等則返回 true，否則返回 false。</returns>
     public bool Equals(PerceptionIntel other) {
-      return NGramKey == other.NGramKey &&
+      return ContextualizedGramKey == other.ContextualizedGramKey &&
              Candidate == other.Candidate &&
              HeadReading == other.HeadReading &&
              Scenario == other.Scenario &&
@@ -619,7 +678,7 @@ namespace Megrez {
     public override int GetHashCode() {
       unchecked {
         int hash = 17;
-        hash = hash * 23 + (NGramKey?.GetHashCode() ?? 0);
+        hash = hash * 23 + (ContextualizedGramKey?.GetHashCode() ?? 0);
         hash = hash * 23 + (Candidate?.GetHashCode() ?? 0);
         hash = hash * 23 + (HeadReading?.GetHashCode() ?? 0);
         hash = hash * 23 + Scenario.GetHashCode();
