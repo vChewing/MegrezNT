@@ -2,7 +2,6 @@
 // ====================
 // This code is released under the SPDX-License-Identifier: `LGPL-3.0-or-later`.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -15,9 +14,7 @@ namespace Megrez {
     /// </summary>
     /// <returns>組句結果（已選字詞陣列）。</returns>
     public List<GramInPath> Assemble() {
-      var assembledSentence = AssembledSentence;
-      new PathFinder(Config, ref assembledSentence);
-      AssembledSentence = assembledSentence;
+      AssembledSentence = PathFinder.Assemble(Config);
       return AssembledSentence;
     }
   }
@@ -30,76 +27,69 @@ namespace Megrez {
     /// 該演算法使用動態規劃在有向無環圖中尋找具有最高分數的路徑，即最可能的字詞組合。
     /// DAG 演算法相對簡潔，記憶體使用量較少。
     /// </summary>
-    public class PathFinder {
+    public static class PathFinder {
       /// <summary>
-      /// 建立 PathFinder 執行個體並執行 DAG 動態規劃演算法。
+      /// 執行 DAG 動態規劃演算法以更新組合語句清單。
       /// </summary>
       /// <param name="config">組字器組態設定。</param>
-      /// <param name="assembledSentence">要更新的組合語句清單。</param>
-      public PathFinder(CompositorConfig config, ref List<GramInPath> assembledSentence) {
+      /// <returns>組句結果。</returns>
+      public static List<GramInPath> Assemble(CompositorConfig config) {
         List<GramInPath> newAssembledSentence = new();
-        try {
-          if (!config.Segments.Any()) return;
+        if (!config.Segments.Any()) return newAssembledSentence;
 
-          int keyCount = config.Keys.Count;
+        int keyCount = config.Keys.Count;
 
-          // 動態規劃陣列：dp[i] 表示到位置 i 的最佳分數
-          double[] dp = new double[keyCount + 1];
-          // 回溯陣列：parent[i] 記錄到達位置 i 的最佳前驅節點
-          Node?[] parent = new Node?[keyCount + 1];
+        // 動態規劃陣列：dp[i] 表示到位置 i 的最佳分數
+        double[] dp = new double[keyCount + 1];
+        // 回溯陣列：parent[i] 記錄到達位置 i 的最佳前驅節點
+        Node?[] parent = new Node?[keyCount + 1];
 
-          // 初期化
-          for (int i = 0; i < dp.Length; i++) {
-            dp[i] = double.MinValue;
-          }
+        // 初期化
+        for (int i = 0; i < dp.Length; i++) {
+          dp[i] = double.MinValue;
+        }
 
-          // 起始狀態
-          dp[0] = 0;
+        // 起始狀態
+        dp[0] = 0;
 
-          // DAG 動態規劃主循環
-          for (int i = 0; i < keyCount; i++) {
-            if (dp[i] <= double.MinValue) continue; // 只處理可達的位置
+        // DAG 動態規劃主循環
+        for (int i = 0; i < keyCount; i++) {
+          if (dp[i] <= double.MinValue) continue; // 只處理可達的位置
 
-            // 遍歷從位置 i 開始的所有可能節點
-            Segment currentSegment = config.Segments[i];
-            foreach (KeyValuePair<int, Node> segmentMeta in currentSegment.Nodes) {
-              int length = segmentMeta.Key;
-              Node node = segmentMeta.Value;
+          // 遍歷從位置 i 開始的所有可能節點
+          Segment currentSegment = config.Segments[i];
+          foreach (KeyValuePair<int, Node> pair in currentSegment.Nodes) {
+            int length = pair.Key;
+            Node node = pair.Value;
+            if (node.Unigrams.Count == 0) continue;
 
-              if (node.Unigrams.Count == 0) continue;
+            int nextPos = i + length;
+            if (nextPos > keyCount) continue;
 
-              int nextPos = i + length;
-              if (nextPos > keyCount) continue;
+            double newScore = dp[i] + node.Score;
 
-              double newScore = dp[i] + node.Score;
-
-              // 如果找到更好的路徑，更新 dp 和 parent
-              if (newScore > dp[nextPos]) {
-                dp[nextPos] = newScore;
-                parent[nextPos] = node;
-              }
+            // 如果找到更好的路徑，更新 dp 和 parent
+            if (newScore > dp[nextPos]) {
+              dp[nextPos] = newScore;
+              parent[nextPos] = node;
             }
           }
-
-          // 回溯構建最佳路徑
-          newAssembledSentence = new();
-          int currentPos = keyCount;
-
-          // 從終點開始回溯
-          while (currentPos > 0) {
-            Node? node = parent[currentPos];
-            if (node == null) break;
-
-            GramInPath insertable = new GramInPath(
-              node.CurrentUnigram,
-              node.IsOverridden
-            );
-            newAssembledSentence.Insert(0, insertable);
-            currentPos -= node.KeyArray.Count;
-          }
-        } finally {
-          assembledSentence = newAssembledSentence;
         }
+
+        // 回溯構建最佳路徑
+        int currentPos = keyCount;
+
+        // 從終點開始回溯
+        while (currentPos > 0) {
+          Node? node = parent[currentPos];
+          if (node == null) break;
+
+          GramInPath insertable = new(node.CurrentUnigram, node.IsOverridden);
+          newAssembledSentence.Insert(0, insertable);
+          currentPos -= node.KeyArray.Count;
+        }
+
+        return newAssembledSentence;
       }
     }
   }

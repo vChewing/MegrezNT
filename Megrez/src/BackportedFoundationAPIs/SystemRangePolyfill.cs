@@ -1,5 +1,7 @@
 #if !(NETSTANDARD2_1_OR_GREATER || NETCOREAPP3_0_OR_GREATER || NET5_0_OR_GREATER)
 #pragma warning disable CS1591
+
+// ReSharper disable once CheckNamespace
 namespace System {
   /// <summary>
   /// 自訂的 <see cref="Index"/> 實作，用於補足舊版 .NET Framework 未提供的功能。
@@ -18,7 +20,7 @@ namespace System {
     /// </summary>
     public bool IsFromEnd { get; }
 
-    public static Index Start => new(0, false);
+    public static Index Start => new(0);
     public static Index End => new(0, true);
 
     public Index(int value, bool fromEnd = false) {
@@ -38,7 +40,7 @@ namespace System {
 
     public bool Equals(Index other) => _value == other._value && IsFromEnd == other.IsFromEnd;
 
-    public override bool Equals(object obj) => obj is Index other && Equals(other);
+    public override bool Equals(object? obj) => obj is Index other && Equals(other);
 
     public override int GetHashCode() => unchecked((_value * 397) ^ IsFromEnd.GetHashCode());
 
@@ -64,7 +66,7 @@ namespace System {
 
     public bool Equals(Range other) => Start.Equals(other.Start) && End.Equals(other.End);
 
-    public override bool Equals(object obj) => obj is Range other && Equals(other);
+    public override bool Equals(object? obj) => obj is Range other && Equals(other);
 
     public override int GetHashCode() => unchecked((Start.GetHashCode() * 397) ^ End.GetHashCode());
 

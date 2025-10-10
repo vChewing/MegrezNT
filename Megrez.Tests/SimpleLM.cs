@@ -13,15 +13,15 @@ using static System.String;
 namespace Megrez.Tests {
   public class SimpleLM : LangModelProtocol {
     private Dictionary<string, List<Unigram>> _database = new();
-    public string separator { get; set; }
+    public string Separator { get; private set; }
 
     public SimpleLM(string input, bool swapKeyValue = false, string separator = "-") {
-      this.separator = separator;
-      this.ReConstruct(input, swapKeyValue, separator);
+      Separator = separator;
+      ReConstruct(input, swapKeyValue, separator);
     }
 
     public void ReConstruct(string input, bool swapKeyValue = false, string? separator = null) {
-      this.separator = separator ?? this.separator;
+      Separator = separator ?? Separator;
       List<string> sStream = new(input.Split('\n'));
       sStream.ForEach(line => {
         if (IsNullOrEmpty(line) || line.FirstOrDefault().CompareTo('#') == 0)
@@ -54,11 +54,11 @@ namespace Megrez.Tests {
       });
     }
 
-    public bool HasUnigramsFor(List<string> keyArray) => _database.ContainsKey(keyArray.Joined(separator: separator));
+    public bool HasUnigramsFor(List<string> keyArray) => _database.ContainsKey(keyArray.Joined(separator: Separator));
 
     public List<Unigram> UnigramsFor(List<string> keyArray) =>
-      _database.ContainsKey(keyArray.Joined(separator: separator))
-        ? _database[keyArray.Joined(separator: separator)]
+      _database.ContainsKey(keyArray.Joined(separator: Separator))
+        ? _database[keyArray.Joined(separator: Separator)]
         : new();
 
     public void Trim(string key, string value) {
@@ -77,11 +77,12 @@ namespace Megrez.Tests {
     }
 
     private List<string> SplitKey(string key) {
-      if (string.IsNullOrEmpty(separator)) {
-        return key.Select(c => c.ToString()).ToList();
-      }
+      // Separator 不可能是 Null，也不會是 Empty。
+      // if (string.IsNullOrEmpty(separator)) {
+      //   return key.Select(c => c.ToString()).ToList();
+      // }
 
-      return key.Split(separator, StringSplitOptions.RemoveEmptyEntries).ToList();
+      return key.Split(Separator, StringSplitOptions.RemoveEmptyEntries).ToList();
     }
   }
 

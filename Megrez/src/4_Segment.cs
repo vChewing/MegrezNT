@@ -16,7 +16,7 @@ namespace Megrez {
     /// 以節點為數值的字典結構。由於 C# 環境缺乏類似 Swift 的 TypeAlias 功能，
     /// 因此保持完整的結構定義而不進行簡化。
     /// </remarks>
-    public struct Segment {
+    public struct Segment : IEquatable<Segment> {
       /// <summary>
       /// 節點資料的儲存字典，每個位置可能包含對應的節點物件或為空值。
       /// </summary>
@@ -56,15 +56,23 @@ namespace Megrez {
       /// </summary>
       /// <param name="obj"></param>
       /// <returns></returns>
-      public override bool Equals(object obj) {
-        return obj is not Segment segment ? false : Nodes.SequenceEqual(segment.Nodes);
+      public override bool Equals(object? obj) {
+        return obj is Segment segment && Equals(segment);
       }
 
       /// <summary>
       ///
       /// </summary>
       /// <returns></returns>
-      public override int GetHashCode() { return Nodes.GetHashCode(); }
+      public override int GetHashCode() {
+        HashCode hash = new();
+        foreach (KeyValuePair<int, Node> entry in Nodes.OrderBy(pair => pair.Key)) {
+          hash.Add(entry.Key);
+          hash.Add(entry.Value);
+        }
+
+        return hash.ToHashCode();
+      }
 
       /// <summary>
       /// 生成自身的拷貝。
@@ -107,6 +115,22 @@ namespace Megrez {
       /// <returns></returns>
       public static bool operator !=(Segment left, Segment right) {
         return !(left == right);
+      }
+
+      /// <summary>
+      /// 
+      /// </summary>
+      /// <param name="other"></param>
+      /// <returns></returns>
+      public bool Equals(Segment other) {
+        if (Nodes.Count != other.Nodes.Count) return false;
+
+        foreach (KeyValuePair<int, Node> pair in Nodes) {
+          if (!other.Nodes.TryGetValue(pair.Key, out Node? otherNode)) return false;
+          if (!pair.Value.Equals(otherNode)) return false;
+        }
+
+        return true;
       }
     }
 

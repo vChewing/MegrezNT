@@ -89,7 +89,7 @@ namespace Megrez {
     /// </summary>
     /// <param name="obj">要比較的物件。</param>
     /// <returns>如果相等則返回 true，否則返回 false。</returns>
-    public override bool Equals(object obj) => obj is GramInPath other && Equals(other);
+    public override bool Equals(object? obj) => obj is GramInPath other && Equals(other);
 
     /// <summary>
     /// 獲取當前 GramInPath 的雜湊碼。

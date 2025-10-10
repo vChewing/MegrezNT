@@ -15,7 +15,7 @@ namespace Megrez {
   /// 然後從語言模型中獲取匹配的單元圖集合。例如，一個包含兩個漢字的詞彙對應兩個讀音，
   /// 其組合後的節點涵蓋長度即為 2。
   /// </summary>
-  public partial class Node {
+  public class Node {
     // MARK: - Enums
 
     /// <summary>
@@ -145,12 +145,11 @@ namespace Megrez {
     /// </summary>
     /// <param name="obj"></param>
     /// <returns></returns>
-    public override bool Equals(object obj) {
-      return obj is not Node node
-        ? false
-        : OverridingScore == node.OverridingScore && KeyArray.SequenceEqual(node.KeyArray) &&
-          SegLength == node.SegLength && Unigrams.SequenceEqual(node.Unigrams) &&
-          CurrentOverrideType == node.CurrentOverrideType && CurrentUnigramIndex == node.CurrentUnigramIndex;
+    public override bool Equals(object? obj) {
+      return obj is Node node && Math.Abs(OverridingScore - node.OverridingScore) < 0.000_000_000_001 &&
+             KeyArray.SequenceEqual(node.KeyArray) &&
+             SegLength == node.SegLength && Unigrams.SequenceEqual(node.Unigrams) &&
+             CurrentOverrideType == node.CurrentOverrideType && CurrentUnigramIndex == node.CurrentUnigramIndex;
     }
 
     /// <summary>
@@ -158,17 +157,25 @@ namespace Megrez {
     /// </summary>
     /// <returns>目前物件的雜湊碼。</returns>
     public override int GetHashCode() {
-      unchecked {
-        int hash = 17;
-        hash = hash * 23 + Id.GetHashCode();
-        hash = hash * 23 + OverridingScore.GetHashCode();
-        hash = hash * 23 + KeyArray.GetHashCode();
-        hash = hash * 23 + SegLength.GetHashCode();
-        hash = hash * 23 + Unigrams.GetHashCode();
-        hash = hash * 23 + CurrentUnigramIndex.GetHashCode();
-        hash = hash * 23 + CurrentOverrideType.GetHashCode();
-        return hash;
+      // ReSharper disable NonReadonlyFieldInGetHashCode
+      // ReSharper disable NonReadonlyMemberInGetHashCode
+      HashCode hash = new();
+      hash.Add(Math.Round(OverridingScore, 12));
+      hash.Add(SegLength);
+      hash.Add(CurrentUnigramIndex);
+      hash.Add(CurrentOverrideType);
+
+      foreach (string key in KeyArray) {
+        hash.Add(key);
       }
+
+      foreach (Unigram unigram in Unigrams) {
+        hash.Add(unigram);
+      }
+
+      return hash.ToHashCode();
+      // ReSharper enable NonReadonlyFieldInGetHashCode
+      // ReSharper enable NonReadonlyMemberInGetHashCode
     }
 
     // MARK: - Dynamic Variables
@@ -334,7 +341,7 @@ namespace Megrez {
     /// </summary>
     /// <param name="obj">要與目前 NodeOverrideStatus 比較的物件。</param>
     /// <returns>若兩者相同則為 true，否則為 false。</returns>
-    public override bool Equals(object obj) {
+    public override bool Equals(object? obj) {
       return obj is NodeOverrideStatus other && Equals(other);
     }
 
@@ -342,6 +349,7 @@ namespace Megrez {
     /// 傳回此 NodeOverrideStatus 的雜湊碼。
     /// </summary>
     /// <returns>32 位元帶正負號的整數雜湊值。</returns>
+    // ReSharper disable once NonReadonlyMemberInGetHashCode
     public override int GetHashCode() {
       unchecked {
         int hash = 17;

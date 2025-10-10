@@ -51,9 +51,9 @@ namespace Megrez {
     /// <param name="tripletExpression">傳入的通用陣列表達形式。</param>
     public KeyValuePaired(Tuple<List<string>, string, double> tripletExpression)
       : this(
-        tripletExpression?.Item1?.ToList() ?? new List<string>(),
-        tripletExpression?.Item2 ?? "N/A",
-        tripletExpression?.Item3 ?? 0
+        tripletExpression.Item1.ToList(),
+        tripletExpression.Item2,
+        tripletExpression.Item3
       ) {
     }
 
@@ -63,9 +63,8 @@ namespace Megrez {
     /// <param name="tupletExpression">傳入的通用陣列表達形式。</param>
     public KeyValuePaired(Tuple<List<string>, string> tupletExpression)
       : this(
-        tupletExpression?.Item1?.ToList() ?? new List<string>(),
-        tupletExpression?.Item2 ?? "N/A",
-        0
+        tupletExpression.Item1.ToList(),
+        tupletExpression.Item2
       ) {
     }
 
@@ -130,7 +129,7 @@ namespace Megrez {
         }
 
         hash = hash * 23 + Value.GetHashCode();
-        hash = hash * 23 + Score.GetHashCode();
+        hash = hash * 23 + Math.Round(Score, 12).GetHashCode();
         return hash;
       }
     }
@@ -439,6 +438,7 @@ namespace Megrez {
       if (overriddenNode.SegLength > anchor.SegLength) {
         return true;
       }
+
       string anchorNodeKeyJoined = anchor.JoinedKey("\t");
       string overriddenNodeKeyJoined = overriddenNode.JoinedKey("\t");
 
@@ -524,54 +524,54 @@ namespace Megrez {
 
       switch (scenario) {
         case POMObservationScenario.ShortToLong: {
-          int cursorPrev = ClampedCursor(previouslyAssembled);
-          int cursorCurr = ClampedCursor(currentAssembled);
-          var keyGenPrev = previouslyAssembled.GenerateKeyForPerception(cursorPrev);
-          var keyGenCurr = currentAssembled.GenerateKeyForPerception(cursorCurr);
+            int cursorPrev = ClampedCursor(previouslyAssembled);
+            int cursorCurr = ClampedCursor(currentAssembled);
+            var keyGenPrev = previouslyAssembled.GenerateKeyForPerception(cursorPrev);
+            var keyGenCurr = currentAssembled.GenerateKeyForPerception(cursorCurr);
 
-          if (keyGenPrev.HasValue && keyGenCurr.HasValue) {
-            List<string> mergedParts = SplitKeyParts(keyGenPrev.Value.NGramKey);
-            List<string> currentParts = SplitKeyParts(keyGenCurr.Value.NGramKey);
-            if (currentParts.Count > 0) {
-              mergedParts[mergedParts.Count - 1] = currentParts[^1];
+            if (keyGenPrev.HasValue && keyGenCurr.HasValue) {
+              List<string> mergedParts = SplitKeyParts(keyGenPrev.Value.NGramKey);
+              List<string> currentParts = SplitKeyParts(keyGenCurr.Value.NGramKey);
+              if (currentParts.Count > 0) {
+                mergedParts[mergedParts.Count - 1] = currentParts[^1];
+              }
+
+              keyGen = new GramInPathArrayExtensions.PerceptionResult {
+                NGramKey = string.Join("&", mergedParts),
+                Candidate = keyGenCurr.Value.Candidate,
+                HeadReading = keyGenCurr.Value.HeadReading
+              };
+            } else if (keyGenCurr.HasValue) {
+              keyGen = keyGenCurr;
+            } else if (keyGenPrev.HasValue) {
+              keyGen = keyGenPrev;
             }
 
-            keyGen = new GramInPathArrayExtensions.PerceptionResult {
-              NGramKey = string.Join("&", mergedParts),
-              Candidate = keyGenCurr.Value.Candidate,
-              HeadReading = keyGenCurr.Value.HeadReading
-            };
-          } else if (keyGenCurr.HasValue) {
-            keyGen = keyGenCurr;
-          } else if (keyGenPrev.HasValue) {
-            keyGen = keyGenPrev;
+            break;
           }
-
-          break;
-        }
         case POMObservationScenario.LongToShort:
         case POMObservationScenario.SameLenSwap: {
-          var primarySource = currentAssembled;
-          var fallbackSource = previouslyAssembled;
+            var primarySource = currentAssembled;
+            var fallbackSource = previouslyAssembled;
 
-          if (primarySource.TotalKeyCount() > 0) {
-            int cursorPrimary = ClampedCursor(primarySource);
-            var primaryKeyGen = primarySource.GenerateKeyForPerception(cursorPrimary);
-            if (primaryKeyGen.HasValue) {
-              keyGen = primaryKeyGen;
+            if (primarySource.TotalKeyCount() > 0) {
+              int cursorPrimary = ClampedCursor(primarySource);
+              var primaryKeyGen = primarySource.GenerateKeyForPerception(cursorPrimary);
+              if (primaryKeyGen.HasValue) {
+                keyGen = primaryKeyGen;
+              }
             }
-          }
 
-          if (!keyGen.HasValue && fallbackSource.TotalKeyCount() > 0) {
-            int cursorFallback = ClampedCursor(fallbackSource);
-            var fallbackKeyGen = fallbackSource.GenerateKeyForPerception(cursorFallback);
-            if (fallbackKeyGen.HasValue) {
-              keyGen = fallbackKeyGen;
+            if (!keyGen.HasValue && fallbackSource.TotalKeyCount() > 0) {
+              int cursorFallback = ClampedCursor(fallbackSource);
+              var fallbackKeyGen = fallbackSource.GenerateKeyForPerception(cursorFallback);
+              if (fallbackKeyGen.HasValue) {
+                keyGen = fallbackKeyGen;
+              }
             }
-          }
 
-          break;
-        }
+            break;
+          }
       }
 
       if (!keyGen.HasValue) return null;
@@ -669,7 +669,7 @@ namespace Megrez {
     /// </summary>
     /// <param name="obj">要比較的物件。</param>
     /// <returns>如果相等則返回 true，否則返回 false。</returns>
-    public override bool Equals(object obj) => obj is PerceptionIntel other && Equals(other);
+    public override bool Equals(object? obj) => obj is PerceptionIntel other && Equals(other);
 
     /// <summary>
     /// 獲取當前 PerceptionIntel 的雜湊碼。

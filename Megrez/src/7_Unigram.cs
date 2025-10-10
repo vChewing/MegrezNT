@@ -98,7 +98,7 @@ namespace Megrez {
     /// <summary>
     /// 判斷兩個單元圖是否相等。
     /// </summary>
-    public static bool operator ==(Unigram lhs, Unigram rhs) => lhs?.Equals(rhs) ?? rhs is null;
+    public static bool operator ==(Unigram lhs, Unigram rhs) => lhs.Equals(rhs);
 
     /// <summary>
     /// 判斷兩個單元圖是否不相等。

@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 using NUnit.Framework;
 
@@ -239,7 +238,7 @@ namespace Megrez.Tests {
       Assert.That(fullyCopiedCompositor.Segments.Count, Is.EqualTo(compositor.Segments.Count));
 
       // 鏡照應該包含所有修改的狀態
-      foreach (var (nodeId, status) in mirror) {
+      foreach (var status in mirror.Values) {
         Assert.That(status.CurrentOverrideType, Is.EqualTo(Node.OverrideType.Specified));
         Assert.That(status.OverridingScore, Is.EqualTo(_baselineOverrideScore));
       }

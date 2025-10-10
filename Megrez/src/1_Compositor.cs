@@ -558,7 +558,8 @@ namespace Megrez {
 
           List<Unigram> unigramsNew = GetSortedUnigrams(joinedKeyArray, ref queryBuffer);
           if (unigramsNew.IsEmpty()) continue;
-          if (position < 0 || position >= Segments.Count) continue;
+          // Position 始終不小於 0。
+          if (position >= Segments.Count) continue;
           Segments[position].Nodes[theLength] = new(joinedKeyArray, theLength, unigramsNew);
           nodesChangedCounter += 1;
         }
@@ -597,7 +598,7 @@ namespace Megrez {
   /// <summary>
   /// 組字器的組態設定專用記錄物件。
   /// </summary>
-  public struct CompositorConfig {
+  public struct CompositorConfig : IEquatable<CompositorConfig> {
     /// <summary>
     /// 初期化一套組字器組態設定。
     /// </summary>
@@ -722,7 +723,7 @@ namespace Megrez {
     /// </summary>
     /// <param name="obj"></param>
     /// <returns></returns>
-    public override bool Equals(object obj) {
+    public override bool Equals(object? obj) {
       if (obj is not CompositorConfig other) return false;
       return Cursor == other.Cursor && Marker == other.Marker && MaxSegLength == other.MaxSegLength &&
              Separator == other.Separator && Keys.SequenceEqual(other.Keys) && Segments.SequenceEqual(other.Segments) &&
@@ -734,18 +735,25 @@ namespace Megrez {
     /// </summary>
     /// <returns></returns>
     public override int GetHashCode() {
-      unchecked {
-        // 使用 unchecked 來允許溢位操作
-        int hash = 17; // 使用質數作為基礎值
-        hash = hash * 23 + Cursor.GetHashCode();
-        hash = hash * 23 + Marker.GetHashCode();
-        hash = hash * 23 + MaxSegLength.GetHashCode();
-        hash = hash * 23 + Separator.GetHashCode();
-        hash = hash * 23 + Keys.GetHashCode();
-        hash = hash * 23 + Segments.GetHashCode();
-        hash = hash * 23 + AssembledSentence.GetHashCode();
-        return hash;
+      HashCode hash = new();
+      hash.Add(_cursor);
+      hash.Add(_marker);
+      hash.Add(_maxSegLength);
+      hash.Add(_separator);
+
+      foreach (string key in Keys) {
+        hash.Add(key);
       }
+
+      foreach (Compositor.Segment segment in Segments) {
+        hash.Add(segment);
+      }
+
+      foreach (GramInPath gram in AssembledSentence) {
+        hash.Add(gram);
+      }
+
+      return hash.ToHashCode();
     }
 
     /// <summary>
@@ -823,6 +831,18 @@ namespace Megrez {
     /// <returns></returns>
     public static bool operator !=(CompositorConfig left, CompositorConfig right) {
       return !(left == right);
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="other"></param>
+    /// <returns></returns>
+    public bool Equals(CompositorConfig other) {
+      return _cursor == other._cursor && _maxSegLength == other._maxSegLength && _marker == other._marker &&
+             _separator == other._separator && Keys.SequenceEqual(other.Keys) &&
+             Segments.SequenceEqual(other.Segments) &&
+             AssembledSentence.SequenceEqual(other.AssembledSentence);
     }
   }
 } // namespace Megrez

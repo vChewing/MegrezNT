@@ -402,23 +402,33 @@ namespace Megrez.Tests {
           compositor.InsertKey(key);
         }
 
-        int a = compositor.FetchCandidatesAt(1, Compositor.CandidateFetchFilter.BeginAt).Select(c => c.KeyArray.Count)
+        int a = compositor.FetchCandidatesAt(1, Compositor.CandidateFetchFilter.BeginAt)
+                          .Select(candidate => candidate.KeyArray.Count)
                           .Max();
-        int b = compositor.FetchCandidatesAt(1, Compositor.CandidateFetchFilter.EndAt).Select(c => c.KeyArray.Count)
+        int b = compositor.FetchCandidatesAt(1, Compositor.CandidateFetchFilter.EndAt)
+                          .Select(candidate => candidate.KeyArray.Count)
                           .Max();
-        int c = compositor.FetchCandidatesAt(0, Compositor.CandidateFetchFilter.BeginAt).Select(c => c.KeyArray.Count)
+        int c = compositor.FetchCandidatesAt(0, Compositor.CandidateFetchFilter.BeginAt)
+                          .Select(candidate => candidate.KeyArray.Count)
                           .Max();
-        int d = compositor.FetchCandidatesAt(2, Compositor.CandidateFetchFilter.EndAt).Select(c => c.KeyArray.Count)
+        int d = compositor.FetchCandidatesAt(2, Compositor.CandidateFetchFilter.EndAt)
+                          .Select(candidate => candidate.KeyArray.Count)
                           .Max();
         Assert.That($"{a} {b} {c} {d}", Is.EqualTo("1 1 2 2"));
         compositor.Cursor = compositor.Length;
         compositor.InsertKey("jin1");
-        a = compositor.FetchCandidatesAt(1, Compositor.CandidateFetchFilter.BeginAt).Select(c => c.KeyArray.Count)
+        a = compositor.FetchCandidatesAt(1, Compositor.CandidateFetchFilter.BeginAt)
+                      .Select(candidate => candidate.KeyArray.Count)
                       .Max();
-        b = compositor.FetchCandidatesAt(1, Compositor.CandidateFetchFilter.EndAt).Select(c => c.KeyArray.Count).Max();
-        c = compositor.FetchCandidatesAt(0, Compositor.CandidateFetchFilter.BeginAt).Select(c => c.KeyArray.Count)
+        b = compositor.FetchCandidatesAt(1, Compositor.CandidateFetchFilter.EndAt)
+                      .Select(candidate => candidate.KeyArray.Count)
                       .Max();
-        d = compositor.FetchCandidatesAt(2, Compositor.CandidateFetchFilter.EndAt).Select(c => c.KeyArray.Count).Max();
+        c = compositor.FetchCandidatesAt(0, Compositor.CandidateFetchFilter.BeginAt)
+                      .Select(candidate => candidate.KeyArray.Count)
+                      .Max();
+        d = compositor.FetchCandidatesAt(2, Compositor.CandidateFetchFilter.EndAt)
+                      .Select(candidate => candidate.KeyArray.Count)
+                      .Max();
         Assert.That($"{a} {b} {c} {d}", Is.EqualTo("1 1 2 2"));
       }
     }
@@ -557,17 +567,17 @@ EOS;
       CollectionAssert.AreEqual(new[] { "幽蝶", "能", "留意", "呂方" }, assembledSentence);
       // 測試覆寫「留」以試圖打斷「留意」。
       compositor.OverrideCandidate(
-        new KeyValuePaired(new List<string> { "liu2" }, "留"), 3, Megrez.Node.OverrideType.Specified
+        new KeyValuePaired(new List<string> { "liu2" }, "留"), 3
       );
       // 測試覆寫「一縷」以打斷「留意」與「呂方」。
       compositor.OverrideCandidate(
-        new KeyValuePaired(new List<string> { "yi4", "lv3" }, "一縷"), 4, Megrez.Node.OverrideType.Specified
+        new KeyValuePaired(new List<string> { "yi4", "lv3" }, "一縷"), 4
       );
       assembledSentence = compositor.Assemble().Values().ToList();
       CollectionAssert.AreEqual(new[] { "幽蝶", "能", "留", "一縷", "方" }, assembledSentence);
       // 對位置 7 這個最前方的座標位置使用節點覆寫。會在此過程中自動糾正成對位置 6 的覆寫。
       compositor.OverrideCandidate(
-        new KeyValuePaired(new List<string> { "fang1" }, "芳"), 7, Megrez.Node.OverrideType.Specified
+        new KeyValuePaired(new List<string> { "fang1" }, "芳"), 7
       );
       assembledSentence = compositor.Assemble().Values().ToList();
       CollectionAssert.AreEqual(new[] { "幽蝶", "能", "留", "一縷", "芳" }, assembledSentence);
@@ -625,7 +635,7 @@ EOS;
 
       List<GramInPath> result = compositor.Assemble();
       List<string> assembledSentence = result.Values().ToList();
-      CollectionAssert.AreEqual(new[] { "水果汁" }, result.Values());
+      CollectionAssert.AreEqual(new[] { "水果汁" }.ToList(), assembledSentence);
       // 測試針對第一個漢字的位置的操作。
       {
         {
@@ -988,7 +998,8 @@ EOS;
       Assert.That(baselineKey.HasValue, Is.True);
       if (baselineKey is not { } baselineKeyData)
         throw new InvalidOperationException("baselineKey should have a value");
-  Assert.That(baselineKeyData.NGramKey, Is.EqualTo("()&(di4,第)&(jiao1,交)"));
+
+      Assert.That(baselineKeyData.NGramKey, Is.EqualTo("()&(di4,第)&(jiao1,交)"));
 
       KeyValuePaired pomSuggestedCandidate = new(
         diJiaoCandidate!.KeyArray.ToList(),
