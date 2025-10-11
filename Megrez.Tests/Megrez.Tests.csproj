@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
-    <ReleaseVersion>5.0.5</ReleaseVersion>
+    <ReleaseVersion>5.0.6</ReleaseVersion>
     <TargetFrameworks>net6.0</TargetFrameworks>
   </PropertyGroup>
 
