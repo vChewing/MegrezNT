@@ -16,7 +16,7 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageLicenseExpression>LGPL-3.0-or-later</PackageLicenseExpression>
     <Description>Megrez Engine is a module made for processing lingual data of an input method.</Description>
     <PackageProjectUrl>https://github.com/ShikiSuen/MegrezNT</PackageProjectUrl>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
