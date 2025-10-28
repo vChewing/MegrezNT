@@ -78,6 +78,7 @@ namespace Megrez {
 
         // 回溯構建最佳路徑
         int currentPos = keyCount;
+        List<GramInPath> reversedSentence = new();
 
         // 從終點開始回溯
         while (currentPos > 0) {
@@ -85,8 +86,13 @@ namespace Megrez {
           if (node == null) break;
 
           GramInPath insertable = new(node.CurrentUnigram, node.IsOverridden);
-          newAssembledSentence.Insert(0, insertable);
+          reversedSentence.Add(insertable);
           currentPos -= node.KeyArray.Count;
+        }
+
+        if (reversedSentence.Count > 0) {
+          reversedSentence.Reverse();
+          newAssembledSentence = reversedSentence;
         }
 
         return newAssembledSentence;
