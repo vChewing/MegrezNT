@@ -188,7 +188,7 @@ namespace Megrez {
     /// <summary>
     /// 給出該節點內部單元圖陣列內目前被索引位置所指向的單元圖。
     /// </summary>
-    public Unigram CurrentUnigram => Unigrams.IsEmpty() ? new() : Unigrams[CurrentUnigramIndex];
+    public Unigram CurrentUnigram => Unigrams.IsEmpty() ? Unigram.Empty : Unigrams[CurrentUnigramIndex];
 
     /// <summary>
     /// 給出該節點內部單元圖陣列內目前被索引位置所指向的單元圖的資料值。

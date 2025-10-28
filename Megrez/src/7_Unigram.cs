@@ -10,23 +10,25 @@ namespace Megrez {
   /// <summary>
   /// 語言模型的基礎資料單位。
   /// </summary>
-  public sealed class Unigram : IEquatable<Unigram> {
+  public readonly struct Unigram : IEquatable<Unigram> {
     /// <summary>
     /// 建立語言模型基礎資料單位副本。單元圖由詞彙內容和對應的統計權重組成。
     /// </summary>
     /// <param name="keyArray">索引鍵陣列。</param>
     /// <param name="value">詞彙內容。</param>
     /// <param name="score">統計權重（雙精度浮點數）。</param>
-    public Unigram(List<string> keyArray, string value = "", double score = 0) {
+    /// <param name="id">指定識別碼，預設會自動生成。</param>
+    public Unigram(List<string> keyArray, string value = "", double score = 0, Guid? id = null) {
       KeyArray = keyArray.ToList();
       Value = value;
       Score = score;
+      Id = id ?? Guid.NewGuid();
     }
 
     /// <summary>
-    /// 建立語言模型基礎資料單位的預設副本。
+    /// 單元圖識別碼。
     /// </summary>
-    public Unigram() : this(new List<string>()) { }
+    public Guid Id { get; }
 
     /// <summary>
     /// 索引鍵陣列。
@@ -70,12 +72,10 @@ namespace Megrez {
     public override string ToString() => $"({string.Join("-", KeyArray)},{Value},{Score})";
 
     /// <inheritdoc />
-    public override bool Equals(object? obj) => Equals(obj as Unigram);
+    public override bool Equals(object? obj) => obj is Unigram other && Equals(other);
 
     /// <inheritdoc />
-    public bool Equals(Unigram? other) {
-      if (ReferenceEquals(null, other)) return false;
-      if (ReferenceEquals(this, other)) return true;
+    public bool Equals(Unigram other) {
       return KeyArray.SequenceEqual(other.KeyArray)
              && Value == other.Value
              && Math.Abs(Score - other.Score) < 0.0000001f;
@@ -104,5 +104,10 @@ namespace Megrez {
     /// 判斷兩個單元圖是否不相等。
     /// </summary>
     public static bool operator !=(Unigram lhs, Unigram rhs) => !(lhs == rhs);
+
+    /// <summary>
+    /// 提供一個空白的單元圖。
+    /// </summary>
+    public static Unigram Empty => new(new List<string>());
   }
 } // namespace Megrez

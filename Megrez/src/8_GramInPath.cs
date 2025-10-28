@@ -389,14 +389,14 @@ namespace Megrez {
 
       int? headIndex = null;
       for (int idx = grams.Count - 1; idx >= 0; idx--) {
-        if (ReferenceEquals(grams[idx].Gram, headPair.Gram)) {
+        if (grams[idx].Gram.Id == headPair.Gram.Id) {
           headIndex = idx;
           break;
         }
       }
 
       if (!headIndex.HasValue) {
-        for (int idx = 0; idx < grams.Count; idx++) {
+        for (int idx = grams.Count - 1; idx >= 0; idx--) {
           if (grams[idx].Equals(headPair)) {
             headIndex = idx;
             break;
