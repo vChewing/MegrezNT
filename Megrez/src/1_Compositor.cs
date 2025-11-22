@@ -258,14 +258,15 @@ namespace Megrez {
     /// 朝著指定方向砍掉一個與游標相鄰的讀音。
     /// </summary>
     /// <remarks>
-    /// 在威注音的術語體系當中，「與文字輸入方向相反的方向」為向後（Rear），反之則為向前（Front）。
+    /// 在 Megrez 的術語體系當中，「與文字輸入方向相反的方向」為向後（Rear），反之則為向前（Front）。
     /// 如果是朝著與文字輸入方向相反的方向砍的話，游標位置會自動遞減。
     /// </remarks>
     /// <param name="direction">指定方向（相對於文字輸入方向而言）</param>
     /// <returns>該操作是否成功執行。</returns>
     public bool DropKey(TypingDirection direction) {
+      if (IsEmpty) return false;
+      if (IsCursorAtEdge(direction)) return false;
       bool isBksp = direction == TypingDirection.ToRear;
-      if (Cursor == (isBksp ? 0 : Keys.Count)) return false;
       Keys.RemoveAt(Cursor - (isBksp ? 1 : 0));
       Cursor -= isBksp ? 1 : 0;
       ResizeGridAt(Cursor, ResizeBehavior.Shrink);
@@ -335,7 +336,7 @@ namespace Megrez {
     /// 按幅節來前後移動游標。
     /// </summary>
     /// <remarks>
-    /// 在威注音的術語體系當中，「與文字輸入方向相反的方向」為向後（Rear），反之則為向前（Front）。
+    /// 在 Megrez 的術語體系當中，「與文字輸入方向相反的方向」為向後（Rear），反之則為向前（Front）。
     /// </remarks>
     /// <param name="direction">指定移動方向（相對於文字輸入方向而言）。</param>
     /// <param name="isMarker">
