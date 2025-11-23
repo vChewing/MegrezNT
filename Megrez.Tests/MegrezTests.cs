@@ -786,6 +786,7 @@ EOS;
         new KeyValuePaired(new List<string> { "shi4" }, "世"),
         cursorShi,
         Node.OverrideType.Specified,
+        false,
         true,
         intel => {
           obsCaptured = intel;
@@ -807,6 +808,7 @@ EOS;
         new KeyValuePaired(new List<string> { "shi4", "de5" }, "是的"),
         cursorShiDe,
         Node.OverrideType.Specified,
+        false,
         true,
         intel => {
           obsCaptured = intel;
@@ -852,6 +854,7 @@ EOS;
         pomSuggestedCandidate,
         pomSuggestedCandidateOverrideCursor,
         Node.OverrideType.TopUnigramScore,
+        false,
         true
       );
       Assert.That(pomOverrideSucceeded, Is.True);
@@ -890,6 +893,7 @@ EOS;
         new KeyValuePaired(new List<string> { "hui4", "hua4" }, "會話"),
         cursorHua,
         Node.OverrideType.Specified,
+        false,
         true,
         intel => { obsCaptured = intel; }
       );
@@ -913,6 +917,7 @@ EOS;
         pomSuggestedCandidate,
         pomSuggestedCandidateOverrideCursor,
         Node.OverrideType.TopUnigramScore,
+        false,
         true
       );
       Assert.That(pomOverrideSucceeded, Is.True);
@@ -936,6 +941,7 @@ EOS;
           new KeyValuePaired(new List<string> { "di4" }, "第"),
           0,
           Node.OverrideType.Specified,
+          false,
           true
         ),
         Is.True
@@ -958,6 +964,7 @@ EOS;
           diJiaoCandidate!,
           readingKeys.Length,
           Node.OverrideType.Specified,
+          false,
           true,
           intel => { obsCaptured = intel; }
         ),
@@ -987,6 +994,7 @@ EOS;
           new KeyValuePaired(new List<string> { "di4" }, "第"),
           0,
           Node.OverrideType.Specified,
+          false,
           true
         ),
         Is.True
@@ -1015,6 +1023,7 @@ EOS;
           pomSuggestedCandidate,
           overrideCursor,
           overrideType,
+          false,
           true
         ),
         Is.True

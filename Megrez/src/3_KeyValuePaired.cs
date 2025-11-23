@@ -258,7 +258,7 @@ namespace Megrez {
               break;
           }
 
-          result.Add(new(theNode.KeyArray, gram.Value));
+          result.Add(new(theNode.KeyArray, gram.Value, gram.Score));
         }
       });
       return result;
@@ -271,12 +271,14 @@ namespace Megrez {
     /// <param name="candidate">指定用來覆寫為的候選字（詞音鍵值配對）。</param>
     /// <param name="location">游標位置。</param>
     /// <param name="overrideType">指定覆寫行為。</param>
+    /// <param name="isExplicitlyOverridden">是否為使用者明確覆寫，而非自動機制造成的覆寫。</param>
     /// <param name="enforceRetokenization">是否強制重新分詞，對所有重疊節點施作重置與降權，以避免殘留舊節點狀態。</param>
     /// <param name="perceptionHandler">覆寫成功後用於回傳觀測智慧的回呼。</param>
     /// <returns>該操作是否成功執行。</returns>
     public bool OverrideCandidate(
       KeyValuePaired candidate, int location,
       Node.OverrideType overrideType = Node.OverrideType.Specified,
+      bool isExplicitlyOverridden = false,
       bool enforceRetokenization = false,
       Action<PerceptionIntel>? perceptionHandler = null
     ) =>
@@ -286,6 +288,7 @@ namespace Megrez {
         candidate.Value,
         candidate.Score < 0 ? candidate.Score : null,
         overrideType,
+        isExplicitlyOverridden,
         enforceRetokenization,
         perceptionHandler
       );
@@ -297,17 +300,26 @@ namespace Megrez {
     /// <param name="candidate">指定用來覆寫為的候選字（字串）。</param>
     /// <param name="location">游標位置。</param>
     /// <param name="overrideType">指定覆寫行為。</param>
+    /// <param name="isExplicitlyOverridden">是否為使用者明確覆寫，而非自動機制造成的覆寫。</param>
     /// <param name="enforceRetokenization">是否強制重新分詞，對所有重疊節點施作重置與降權，以避免殘留舊節點狀態。</param>
     /// <param name="perceptionHandler">覆寫成功後用於回傳觀測智慧的回呼。</param>
     /// <returns>該操作是否成功執行。</returns>
     public bool OverrideCandidateLiteral(
       string candidate, int location,
       Node.OverrideType overrideType = Node.OverrideType.Specified,
+      bool isExplicitlyOverridden = false,
       bool enforceRetokenization = false,
       Action<PerceptionIntel>? perceptionHandler = null
     ) =>
       OverrideCandidateAgainst(
-        null, location, candidate, null, overrideType, enforceRetokenization, perceptionHandler
+        null,
+        location,
+        candidate,
+        null,
+        overrideType,
+        isExplicitlyOverridden,
+        enforceRetokenization,
+        perceptionHandler
       );
 
     /// <summary>
@@ -318,6 +330,7 @@ namespace Megrez {
     /// <param name="value">資料值。</param>
     /// <param name="specifiedScore">指定分數。</param>
     /// <param name="overrideType">指定覆寫行為。</param>
+    /// <param name="isExplicitlyOverridden">是否為使用者明確覆寫，而非自動機制造成的覆寫。</param>
     /// <param name="enforceRetokenization">是否強制重新分詞，對所有重疊節點施作重置與降權，以避免殘留舊節點狀態。</param>
     /// <param name="perceptionHandler">覆寫成功後用於回傳觀測智慧的回呼。</param>
     /// <returns>該操作是否成功執行。</returns>
@@ -327,6 +340,7 @@ namespace Megrez {
       string value,
       double? specifiedScore,
       Node.OverrideType overrideType,
+      bool isExplicitlyOverridden = false,
       bool enforceRetokenization = false,
       Action<PerceptionIntel>? perceptionHandler = null
     ) {
@@ -364,6 +378,7 @@ namespace Megrez {
           anchor.Node.OverrideStatus = new NodeOverrideStatus(
             desiredScore,
             Node.OverrideType.Specified,
+            isExplicitlyOverridden,
             anchor.Node.CurrentUnigramIndex
           );
         }
@@ -394,6 +409,7 @@ namespace Megrez {
               anchor.Node.OverrideStatus = new NodeOverrideStatus(
                 demotionScore,
                 Node.OverrideType.Specified,
+                anchor.Node.IsExplicitlyOverridden,
                 anchor.Node.CurrentUnigramIndex
               );
             }

@@ -20,10 +20,10 @@ namespace Megrez {
     /// 初期化一個新的 GramInPath 副本。
     /// </summary>
     /// <param name="gram">單元圖。</param>
-    /// <param name="isOverridden">是否被覆寫。</param>
-    public GramInPath(Unigram gram, bool isOverridden) {
+    /// <param name="isExplicit">是否被覆寫。</param>
+    public GramInPath(Unigram gram, bool isExplicit) {
       Gram = gram;
-      IsOverridden = isOverridden;
+      IsExplicit = isExplicit;
     }
 
     // MARK: - Properties
@@ -36,7 +36,7 @@ namespace Megrez {
     /// <summary>
     /// 是否被覆寫。
     /// </summary>
-    public readonly bool IsOverridden;
+    public readonly bool IsExplicit;
 
     /// <summary>
     /// 索引鍵陣列。
@@ -81,7 +81,7 @@ namespace Megrez {
     /// <param name="other">要比較的另一個 GramInPath 物件。</param>
     /// <returns>如果相等則返回 true，否則返回 false。</returns>
     public bool Equals(GramInPath other) {
-      return Equals(Gram, other.Gram) && IsOverridden == other.IsOverridden;
+      return Equals(Gram, other.Gram) && IsExplicit == other.IsExplicit;
     }
 
     /// <summary>
@@ -99,7 +99,7 @@ namespace Megrez {
       unchecked {
         int hash = 17;
         hash = hash * 23 + Gram.GetHashCode();
-        hash = hash * 23 + IsOverridden.GetHashCode();
+        hash = hash * 23 + IsExplicit.GetHashCode();
         return hash;
       }
     }

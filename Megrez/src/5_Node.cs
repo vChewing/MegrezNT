@@ -75,6 +75,11 @@ namespace Megrez {
     /// </summary>
     public OverrideType? CurrentOverrideType { get; private set; }
 
+    /// <summary>
+    /// 是否為使用者明確覆寫，而非自動機制造成的覆寫。
+    /// </summary>
+    public bool IsExplicitlyOverridden { get; private set; }
+
     private int _currentUnigramIndex;
 
     /// <summary>
@@ -126,6 +131,7 @@ namespace Megrez {
       SegLength = node.SegLength;
       Unigrams = node.Unigrams.Select(x => x.Copy()).ToList();
       CurrentOverrideType = node.CurrentOverrideType;
+      IsExplicitlyOverridden = node.IsExplicitlyOverridden;
       CurrentUnigramIndex = node.CurrentUnigramIndex;
     }
 
@@ -149,7 +155,9 @@ namespace Megrez {
       return obj is Node node && Math.Abs(OverridingScore - node.OverridingScore) < 0.000_000_000_001 &&
              KeyArray.SequenceEqual(node.KeyArray) &&
              SegLength == node.SegLength && Unigrams.SequenceEqual(node.Unigrams) &&
-             CurrentOverrideType == node.CurrentOverrideType && CurrentUnigramIndex == node.CurrentUnigramIndex;
+             CurrentOverrideType == node.CurrentOverrideType &&
+             IsExplicitlyOverridden == node.IsExplicitlyOverridden &&
+             CurrentUnigramIndex == node.CurrentUnigramIndex;
     }
 
     /// <summary>
@@ -164,6 +172,7 @@ namespace Megrez {
       hash.Add(SegLength);
       hash.Add(CurrentUnigramIndex);
       hash.Add(CurrentOverrideType);
+      hash.Add(IsExplicitlyOverridden);
 
       foreach (string key in KeyArray) {
         hash.Add(key);
@@ -224,9 +233,10 @@ namespace Megrez {
     /// 節點覆寫狀態的動態屬性，允許直接讀取和設定覆寫狀態。
     /// </summary>
     public NodeOverrideStatus OverrideStatus {
-      get => new(OverridingScore, CurrentOverrideType, CurrentUnigramIndex);
+      get => new(OverridingScore, CurrentOverrideType, IsExplicitlyOverridden, CurrentUnigramIndex);
       set {
         OverridingScore = value.OverridingScore;
+        IsExplicitlyOverridden = value.IsExplicitlyOverridden;
         // 防範 UnigramIndex 溢出，如果溢出則重設覆寫狀態
         if (value.CurrentUnigramIndex >= 0 && value.CurrentUnigramIndex < Unigrams.Count) {
           CurrentOverrideType = value.CurrentOverrideType;
@@ -253,6 +263,7 @@ namespace Megrez {
     public void Reset() {
       _currentUnigramIndex = 0;
       CurrentOverrideType = null;
+      IsExplicitlyOverridden = false;
     }
 
     /// <summary>
@@ -310,18 +321,26 @@ namespace Megrez {
     public int CurrentUnigramIndex { get; set; }
 
     /// <summary>
+    /// 使用者是否明確覆寫。
+    /// </summary>
+    public bool IsExplicitlyOverridden { get; set; }
+
+    /// <summary>
     /// 初始化一個節點覆寫狀態
     /// </summary>
     /// <param name="overridingScore">覆寫權重數值</param>
     /// <param name="currentOverrideType">當前覆寫狀態種類</param>
+    /// <param name="isExplicitlyOverridden">是否為使用者明確覆寫，而非自動機制造成的覆寫。</param>
     /// <param name="currentUnigramIndex">當前單元圖索引位置</param>
     public NodeOverrideStatus(
       double overridingScore = 114514,
       Node.OverrideType? currentOverrideType = null,
+      bool isExplicitlyOverridden = false,
       int currentUnigramIndex = 0
     ) {
       OverridingScore = overridingScore;
       CurrentOverrideType = currentOverrideType;
+      IsExplicitlyOverridden = isExplicitlyOverridden;
       CurrentUnigramIndex = currentUnigramIndex;
     }
 
@@ -333,6 +352,7 @@ namespace Megrez {
     public bool Equals(NodeOverrideStatus other) {
       return OverridingScore.Equals(other.OverridingScore) &&
              CurrentOverrideType == other.CurrentOverrideType &&
+             IsExplicitlyOverridden == other.IsExplicitlyOverridden &&
              CurrentUnigramIndex == other.CurrentUnigramIndex;
     }
 
@@ -355,6 +375,7 @@ namespace Megrez {
         int hash = 17;
         hash = hash * 23 + OverridingScore.GetHashCode();
         hash = hash * 23 + CurrentOverrideType.GetHashCode();
+        hash = hash * 23 + IsExplicitlyOverridden.GetHashCode();
         hash = hash * 23 + CurrentUnigramIndex.GetHashCode();
         return hash;
       }

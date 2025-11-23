@@ -53,11 +53,11 @@ namespace Megrez.Tests {
       Assert.That(status.CurrentUnigramIndex, Is.EqualTo(2));
 
       // 測試等價性
-      var status2 = new NodeOverrideStatus(100.0, Node.OverrideType.Specified, 2);
+      var status2 = new NodeOverrideStatus(100.0, Node.OverrideType.Specified, false, 2);
       Assert.That(status, Is.EqualTo(status2));
       Assert.That(status == status2, Is.True);
 
-      var status3 = new NodeOverrideStatus(200.0, Node.OverrideType.Specified, 2);
+      var status3 = new NodeOverrideStatus(200.0, Node.OverrideType.Specified, false, 2);
       Assert.That(status != status3, Is.True);
     }
 

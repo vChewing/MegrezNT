@@ -85,7 +85,10 @@ namespace Megrez {
           Node? node = parent[currentPos];
           if (node == null) break;
 
-          GramInPath insertable = new(node.CurrentUnigram, node.IsOverridden);
+          GramInPath insertable = new(
+            node.CurrentUnigram,
+            node.IsExplicitlyOverridden
+          );
           reversedSentence.Add(insertable);
           currentPos -= node.KeyArray.Count;
         }
