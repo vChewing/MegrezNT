@@ -200,17 +200,12 @@ namespace Megrez {
       if (string.IsNullOrEmpty(node.KeyArray.Joined()))
         return;
       NodeWithLocation anchor = new(segmentIndex, node);
-      foreach (int i in new ClosedRange(lowerbound: 0, upperbound: targetContainer.Count + 1)) {
-        if (targetContainer.IsEmpty())
-          break;
-        if (targetContainer.First().Node.SegLength > anchor.Node.SegLength)
-          continue;
-        targetContainer.Insert(i, anchor);
-        return;
+      for (int i = 0; i < targetContainer.Count; i++) {
+        if (targetContainer[i].Node.SegLength <= anchor.Node.SegLength) {
+          targetContainer.Insert(i, anchor);
+          return;
+        }
       }
-
-      if (!targetContainer.IsEmpty())
-        return;
       targetContainer.Add(anchor);
     }
   }
